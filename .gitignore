@@ -82,3 +82,10 @@ core
 # /src/config.h.in
 # /aclocal.m4
 # /configure
+
+# mikosu: reference checkouts (McOsu, McEngine, ppy/osu, osu-tools, rosu-pp), see CLAUDE.md
+/ref/
+# local agent worktrees and scratch
+/.claude/worktrees/
+# extra build trees (e.g. build-win64, build-dev)
+/build-*/
