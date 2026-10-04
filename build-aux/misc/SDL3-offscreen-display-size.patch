@@ -1,0 +1,18 @@
+--- a/src/video/offscreen/SDL_offscreenvideo.c
++++ b/src/video/offscreen/SDL_offscreenvideo.c
+@@ -132,6 +132,15 @@
+     mode.format = SDL_PIXELFORMAT_XRGB8888;
+     mode.w = 1024;
+     mode.h = 768;
++    // allow a bigger fake display (headless screenshots and benchmarks at real resolutions), e.g. "2560x1440"
++    {
++        const char *size = SDL_getenv("SDL_VIDEO_OFFSCREEN_DISPLAY_SIZE");
++        int w = 0, h = 0;
++        if (size && SDL_sscanf(size, "%dx%d", &w, &h) == 2 && w > 0 && h > 0) {
++            mode.w = w;
++            mode.h = h;
++        }
++    }
+     if (SDL_AddBasicVideoDisplay(&mode) == 0) {
+         return false;
+     }
