@@ -265,6 +265,21 @@ try:
                 build_mo(po, mo)
         sys.exit(0)
 
+    # mikosu: a fresh build dir has no translations.h yet, which counted as "strings changed" and rewrote
+    # the tracked .pot/.po with this machine's gettext (gettext < 0.22 formats them differently, leaving a
+    # dirty tree after every clean build). Only rewrite the tracked files when the set of strings really
+    # differs from the committed .pot; otherwise build from the committed .po as they are.
+    if pot_path.exists() and sorted(parse_pot_msgids(pot_path.read_text(encoding="utf-8"))) == sorted(msgids):
+        translations_h_path.write_text(new_translations_h, encoding="utf-8")
+        manifest_content = "\n".join(f"locale_{code} : {builddir}/gen/{code}.mo" for code in languages) + "\n"
+        write_if_changed(manifest_path, manifest_content)
+        for code in languages:
+            po = srcdir_abs / "translations" / f"{code}.po"
+            mo = gen_dir / f"{code}.mo"
+            if po.exists():
+                build_mo(po, mo)
+        sys.exit(0)
+
     print("Strings changed, updating translations.")
 
     shutil.move(str(temp_pot), str(pot_path))

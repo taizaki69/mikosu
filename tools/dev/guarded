@@ -2,7 +2,10 @@
 # Run a heavy command (build, test, game run) inside a capped systemd user scope, so a runaway
 # process tree gets killed inside its own cgroup instead of freezing the whole desktop.
 #
-#   tools/dev/guarded [--mem 16G] [--tasks 2048] -- <command...>
+#   tools/dev/guarded [--mem 16G] [--tasks 2048] [--bench] -- <command...>
+#
+# --bench keeps the caps but drops the lowered priority, for measurements (the game raises its own thread
+# priorities, which a niced process isn't allowed to do).
 #
 # Defaults leave room for the desktop on the 32 GB dev machine. Lower priority (nice/ionice)
 # keeps the UI responsive while a build runs. Falls back to plain ulimits if systemd-run is
@@ -11,10 +14,13 @@ set -euo pipefail
 
 mem="${GUARDED_MEM:-16G}"
 tasks="${GUARDED_TASKS:-2048}"
+nice=10
+weight=20
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --mem) mem="$2"; shift 2 ;;
         --tasks) tasks="$2"; shift 2 ;;
+        --bench) nice=0; weight=100; shift ;;
         --) shift; break ;;
         *) break ;;
     esac
@@ -23,8 +29,8 @@ done
 
 if command -v systemd-run >/dev/null 2>&1 && systemd-run --user --scope --quiet -p TasksMax=8 -- true 2>/dev/null; then
     exec systemd-run --user --scope --quiet \
-        -p MemoryMax="$mem" -p MemorySwapMax=0 -p TasksMax="$tasks" -p CPUWeight=20 -p IOWeight=20 \
-        -- nice -n 10 "$@"
+        -p MemoryMax="$mem" -p MemorySwapMax=0 -p TasksMax="$tasks" -p CPUWeight="$weight" -p IOWeight="$weight" \
+        -- nice -n "$nice" "$@"
 fi
 ulimit -u "$tasks" 2>/dev/null || true
-exec nice -n 10 "$@"
+exec nice -n "$nice" "$@"
