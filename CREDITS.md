@@ -1,0 +1,49 @@
+# Credits
+
+mikosu is free software under the GNU GPL v3 (see `LICENSE`). It stands on the work of others.
+
+## Lineage
+
+- **McOsu** and **McEngine** by **McKay** (`McKay42`): the original osu! client and engine this code descends from.
+  - https://github.com/McKay42/McOsu (GPL-3.0)
+  - https://github.com/McKay42/McEngine (MIT)
+- **neomod** (formerly neosu) by **kiwec** and **spectator** (whrvt), with contributors: the actively developed fork mikosu is built from.
+  - https://github.com/neomodnet/neomod (GPL-3.0)
+  - mikosu forked it at commit `0fedcafb` (2026-10-04) and keeps its history.
+  - Every contributor is in `git log`, and their copyright notices stay in the source files.
+
+## Content inherited from neomod (provenance audit in progress)
+
+neomod credits these authors for its default skin:
+- ffffffffffffffffff ("- Jaret - Mish Mosh")
+- irrlux ("Talrava XIV")
+- HazrdMC ("Phaze")
+- Redon ("Aesthetic 1.3")
+- DarkSlayer000 ("xXx_SampleSkin_xXx v1.3")
+- Inori ("Stepmania")
+- taikuta ("Murakumo")
+- _Easy_ ("Burning_Crow V2")
+- Icomoon
+- Freepik
+
+Translations: French by kiwec; German, Japanese, Polish and Russian machine-translated.
+
+mikosu is auditing every shipped asset before its first release. Anything not clearly redistributable will be replaced with original or openly licensed work, and the result recorded here and in `docs/renovation/ASSETS.md`.
+
+## Third-party libraries
+
+The full list with licences is in `assets/misc/licenses.txt` and `assets/misc/credits.txt`. Among them:
+- SDL3, FreeType, libpng, libjpeg-turbo, zlib-ng, bzip2, brotli, fmt, spdlog, GLM, simdutf, ctre, libarchive, nsync, mimalloc, curl, OpenSSL, nghttp2, rapidjson, discord-rpc
+- SoLoud (neoloud fork), Signalsmith Stretch, mpg123, FFmpeg, libiconv
+- stb_image, glad
+
+**BASS** (un4seen) is proprietary and free for non-commercial use only. Whether mikosu ships it or defaults to the open-source SoLoud backend is decided before release.
+
+## Fonts used by the design work
+
+- **Nunito**, by the Nunito Project Authors, SIL Open Font License 1.1
+- **M PLUS Rounded 1c**, by the Rounded M+ Project Authors, SIL Open Font License 1.1
+
+## Not affiliated with osu!
+
+osu! is a trademark of ppy Pty Ltd. mikosu is an independent project. It isn't affiliated with or endorsed by ppy, ships none of ppy's assets, and doesn't connect to the official osu! servers.

@@ -1,6 +1,6 @@
 {
   "updated": "2026-10-04",
-  "phase": "0 bootstrap: done; waiting on the user's design direction and GitHub decision",
+  "phase": "0 bootstrap: done; design round 2 in progress",
   "upstream": {
     "remote": "neomodnet/neomod",
     "fork_point": "0fedcafb3515c86d8be8ee736c76bce19d0198d3",
@@ -65,5 +65,6 @@
     "mcosu": "~/.local/share/Steam/steamapps/common/McOsu",
     "library": {"osu_db_version": 20260711, "difficulties": 7514, "folders": 1354, "skins": 13, "stable_scores": 84, "stable_scores_with_online_id": 54, "replays_data_r": 86, "collections": 1}
   },
-  "decisions_waiting": ["design direction (A/B/C)", "GitHub repo now (public/private) + gh login"]
+  "decisions_waiting": ["design direction, round 2 (modern: slanted shapes, geometric font, flat dark panels, calm; stable layout)"],
+  "repo": "https://github.com/taizaki69/mikosu"
 }

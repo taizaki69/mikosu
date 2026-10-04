@@ -1,20 +1,18 @@
 # mikosu design spec
 
-> **Status: draft.** Waiting on the user to pick a direction (mockups in `mockups/`; decision page: https://claude.ai/artifact/WPKRiAu87RZV2pKhaAQncj). The tokens below are drafted from direction **B, Refined** (recommended) and get finalised once the user picks.
+> **Status: draft, direction revised 2026-10-04.** The user rejected all three first-round mockups (A faithful, B refined, C bold) as "way too old style". The new direction, in the user's words: *keep the general osu!stable layout; some design aspects can be borrowed from osu!lazer; just not lazer's layout.* Their picks from lazer's styling: **slanted (sheared) shapes, a clean modern font, and flat dark panels**. Overall feel: **clean and calm** (few effects; the map background does the talking). Not picked, so not a focus: colour-coded star-rating badges. The second-round mockups follow this; the tokens below are rewritten once one is chosen.
 
 ## Intent
 
-osu!stable, remastered.
-- **Same layout, flow and soul.** Every element sits where a stable player's hands and eyes expect it.
-- **Prettier.** Crisp at any resolution, calmer typography, tasteful depth, and motion that feels native at 240 Hz and above.
-- **The beatmap's artwork is the hero.** The UI frames it and borrows its colours instead of covering it.
-- **Nothing should feel like lazer.**
-  - No sheared buttons or panels.
-  - No triangle patterns.
-  - No column-and-card mod select.
-  - No full-screen overlays.
-  - No flat dark panel styling.
-- **No generic web-dashboard look either.**
+osu!stable's layout, with a modern, clean look.
+- **Same layout and flow as stable.** Every element sits where a stable player's hands and eyes expect it: song select with the carousel on the right, info top-left, leaderboard on the left, and the bottom bar; main menu with the logo and buttons sliding out of it; mod overlay; options sliding in from the left.
+- **Modern styling, partly borrowed from lazer** (the user's call, 2026-10-04):
+  - slanted parallelogram panels and buttons;
+  - a crisp geometric sans-serif (an openly licensed look-alike, never lazer's Torus);
+  - flat, solid dark panels with bright accents, instead of glass.
+- **Clean and calm.** Generous spacing and few effects, so it's readable mid-session at a glance.
+- **The beatmap's artwork is the hero.**
+- **Lazer's *layout* stays out.** That means no top toolbar, no column-and-card mod select, no full-screen settings and no lazer-style results screen. The first brief's "nothing like lazer" rule is narrowed to layout by the user's later instruction.
 
 ## Principles (from the brief, binding)
 
@@ -35,6 +33,8 @@ osu!stable, remastered.
 8. **Performance:** stays inside the menu budget in `BASELINE.md`.
 
 ## Directions shown to the user
+
+### Round 1 (rejected 2026-10-04: "way too old style")
 
 All three keep stable's layout (mockups: `mockups/{mainmenu,songselect}-{faithful,refined,bold}.jpg`; source in `mockups/src/`).
 

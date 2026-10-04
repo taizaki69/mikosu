@@ -221,6 +221,8 @@ Storyboards (check upstream `sb` first), lazer mods (rate with a pitch option, D
 | 14 | 2026-10-04 | Commits are authored as `taizaki69` with the GitHub noreply address; pre-publication history was rewritten from a local placeholder before the first push, and personal paths were scrubbed from the docs | Never publish the user's personal email or machine details in a public repo |
 | 15 | 2026-10-04 | Main branch `main`; feature branches; bootstrap docs and tooling committed straight to `main` (no remote yet) | Bootstrap work has no reviewer or CI to gate yet |
 | 16 | 2026-10-04 | Mockups are HTML/CSS rendered to PNG with headless Firefox, using generated art and OFL fonts (Nunito, M PLUS Rounded 1c), and a placeholder logo | Fast to iterate on three directions; no copyrighted beatmap art; fonts are candidates for the real UI |
+| 17 | 2026-10-04 | **User decision:** round-1 looks rejected as too old-style. New direction: stable layout with modern styling borrowed from lazer (slanted shapes, clean geometric font, flat dark panels); clean and calm | The user's words override the brief's "nothing like lazer" for styling; lazer's *layout* stays excluded |
+| 18 | 2026-10-04 | **User decision:** the project is public on GitHub, at `taizaki69/mikosu`, as a standalone repository (not a GitHub fork) | Free CI for public repos; a standalone repo gives mikosu its own identity and releases. Attribution lives in `CREDITS.md`, `README.md` and the git history |
 
 ## Open questions for the user
 
