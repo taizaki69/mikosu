@@ -47,3 +47,12 @@ function logoSVG(v, id) {
     <circle cx="-67.5" cy="-39" r="9" fill="#fff"/>
   </svg>`;
 }
+// round-2 placeholder logo: flat, one accent colour (the ring), a dark disc and the hit dot; no gradients
+function flatLogo(id, word) {
+  return `<svg viewBox="-100 -100 200 200" style="color:var(--accent)">
+    <circle r="97" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".35"/>
+    <circle r="80" fill="#12131a"/>
+    <path d="M 0 -80 A 80 80 0 1 1 -69.3 -40" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="butt"/>
+    <circle cx="-69.3" cy="-40" r="9" fill="#fff"/>
+  </svg>${word ? `<div class="word">${word}</div>` : ""}`;
+}

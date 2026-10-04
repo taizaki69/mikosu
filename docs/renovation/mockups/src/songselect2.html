@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mikosu song select mockup, round 2</title>
+<link rel="stylesheet" href="modern.css">
+</head>
+<body>
+<div class="bg"></div>
+<div class="dim"></div>
+
+<div class="carousel" id="carousel"></div>
+
+<section class="info sk"><div class="un">
+  <div class="title">Lanternfall <span class="diff">Kaze's Extra</span></div>
+  <div class="by"><b>Aurora Drift</b> &middot; mapped by kazehana</div>
+  <div class="stats">
+    <span>Length<b>3:42</b></span><span>BPM<b>174</b></span><span>Objects<b>1,284</b></span><span>Circles<b>702</b></span><span>Sliders<b>578</b></span>
+  </div>
+  <div class="attrs">
+    <div class="meter">CS <b>5.5</b><i class="up" style="--w:55%"></i></div>
+    <div class="meter">AR <b>10</b><i class="up" style="--w:100%"></i></div>
+    <div class="meter">OD <b>10</b><i class="up" style="--w:100%"></i></div>
+    <div class="meter">HP <b>7</b><i class="up" style="--w:70%"></i></div>
+    <span class="sr-big">&#9733; 7.38<small>with HD HR</small></span>
+  </div>
+  <div class="pp" style="margin-top:14px"><span><b>312</b>pp at 95%</span><span><b>351</b>pp at 98%</span><span><b>368</b>pp at 99%</span><span><b>392</b>pp at 100%</span></div>
+</div></section>
+
+<section class="topright">
+  <div class="search sk"><div class="un" id="search"></div></div>
+  <div class="dds"><span>Group</span><div class="dd sk"><div class="un">Artist</div></div>
+    <span style="margin-left:10px">Sort</span><div class="dd sk"><div class="un">Date added</div></div>
+    <span style="margin-left:10px">Show</span><div class="dd sk"><div class="un">All maps</div></div></div>
+</section>
+
+<section class="board">
+  <div class="tabs"><div class="tab sk on"><div class="un">Local</div></div><div class="tab sk"><div class="un">Country</div></div><div class="tab sk"><div class="un">Global</div></div><div class="tab sk"><div class="un">Friends</div></div></div>
+  <div id="rows" style="display:flex;flex-direction:column;gap:6px"></div>
+</section>
+
+<footer class="bottombar" id="bottombar"></footer>
+<div class="logo playlogo" id="playlogo"></div>
+
+<script src="icons.js"></script>
+<script>
+const v = new URLSearchParams(location.search).get("v") || "controls";
+document.body.classList.add("v-" + v);
+
+document.getElementById("search").innerHTML =
+  `${icon("search")}<span class="q">Search 7,514 maps &middot; try <b>stars&gt;6 ar&lt;9</b></span><kbd>Ctrl+F</kbd>`;
+
+// carousel: the selected difficulty sits at the vertical centre; panels further away drift right, as in stable
+const items = [
+  { k: "set", t: "Paper Planes in June", a: "Kaori Nanase // Shibuki", art: "teal" },
+  { k: "set", t: "夜明けの灯", a: "星野ミオ // rinne", art: "violet" },
+  { k: "set", t: "Lanternfall", a: "Aurora Drift // kazehana", art: "rose", head: true },
+  { k: "diff", d: "Easy", sr: 1.92, rank: "S" },
+  { k: "diff", d: "Normal", sr: 2.84, rank: "S" },
+  { k: "diff", d: "Hard", sr: 4.07, rank: "A" },
+  { k: "diff", d: "Insane", sr: 5.41, rank: "A" },
+  { k: "diff", d: "Kaze's Extra", sr: 6.71, rank: "S", sel: true },
+  { k: "set", t: "Velvet Static", a: "Lumen Kid // ponytail", art: "ember" },
+  { k: "set", t: "Glass Harbor", a: "Mareen // Shiro", art: "ocean" },
+  { k: "set", t: "Moss & Mirrors", a: "The Quiet Engine // Oak", art: "moss" },
+];
+const carousel = document.getElementById("carousel");
+const centre = 436;           // relative to the carousel's top (540 on screen)
+const heights = items.map((it) => (it.k === "diff" ? 74 : 92));
+const selIndex = items.findIndex((it) => it.sel);
+// lay out top-down so the selected panel's centre lands on `centre`
+let yPos = centre - heights[selIndex] / 2;  // (not `top`: that's window.top)
+for (let i = selIndex - 1; i >= 0; i--) yPos -= heights[i] + 8;
+items.forEach((it, i) => {
+  const h = heights[i];
+  const mid = yPos + h / 2;
+  const dist = Math.abs(mid - centre);
+  const drift = Math.min(150, dist * dist * 0.0004) + (it.k === "diff" && !it.sel ? 30 : 0) + (it.k === "set" ? 0 : 0);
+  const el = document.createElement("div");
+  el.className = `panel ${it.k}${it.sel ? " sel" : ""}`;
+  el.style.top = yPos + "px";
+  el.style.right = (-60 - drift) + "px";
+  const sr = it.sr ? `<span class="sr${it.sel ? "" : " dim"}">&#9733; ${it.sr.toFixed(2)}</span>` : "";
+  const rk = it.rank ? `<span class="rk g-${it.rank.toLowerCase()}">${it.rank}</span>` : "";
+  el.innerHTML = `<div class="art" style="background-image:url(art/thumb-${it.art || "rose"}.png)"></div>
+    <div class="txt"><div class="t">${it.t || ""}</div><div class="a">${it.a || ""}</div>
+    <div class="d">${it.k === "diff" ? rk + it.d + sr : (it.head ? "5 difficulties &middot; ★ 1.92 – 6.71" : "")}</div></div>`;
+  carousel.appendChild(el);
+  yPos += h + 8;
+});
+
+const rows = [
+  { g: "S", who: "taizaki", mods: ["HD", "HR"], score: "12,948,210", acc: "98.92%", combo: "1,284x", pp: "387pp", me: true },
+  { g: "A", who: "mochi_m", mods: ["HD"], score: "11,203,554", acc: "97.40%", combo: "1,102x", pp: "340pp" },
+  { g: "A", who: "ren_k", mods: [], score: "9,876,002", acc: "96.88%", combo: "803x", pp: "301pp" },
+  { g: "A", who: "solstice", mods: ["HR"], score: "8,442,190", acc: "96.10%", combo: "722x", pp: "288pp" },
+  { g: "B", who: "Velvet", mods: [], score: "6,120,775", acc: "93.05%", combo: "514x", pp: "214pp" },
+  { g: "B", who: "kitsu", mods: ["DT"], score: "5,980,340", acc: "92.77%", combo: "466x", pp: "251pp" },
+];
+document.getElementById("rows").innerHTML = rows.map((r, i) => `
+  <div class="row${r.me ? " me" : ""}">
+    <div class="grade g-${r.g.toLowerCase()}">${r.g}</div>
+    <div class="who"><b>${r.who}</b><small>${r.combo} &middot; ${r.acc} ${r.mods.map((m) => `<span class="mod">${m}</span>`).join("")}</small></div>
+    <div class="num"><b>${r.score}</b><small>${r.pp}</small></div>
+  </div>`).join("");
+
+const bb = (cls, ic, label, key) => `<div class="bb sk ${cls}"><div class="un">${ic ? `<span class="ic">${icon(ic)}</span>` : ""}${label}${key ? `<kbd>${key}</kbd>` : ""}</div></div>`;
+document.getElementById("bottombar").innerHTML =
+  bb("back", "back", "BACK") + bb("", "mode", "osu!") + bb("", "mods", "Mods", "F1") + bb("", "random", "Random", "F2") + bb("", "options", "Options", "F3") +
+  `<div class="user"><div class="avatar"><span>T</span></div><div><b>taizaki</b><small>4,218pp &middot; #48,213 &middot; 97.84%</small><div class="lvl"><i></i></div></div></div>`;
+
+document.getElementById("playlogo").innerHTML = flatLogo("p");
+</script>
+</body>
+</html>

@@ -2,6 +2,28 @@
 
 Newest session first. Every claim cites its evidence (a test, a measurement or a screenshot).
 
+## 2026-10-04: Session 1, continued (stopped at the usage limit)
+
+### What changed
+- **GitHub:** the repo is public at https://github.com/taizaki69/mikosu, as a standalone repo with `main` as the default branch.
+  - Before the first push, history was rewritten so commits are authored with the user's GitHub noreply address, and machine paths and personal details were scrubbed from the docs.
+  - `upstream` push is disabled.
+- **`README.md` and `CREDITS.md`** for mikosu. neomod's README moved to `docs/renovation/NEOMOD-README.md`.
+- **Design round 1** (faithful / refined / bold) was **rejected** by the user as "way too old style".
+  - New direction (see `DESIGN.md` and PLAN decisions 17–18): stable layout, modern styling borrowed from lazer. The user picked slanted shapes, a clean modern font and flat dark panels, with a "clean and calm" feel.
+  - Not picked: colour-coded star rating.
+- **Design round 2 is in progress.** Sources are `mockups/src/{modern.css,songselect2.html,mainmenu2.html}`, with variants `all` / `controls` / `accents` (how much is slanted). The font is Outfit, with M PLUS 1 for CJK.
+  - Renders: `mockups/*2-*.jpg`. **Not shown to the user yet.**
+  - Known glitches to fix first:
+    - the song-select carousel overlaps the Group/Sort row (start the carousel lower, around y=140);
+    - unselected difficulty rows show the star rating on a line above the name; inspect `.panel.diff .d` in a browser.
+  - Then check `mainmenu2-*.jpg`, rebuild the decision page (the artifact link in `DESIGN.md`) with round 2 and ask the user to pick.
+- **Lesson:** `pkill -f <pattern>` also matches the shell running it. Use `pkill -f "[h]ttp.server"`-style patterns.
+
+### Next
+1. Finish round-2 mockups → user picks → write `DESIGN.md` tokens.
+2. Phase 1 (`PLAN.md`): branding module, honest network identity, XDG data dirs, CI on GitHub Actions (the repo exists now), unit tests, headless runner, screenshot tool, Wine smoke test, asset audit.
+
 ## 2026-10-04: Session 1, bootstrap
 
 ### What changed

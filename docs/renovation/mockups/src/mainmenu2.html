@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mikosu main menu mockup, round 2</title>
+<link rel="stylesheet" href="modern.css">
+</head>
+<body>
+<div class="bg"></div>
+<div class="dim"></div>
+<canvas class="viz" id="viz" width="1920" height="1080"></canvas>
+<div class="logo" id="logo" style="left:340px;top:320px;width:440px;height:440px"></div>
+
+<section class="mm-user sk" id="user"></section>
+<section class="np" id="np"></section>
+<nav class="mm-buttons" id="buttons"></nav>
+<div class="mm-foot"><span>mikosu 0.1 &middot; based on neomod and McOsu</span><span>7,514 maps &middot; 13 skins</span></div>
+<div class="mm-tip">F2 in song select picks a random map &middot; Shift+F2 goes back</div>
+
+<script src="icons.js"></script>
+<script>
+const v = new URLSearchParams(location.search).get("v") || "controls";
+document.body.classList.add("v-" + v);
+const CX = 560, CY = 540;
+
+document.getElementById("logo").innerHTML = flatLogo("m", "mikosu");
+document.querySelector("#logo .word").style.cssText = "font-size:74px;color:#fff";
+
+document.getElementById("user").innerHTML = `<div class="un"><div class="avatar"><span>T</span></div><div><b>taizaki</b>
+  <small>4,218pp &middot; #48,213 global &middot; 97.84%</small><small>Level 92</small><div class="lvl"><i></i></div></div></div>`;
+
+const cb = (ic) => `<div class="cbtn sk"><div class="un">${icon(ic)}</div></div>`;
+document.getElementById("np").innerHTML = `
+  <div class="song">${icon("note")} Lanternfall <small>Aurora Drift</small></div>
+  <div class="controls">${cb("prev")}${cb("pause")}${cb("next")}${cb("info")}</div>
+  <div class="bar"><i></i></div>`;
+
+const btn = (cls, ic, label, key) => `<div class="mm-btn sk ${cls}"><div class="un"><span class="ic">${icon(ic)}</span>${label}<small>${key}</small></div></div>`;
+document.getElementById("buttons").innerHTML =
+  btn("on", "play", "Play", "P") + btn("", "browse", "Browse maps", "B") + btn("", "options", "Options", "O") + btn("", "exit", "Exit", "Q");
+
+// calm visualizer: thin bars, low opacity, shaped like a spectrum (more energy in the lows)
+const c = document.getElementById("viz"), x = c.getContext("2d"), r = rng(7);
+const N = 160, R0 = 232;
+let smooth = 0;
+const accent = getComputedStyle(document.body).getPropertyValue("--accent").trim();
+for (let i = 0; i < N; i++) {
+  const f = i / N;
+  const base = 0.3 + 0.7 * Math.pow(1 - Math.abs(Math.sin(f * Math.PI * 3)), 2);
+  smooth = smooth * 0.55 + r() * 0.45;
+  const len = Math.max(6, 92 * base * smooth);
+  const a = f * Math.PI * 2 - Math.PI / 2;
+  x.beginPath();
+  x.moveTo(CX + Math.cos(a) * R0, CY + Math.sin(a) * R0);
+  x.lineTo(CX + Math.cos(a) * (R0 + len), CY + Math.sin(a) * (R0 + len));
+  x.strokeStyle = i % 9 === 0 ? accent : "rgba(255,255,255,.38)";
+  x.lineWidth = 3;
+  x.stroke();
+}
+</script>
+</body>
+</html>

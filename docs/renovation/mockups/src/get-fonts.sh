@@ -8,3 +8,8 @@ curl -fsSL -o Nunito-Italic-wght.ttf "$base/nunito/Nunito-Italic%5Bwght%5D.ttf"
 curl -fsSL -o Nunito-OFL.txt "$base/nunito/OFL.txt"
 curl -fsSL -o MPLUSRounded1c-Regular.ttf "$base/mplusrounded1c/MPLUSRounded1c-Regular.ttf"
 curl -fsSL -o MPLUSRounded1c-Bold.ttf "$base/mplusrounded1c/MPLUSRounded1c-Bold.ttf"
+# round 2
+curl -fsSL -o Outfit-wght.ttf "$base/outfit/Outfit%5Bwght%5D.ttf"
+curl -fsSL -o Outfit-OFL.txt "$base/outfit/OFL.txt"
+curl -fsSL -o MPLUS1-wght.ttf "$base/mplus1/MPLUS1%5Bwght%5D.ttf"
+curl -fsSL -o MPLUS1-OFL.txt "$base/mplus1/OFL.txt"

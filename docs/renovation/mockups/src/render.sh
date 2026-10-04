@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# Renders every mockup (screen x variant) to ../<screen>-<variant>.png with headless Firefox at 1920x1080.
+# Renders mockups (screen x variant) to ../<screen>-<variant>.jpg with headless Firefox at 1920x1080.
 # Needs: fonts (./get-fonts.sh), art (python3 make_art.py), firefox.
 set -euo pipefail
 cd "$(dirname "$0")"
 here="$(pwd)"
 profile="$(mktemp -d)"
 trap 'rm -rf "$profile"' EXIT
-for screen in ${SCREENS:-mainmenu songselect}; do
-  for v in faithful refined bold; do
+# round 1: SCREENS="mainmenu songselect" VARIANTS="faithful refined bold"
+# round 2: SCREENS="mainmenu2 songselect2" VARIANTS="all controls accents"
+for screen in ${SCREENS:-mainmenu2 songselect2}; do
+  for v in ${VARIANTS:-all controls accents}; do
     out="$here/../$screen-$v.png"
     rm -f "$out"
     firefox --headless --no-remote --profile "$profile" --window-size=1920,1080 \
