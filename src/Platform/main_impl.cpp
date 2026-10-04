@@ -18,6 +18,7 @@
 #include "Engine.h"
 #include "ConVar.h"
 #include "FPSLimiter.h"
+#include "FrameStats.h"
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "Profiler.h"
@@ -687,6 +688,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
         // keyboard events
         case SDL_EVENT_KEY_UP:
         case SDL_EVENT_KEY_DOWN:
+            if(event->key.down && !event->key.repeat) FrameStats::onInputEvent(event->key.timestamp);
             keyboard->onKeyEvent(event->key.timestamp, event->key.which, event->key.key, event->key.mod,
                                  event->key.scancode,
                                  /*isKeyDown=*/event->key.type == SDL_EVENT_KEY_DOWN, event->key.repeat);
@@ -698,6 +700,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
 
         // mouse events
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            FrameStats::onInputEvent(event->button.timestamp);
             mouse->onButtonChange(
                 {event->button.timestamp, (MouseButtonFlags)(1 << (event->button.button - 1)), true, false});
             break;
@@ -708,6 +711,7 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
             break;
 
         case SDL_EVENT_MOUSE_WHEEL:
+            FrameStats::onInputEvent(event->wheel.timestamp);
             if(float wx = event->wheel.x; wx != 0.f)
                 mouse->onWheelHorizontal(
                     static_cast<int>(120.f * (std::abs(wx) < 1.f ? (std::signbit(wx) ? -1.f : 1.f) : wx)));
@@ -790,10 +794,13 @@ SDL_AppResult SDLMain::iterate() {
         if(!isHeadless()) calibrateDisplayHzWASM();
     }
 
+    FrameStats::frameBegin();
+
     // update
     {
         m_engine->onUpdate();
     }
+    FrameStats::updateDone();
 
     bool occludedUnfocusedFullscreen = false;
     {
@@ -813,6 +820,7 @@ SDL_AppResult SDLMain::iterate() {
             m_engine->onPaint();
         }
     }
+    FrameStats::paintDone(app && app->isInGameplay());
 
     if constexpr(!Env::cfg(FEAT::MAINCB))  // main callbacks use SDL iteration rate to limit fps
     {

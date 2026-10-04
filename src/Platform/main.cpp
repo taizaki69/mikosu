@@ -24,6 +24,7 @@
 #include "Engine.h"
 #include "DiffCalcTool.h"
 #include "File.h"
+#include "FrameStats.h"
 #include "LaunchArgs.h"
 #include "Paths.h"
 #include "SingleInstance.h"
@@ -83,6 +84,9 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
             fmain->m_engine->shutdown();
         }
     }
+
+    // benchmark summary (no-op unless launched with -benchout)
+    FrameStats::shutdown();
 
     if constexpr(Env::cfg(OS::WASM) || Env::cfg(FEAT::MAINCB)) {
         // we allocated it with new
@@ -169,6 +173,7 @@ MAIN_FUNC /* int argc, char *argv[] */
 
     // parse initial cmdline args
     Mc::LaunchArgs::detail::init(argc, argv);
+    FrameStats::init();
 
     using Mc::LaunchArgs::has_arg;
     using enum Mc::LaunchArgs::ArgSwitch;

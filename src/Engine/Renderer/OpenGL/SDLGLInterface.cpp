@@ -9,6 +9,7 @@
 
 #include "Engine.h"
 #include "OpenGLSync.h"
+#include "FrameStats.h"
 #include "Logging.h"
 #include "Environment.h"
 #include "ConVar.h"
@@ -137,16 +138,70 @@ SDLGLInterface::~SDLGLInterface() {
     unload();
 }
 
+namespace {
+// GPU frame time for FrameStats (-benchout only): timestamp queries around each frame, kept in a small ring
+// and read back a few frames later, so the CPU never waits on the GPU for them
+struct GpuFrameTimer {
+    static constexpr int RING = 4;
+    GLuint queries[RING][2]{};
+    bool pending[RING]{};
+    int slot{0};
+    bool begun{false};
+    bool initialized{false};
+    bool supported{false};
+
+    void begin() {
+#ifndef __EMSCRIPTEN__
+        if(!initialized) {
+            initialized = true;
+            supported = glad_glGenQueries && glad_glQueryCounter && glad_glGetQueryObjectui64v &&
+                        glad_glGetQueryObjectiv;
+            if(supported) glGenQueries(RING * 2, &queries[0][0]);
+        }
+        if(!supported) return;
+        if(pending[slot]) {
+            GLint available = 0;
+            glGetQueryObjectiv(queries[slot][1], GL_QUERY_RESULT_AVAILABLE, &available);
+            if(available) {
+                GLuint64 t0 = 0, t1 = 0;
+                glGetQueryObjectui64v(queries[slot][0], GL_QUERY_RESULT, &t0);
+                glGetQueryObjectui64v(queries[slot][1], GL_QUERY_RESULT, &t1);
+                if(t1 >= t0) FrameStats::reportGpuFrameTime((f64)(t1 - t0) / 1e6);
+            }
+            pending[slot] = false;  // a result that isn't in after RING frames is dropped
+        }
+        glQueryCounter(queries[slot][0], GL_TIMESTAMP);
+        begun = true;
+#endif
+    }
+
+    void end() {
+#ifndef __EMSCRIPTEN__
+        if(!begun) return;
+        glQueryCounter(queries[slot][1], GL_TIMESTAMP);
+        pending[slot] = true;
+        slot = (slot + 1) % RING;
+        begun = false;
+#endif
+    }
+};
+GpuFrameTimer s_gpuFrameTimer;
+}  // namespace
+
 void SDLGLInterface::beginScene() {
     // block on frame queue (if enabled)
     if(!cv::r_gl_block_immediate.getBool()) {
         this->syncobj->begin();
     }
+
+    if(FrameStats::enabled()) s_gpuFrameTimer.begin();
 }
 
 void SDLGLInterface::endScene() {
     // log gl errors from the previous frame
     this->handleGLErrors();
+
+    if(FrameStats::enabled()) s_gpuFrameTimer.end();
 
     SDL_GL_SwapWindow(this->window);
 

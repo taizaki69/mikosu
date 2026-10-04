@@ -87,6 +87,7 @@ enum ArgSwitch : unsigned char {
     MISC_NO_FPU,          // -nofpu (don't change floating point behavior on thread init)
     MISC_ASYNC_THREADS,   // -async_threads <n> (override the async pool's worker thread count, for testing)
     MISC_DATA_DIR,        // -datadir <path> (put all writable data, including cache and logs, under this directory)
+    MISC_BENCH_OUT,       // -benchout <file> (record frame timings and write a summary to <file> at exit, see FrameStats)
     // window settings
     WIN_WIDTH,  // -width, -w
     WIN_HEIGHT  // -height, -h

@@ -55,6 +55,7 @@ constexpr auto KNOWN_SWITCHES = std::to_array<KnownSwitch>({
     {"-exclusive", Takes::NOTHING},  {"-ime", Takes::NOTHING},
     {"-nodpi", Takes::NOTHING},      {"-nofpu", Takes::NOTHING},
     {"-async_threads", Takes::WORD}, {"-datadir", Takes::ANYTHING},
+    {"-benchout", Takes::ANYTHING},
     {"-w", Takes::WORD},             {"-width", Takes::WORD},
     {"-h", Takes::WORD},             {"-height", Takes::WORD},
 });
@@ -248,6 +249,8 @@ std::optional<std::string> has_arg(ArgSwitch arg_switch) noexcept {
             return find_switch({"-async_threads"});
         case MISC_DATA_DIR:
             return find_switch({"-datadir"});
+        case MISC_BENCH_OUT:
+            return find_switch({"-benchout"});
         case WIN_WIDTH:
             return find_switch({"-w", "-width"});
         case WIN_HEIGHT:
