@@ -1,0 +1,69 @@
+{
+  "updated": "2026-10-04",
+  "phase": "0 bootstrap: done; waiting on the user's design direction and GitHub decision",
+  "upstream": {
+    "remote": "neomodnet/neomod",
+    "fork_point": "0fedcafb3515c86d8be8ee736c76bce19d0198d3",
+    "reviewed_through": "0fedcafb3515c86d8be8ee736c76bce19d0198d3"
+  },
+  "builds": {
+    "linux_x64": {"local": "ok", "command": "tools/build.sh linux", "sanity_test": "pass (gl, sdlgpu)"},
+    "windows_x64": {"local": "cross-build via llvm-mingw 20260908", "command": "tools/build.sh windows", "smoke_test_wine": "not yet"},
+    "ci": "not set up (needs a GitHub repo)"
+  },
+  "parity": {
+    "oracle": "osu-tools 8ce45b3 (PerformanceCalculator) built against ppy/osu 2026.921.0-lazer",
+    "algorithm": "neomod PP_ALGORITHM_VERSION 20260811",
+    "corpus_cases": 0,
+    "sr_within_1e-4_rate": null,
+    "pp_within_0.01_rate": null,
+    "spot_checks": [
+      {"map": "tools/diffcalc/tests/maps/2785319.osu", "mods": "NM", "rate": 1.0,
+       "neomod_sr": 6.0042720531632305, "oracle_sr": 6.004027372552197, "abs_diff": 0.000245,
+       "neomod_reading": 0.8291758532814358, "oracle_reading": 0.8229208521405954}
+    ]
+  },
+  "replay_parity": {"stable": null, "lazer": null, "lazer_classic": null, "inputs_available": {"stable_replays": 86}},
+  "performance": {
+    "reference_machine": "i5-13400F, RTX 4070 SUPER (610.57.04), Linux Mint 22.3, kernel 7.0.0-38",
+    "method": "tools/bench/bench.py, headless offscreen on the real GPU, 2560x1440, uncapped, median of 3 runs",
+    "baseline_files": ["docs/renovation/bench/baseline-neomod-0fedcafb-gl.json", "docs/renovation/bench/baseline-neomod-0fedcafb-sdlgpu.json"],
+    "gl": {
+      "gameplay_cpu_ms": {"p50": 0.160, "p99": 0.448, "max": 2.41}, "gameplay_gpu_ms": {"p50": 0.068, "p99": 0.104},
+      "gameplay_input_to_present_ms": {"p50": 0.349, "p99": 0.875},
+      "songselect_idle_cpu_ms": {"p50": 0.222, "p99": 0.709}, "songselect_scroll_cpu_ms": {"p50": 0.252, "p99": 0.712, "max": 7.64},
+      "startup_first_frame_ms": 144, "startup_ready_ms": 134, "peak_rss_mb_gameplay": 489, "peak_rss_mb_songselect": 565,
+      "library_import_s": 0.22
+    },
+    "sdlgpu": {
+      "gameplay_cpu_ms": {"p50": 0.094, "p99": 0.466, "max": 2.31},
+      "gameplay_input_to_present_ms": {"p50": 0.234, "p99": 0.822},
+      "songselect_idle_cpu_ms": {"p50": 0.135, "p99": 0.477}, "songselect_scroll_cpu_ms": {"p50": 0.144, "p99": 0.556, "max": 2.05},
+      "startup_first_frame_ms": 432, "startup_ready_ms": 424, "peak_rss_mb_gameplay": 617, "peak_rss_mb_songselect": 722,
+      "library_import_s": 0.44
+    },
+    "menu_budget_ms": {"cpu_p99": 1.5, "gpu_p99": 1.5, "worst_frame_scrolling": 8.0},
+    "gameplay_regression_rule": "median-of-runs CPU p99 must not exceed max(1.05 x baseline median, slowest baseline run)"
+  },
+  "screens": {
+    "main_menu": "mockups done (3 directions)",
+    "song_select": "mockups done (3 directions)",
+    "mod_select": "not started",
+    "options": "not started",
+    "results": "not started",
+    "pause_fail_loading": "not started",
+    "notifications": "not started",
+    "first_run_wizard": "not started",
+    "downloads": "not started",
+    "profile": "not started",
+    "skin_picker": "not started"
+  },
+  "user_data": {
+    "stable_windows": "<windows drive>/Users/<windows user>/AppData/Local/osu! (mounted read-only on demand)",
+    "stable_linux_copy": "~/.local/share/osu-stable",
+    "lazer": "<windows drive>/Users/<windows user>/AppData/Roaming/osu",
+    "mcosu": "~/.local/share/Steam/steamapps/common/McOsu",
+    "library": {"osu_db_version": 20260711, "difficulties": 7514, "folders": 1354, "skins": 13, "stable_scores": 84, "stable_scores_with_online_id": 54, "replays_data_r": 86, "collections": 1}
+  },
+  "decisions_waiting": ["design direction (A/B/C)", "GitHub repo now (public/private) + gh login"]
+}

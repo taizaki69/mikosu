@@ -1,0 +1,1547 @@
+{
+ "game": "build/dist/bin-x86_64/neomod",
+ "renderer": "gl",
+ "res": "2560x1440",
+ "runs": 3,
+ "date": "2026-10-04 16:32:43",
+ "results": {
+  "startup": [
+   {
+    "first_frame_ms": 143.602,
+    "ready_ms": 134.0,
+    "wall_s": 1.293035393000082,
+    "peak_rss_mb": 471.6
+   },
+   {
+    "first_frame_ms": 140.082,
+    "ready_ms": 131.0,
+    "wall_s": 1.294094184000187,
+    "peak_rss_mb": 471.5
+   },
+   {
+    "first_frame_ms": 147.466,
+    "ready_ms": 138.0,
+    "wall_s": 1.2769088800000645,
+    "peak_rss_mb": 465.4
+   }
+  ],
+  "gameplay": [
+   {
+    "schema": 1,
+    "tool": "FrameStats",
+    "startup": {
+     "first_frame_ms": 161.721
+    },
+    "memory": {
+     "rss_mb": 397.6,
+     "peak_rss_mb": 489.3
+    },
+    "segments": [
+     {
+      "label": "startup",
+      "start_s": 0.0,
+      "duration_s": 7.152,
+      "frames": 49905,
+      "gameplay_frames": 27401,
+      "cpu_update_ms": {
+       "n": 49905,
+       "mean": 0.0027,
+       "p50": 0.002,
+       "p90": 0.0027,
+       "p99": 0.0045,
+       "max": 8.5504
+      },
+      "cpu_paint_ms": {
+       "n": 49905,
+       "mean": 0.1368,
+       "p50": 0.1451,
+       "p90": 0.2227,
+       "p99": 0.3923,
+       "max": 1.8076
+      },
+      "cpu_frame_ms": {
+       "n": 49905,
+       "mean": 0.1395,
+       "p50": 0.1473,
+       "p90": 0.2252,
+       "p99": 0.395,
+       "max": 9.9393
+      },
+      "frame_interval_ms": {
+       "n": 49905,
+       "mean": 0.1403,
+       "p50": 0.148,
+       "p90": 0.226,
+       "p99": 0.396,
+       "max": 9.9463
+      },
+      "gpu_frame_ms": {
+       "n": 49901,
+       "mean": 0.0499,
+       "p50": 0.0563,
+       "p90": 0.0645,
+       "p99": 0.0758,
+       "max": 0.8346
+      },
+      "input_latency_ms": {
+       "n": 1,
+       "mean": 4.0859,
+       "p50": 4.0859,
+       "p90": 4.0859,
+       "p99": 4.0859,
+       "max": 4.0859
+      }
+     },
+     {
+      "label": "gameplay",
+      "start_s": 7.152,
+      "duration_s": 45.022,
+      "frames": 250261,
+      "gameplay_frames": 250261,
+      "cpu_update_ms": {
+       "n": 250261,
+       "mean": 0.0057,
+       "p50": 0.006,
+       "p90": 0.0071,
+       "p99": 0.0136,
+       "max": 0.1865
+      },
+      "cpu_paint_ms": {
+       "n": 250261,
+       "mean": 0.1732,
+       "p50": 0.1529,
+       "p90": 0.2519,
+       "p99": 0.4704,
+       "max": 3.1326
+      },
+      "cpu_frame_ms": {
+       "n": 250261,
+       "mean": 0.179,
+       "p50": 0.1595,
+       "p90": 0.2581,
+       "p99": 0.4785,
+       "max": 3.1456
+      },
+      "frame_interval_ms": {
+       "n": 250261,
+       "mean": 0.1799,
+       "p50": 0.1605,
+       "p90": 0.2592,
+       "p99": 0.4803,
+       "max": 3.1578
+      },
+      "gpu_frame_ms": {
+       "n": 250261,
+       "mean": 0.0744,
+       "p50": 0.0676,
+       "p90": 0.0952,
+       "p99": 0.1044,
+       "max": 1.5657
+      },
+      "input_latency_ms": {
+       "n": 180,
+       "mean": 0.3906,
+       "p50": 0.3583,
+       "p90": 0.5817,
+       "p99": 0.8751,
+       "max": 1.0809
+      }
+     },
+     {
+      "label": "after",
+      "start_s": 52.174,
+      "duration_s": 0.0,
+      "frames": 1,
+      "gameplay_frames": 1,
+      "cpu_update_ms": {
+       "n": 1,
+       "mean": 0.2131,
+       "p50": 0.2131,
+       "p90": 0.2131,
+       "p99": 0.2131,
+       "max": 0.2131
+      },
+      "cpu_paint_ms": {
+       "n": 1,
+       "mean": 0.0001,
+       "p50": 0.0001,
+       "p90": 0.0001,
+       "p99": 0.0001,
+       "max": 0.0001
+      },
+      "cpu_frame_ms": {
+       "n": 1,
+       "mean": 0.2131,
+       "p50": 0.2131,
+       "p90": 0.2131,
+       "p99": 0.2131,
+       "max": 0.2131
+      },
+      "frame_interval_ms": null,
+      "gpu_frame_ms": null,
+      "input_latency_ms": null
+     }
+    ],
+    "wall_s": 52.35608218199991
+   },
+   {
+    "schema": 1,
+    "tool": "FrameStats",
+    "startup": {
+     "first_frame_ms": 157.103
+    },
+    "memory": {
+     "rss_mb": 408.9,
+     "peak_rss_mb": 495.3
+    },
+    "segments": [
+     {
+      "label": "startup",
+      "start_s": 0.0,
+      "duration_s": 7.148,
+      "frames": 53794,
+      "gameplay_frames": 30781,
+      "cpu_update_ms": {
+       "n": 53794,
+       "mean": 0.0026,
+       "p50": 0.0021,
+       "p90": 0.0028,
+       "p99": 0.0035,
+       "max": 8.2531
+      },
+      "cpu_paint_ms": {
+       "n": 53794,
+       "mean": 0.1267,
+       "p50": 0.1194,
+       "p90": 0.17,
+       "p99": 0.3725,
+       "max": 2.2575
+      },
+      "cpu_frame_ms": {
+       "n": 53794,
+       "mean": 0.1294,
+       "p50": 0.1221,
+       "p90": 0.1723,
+       "p99": 0.3745,
+       "max": 9.6336
+      },
+      "frame_interval_ms": {
+       "n": 53794,
+       "mean": 0.1301,
+       "p50": 0.1229,
+       "p90": 0.1731,
+       "p99": 0.3754,
+       "max": 9.6408
+      },
+      "gpu_frame_ms": {
+       "n": 53790,
+       "mean": 0.0497,
+       "p50": 0.0563,
+       "p90": 0.0645,
+       "p99": 0.0758,
+       "max": 0.5018
+      },
+      "input_latency_ms": {
+       "n": 1,
+       "mean": 4.5557,
+       "p50": 4.5557,
+       "p90": 4.5557,
+       "p99": 4.5557,
+       "max": 4.5557
+      }
+     },
+     {
+      "label": "gameplay",
+      "start_s": 7.148,
+      "duration_s": 45.016,
+      "frames": 271028,
+      "gameplay_frames": 271028,
+      "cpu_update_ms": {
+       "n": 271028,
+       "mean": 0.0055,
+       "p50": 0.0059,
+       "p90": 0.0069,
+       "p99": 0.0095,
+       "max": 0.2228
+      },
+      "cpu_paint_ms": {
+       "n": 271028,
+       "mean": 0.1597,
+       "p50": 0.1388,
+       "p90": 0.2071,
+       "p99": 0.395,
+       "max": 1.6933
+      },
+      "cpu_frame_ms": {
+       "n": 271028,
+       "mean": 0.1652,
+       "p50": 0.145,
+       "p90": 0.2143,
+       "p99": 0.4015,
+       "max": 1.7001
+      },
+      "frame_interval_ms": {
+       "n": 271028,
+       "mean": 0.1661,
+       "p50": 0.1457,
+       "p90": 0.2153,
+       "p99": 0.4027,
+       "max": 1.703
+      },
+      "gpu_frame_ms": {
+       "n": 271028,
+       "mean": 0.0739,
+       "p50": 0.0676,
+       "p90": 0.0952,
+       "p99": 0.1034,
+       "max": 1.3138
+      },
+      "input_latency_ms": {
+       "n": 180,
+       "mean": 0.3654,
+       "p50": 0.3486,
+       "p90": 0.5165,
+       "p99": 0.957,
+       "max": 1.2376
+      }
+     },
+     {
+      "label": "after",
+      "start_s": 52.164,
+      "duration_s": 0.0,
+      "frames": 1,
+      "gameplay_frames": 1,
+      "cpu_update_ms": {
+       "n": 1,
+       "mean": 0.466,
+       "p50": 0.466,
+       "p90": 0.466,
+       "p99": 0.466,
+       "max": 0.466
+      },
+      "cpu_paint_ms": {
+       "n": 1,
+       "mean": 0.0001,
+       "p50": 0.0001,
+       "p90": 0.0001,
+       "p99": 0.0001,
+       "max": 0.0001
+      },
+      "cpu_frame_ms": {
+       "n": 1,
+       "mean": 0.4661,
+       "p50": 0.4661,
+       "p90": 0.4661,
+       "p99": 0.4661,
+       "max": 0.4661
+      },
+      "frame_interval_ms": null,
+      "gpu_frame_ms": null,
+      "input_latency_ms": null
+     }
+    ],
+    "wall_s": 52.33867888999998
+   },
+   {
+    "schema": 1,
+    "tool": "FrameStats",
+    "startup": {
+     "first_frame_ms": 165.19
+    },
+    "memory": {
+     "rss_mb": 405.2,
+     "peak_rss_mb": 467.7
+    },
+    "segments": [
+     {
+      "label": "startup",
+      "start_s": 0.0,
+      "duration_s": 7.156,
+      "frames": 50534,
+      "gameplay_frames": 26876,
+      "cpu_update_ms": {
+       "n": 50534,
+       "mean": 0.0026,
+       "p50": 0.002,
+       "p90": 0.0027,
+       "p99": 0.0048,
+       "max": 7.4151
+      },
+      "cpu_paint_ms": {
+       "n": 50534,
+       "mean": 0.1351,
+       "p50": 0.1422,
+       "p90": 0.1887,
+       "p99": 0.3892,
+       "max": 1.6425
+      },
+      "cpu_frame_ms": {
+       "n": 50534,
+       "mean": 0.1378,
+       "p50": 0.144,
+       "p90": 0.1917,
+       "p99": 0.3913,
+       "max": 8.7818
+      },
+      "frame_interval_ms": {
+       "n": 50534,
+       "mean": 0.1385,
+       "p50": 0.1447,
+       "p90": 0.1925,
+       "p99": 0.3924,
+       "max": 8.7892
+      },
+      "gpu_frame_ms": {
+       "n": 50530,
+       "mean": 0.0505,
+       "p50": 0.0563,
+       "p90": 0.0655,
+       "p99": 0.0758,
+       "max": 0.4721
+      },
+      "input_latency_ms": {
+       "n": 1,
+       "mean": 4.0311,
+       "p50": 4.0311,
+       "p90": 4.0311,
+       "p99": 4.0311,
+       "max": 4.0311
+      }
+     },
+     {
+      "label": "gameplay",
+      "start_s": 7.156,
+      "duration_s": 45.019,
+      "frames": 248179,
+      "gameplay_frames": 248179,
+      "cpu_update_ms": {
+       "n": 248179,
+       "mean": 0.0057,
+       "p50": 0.0059,
+       "p90": 0.0073,
+       "p99": 0.0153,
+       "max": 0.2671
+      },
+      "cpu_paint_ms": {
+       "n": 248179,
+       "mean": 0.1747,
+       "p50": 0.1543,
+       "p90": 0.256,
+       "p99": 0.4394,
+       "max": 2.3991
+      },
+      "cpu_frame_ms": {
+       "n": 248179,
+       "mean": 0.1805,
+       "p50": 0.1608,
+       "p90": 0.2633,
+       "p99": 0.4477,
+       "max": 2.4058
+      },
+      "frame_interval_ms": {
+       "n": 248179,
+       "mean": 0.1814,
+       "p50": 0.1618,
+       "p90": 0.2644,
+       "p99": 0.4493,
+       "max": 2.414
+      },
+      "gpu_frame_ms": {
+       "n": 248179,
+       "mean": 0.0744,
+       "p50": 0.0676,
+       "p90": 0.0952,
+       "p99": 0.1044,
+       "max": 1.5063
+      },
+      "input_latency_ms": {
+       "n": 180,
+       "mean": 0.3645,
+       "p50": 0.3472,
+       "p90": 0.5292,
+       "p99": 0.7056,
+       "max": 0.777
+      }
+     },
+     {
+      "label": "after",
+      "start_s": 52.175,
+      "duration_s": 0.001,
+      "frames": 1,
+      "gameplay_frames": 1,
+      "cpu_update_ms": {
+       "n": 1,
+       "mean": 0.508,
+       "p50": 0.508,
+       "p90": 0.508,
+       "p99": 0.508,
+       "max": 0.508
+      },
+      "cpu_paint_ms": {
+       "n": 1,
+       "mean": 0.0001,
+       "p50": 0.0001,
+       "p90": 0.0001,
+       "p99": 0.0001,
+       "max": 0.0001
+      },
+      "cpu_frame_ms": {
+       "n": 1,
+       "mean": 0.5081,
+       "p50": 0.5081,
+       "p90": 0.5081,
+       "p99": 0.5081,
+       "max": 0.5081
+      },
+      "frame_interval_ms": null,
+      "gpu_frame_ms": null,
+      "input_latency_ms": null
+     }
+    ],
+    "wall_s": 52.33517465
+   }
+  ],
+  "songselect_cold": {
+   "schema": 1,
+   "tool": "FrameStats",
+   "startup": {
+    "first_frame_ms": 169.85
+   },
+   "memory": {
+    "rss_mb": 568.3,
+    "peak_rss_mb": 658.0
+   },
+   "segments": [
+    {
+     "label": "startup",
+     "start_s": 0.0,
+     "duration_s": 0.149,
+     "frames": 0,
+     "gameplay_frames": 0,
+     "cpu_update_ms": null,
+     "cpu_paint_ms": null,
+     "cpu_frame_ms": null,
+     "frame_interval_ms": null,
+     "gpu_frame_ms": null,
+     "input_latency_ms": null
+    },
+    {
+     "label": "load",
+     "start_s": 0.149,
+     "duration_s": 120.0,
+     "frames": 430388,
+     "gameplay_frames": 0,
+     "cpu_update_ms": {
+      "n": 430388,
+      "mean": 0.0034,
+      "p50": 0.0025,
+      "p90": 0.0055,
+      "p99": 0.0087,
+      "max": 16.2863
+     },
+     "cpu_paint_ms": {
+      "n": 430388,
+      "mean": 0.2745,
+      "p50": 0.226,
+      "p90": 0.3702,
+      "p99": 0.582,
+      "max": 4.8038
+     },
+     "cpu_frame_ms": {
+      "n": 430388,
+      "mean": 0.2779,
+      "p50": 0.2286,
+      "p90": 0.3737,
+      "p99": 0.5865,
+      "max": 21.0901
+     },
+     "frame_interval_ms": {
+      "n": 430388,
+      "mean": 0.2788,
+      "p50": 0.2294,
+      "p90": 0.3748,
+      "p99": 0.5879,
+      "max": 21.098
+     },
+     "gpu_frame_ms": {
+      "n": 430384,
+      "mean": 0.0714,
+      "p50": 0.0717,
+      "p90": 0.0737,
+      "p99": 0.0901,
+      "max": 1.5104
+     },
+     "input_latency_ms": null
+    },
+    {
+     "label": "songselect_idle",
+     "start_s": 120.149,
+     "duration_s": 8.0,
+     "frames": 29965,
+     "gameplay_frames": 0,
+     "cpu_update_ms": {
+      "n": 29965,
+      "mean": 0.0026,
+      "p50": 0.0025,
+      "p90": 0.0029,
+      "p99": 0.0045,
+      "max": 0.1511
+     },
+     "cpu_paint_ms": {
+      "n": 29965,
+      "mean": 0.2635,
+      "p50": 0.2252,
+      "p90": 0.3422,
+      "p99": 0.533,
+      "max": 1.7351
+     },
+     "cpu_frame_ms": {
+      "n": 29965,
+      "mean": 0.2662,
+      "p50": 0.2279,
+      "p90": 0.345,
+      "p99": 0.5355,
+      "max": 1.7383
+     },
+     "frame_interval_ms": {
+      "n": 29965,
+      "mean": 0.267,
+      "p50": 0.2287,
+      "p90": 0.3458,
+      "p99": 0.5363,
+      "max": 1.7413
+     },
+     "gpu_frame_ms": {
+      "n": 29965,
+      "mean": 0.071,
+      "p50": 0.0717,
+      "p90": 0.0727,
+      "p99": 0.1044,
+      "max": 0.5253
+     },
+     "input_latency_ms": null
+    },
+    {
+     "label": "songselect_scroll_keys",
+     "start_s": 128.149,
+     "duration_s": 8.014,
+     "frames": 26565,
+     "gameplay_frames": 0,
+     "cpu_update_ms": {
+      "n": 26565,
+      "mean": 0.0158,
+      "p50": 0.006,
+      "p90": 0.011,
+      "p99": 0.0183,
+      "max": 12.8356
+     },
+     "cpu_paint_ms": {
+      "n": 26565,
+      "mean": 0.2849,
+      "p50": 0.2546,
+      "p90": 0.3821,
+      "p99": 0.5242,
+      "max": 3.49
+     },
+     "cpu_frame_ms": {
+      "n": 26565,
+      "mean": 0.3007,
+      "p50": 0.2606,
+      "p90": 0.3897,
+      "p99": 0.5337,
+      "max": 14.0029
+     },
+     "frame_interval_ms": {
+      "n": 26565,
+      "mean": 0.3017,
+      "p50": 0.2615,
+      "p90": 0.3906,
+      "p99": 0.5347,
+      "max": 14.0103
+     },
+     "gpu_frame_ms": {
+      "n": 26565,
+      "mean": 0.0863,
+      "p50": 0.0881,
+      "p90": 0.0911,
+      "p99": 0.1208,
+      "max": 0.425
+     },
+     "input_latency_ms": {
+      "n": 80,
+      "mean": 0.6952,
+      "p50": 0.6778,
+      "p90": 0.8382,
+      "p99": 0.9511,
+      "max": 0.9889
+     }
+    },
+    {
+     "label": "songselect_scroll_wheel",
+     "start_s": 136.163,
+     "duration_s": 6.008,
+     "frames": 22222,
+     "gameplay_frames": 0,
+     "cpu_update_ms": {
+      "n": 22222,
+      "mean": 0.0028,
+      "p50": 0.0025,
+      "p90": 0.0029,
+      "p99": 0.0045,
+      "max": 4.63
+     },
+     "cpu_paint_ms": {
+      "n": 22222,
+      "mean": 0.2667,
+      "p50": 0.2302,
+      "p90": 0.3671,
+      "p99": 0.4962,
+      "max": 1.526
+     },
+     "cpu_frame_ms": {
+      "n": 22222,
+      "mean": 0.2695,
+      "p50": 0.2331,
+      "p90": 0.3699,
+      "p99": 0.4994,
+      "max": 5.8351
+     },
+     "frame_interval_ms": {
+      "n": 22222,
+      "mean": 0.2704,
+      "p50": 0.234,
+      "p90": 0.3707,
+      "p99": 0.5001,
+      "max": 5.8383
+     },
+     "gpu_frame_ms": {
+      "n": 22222,
+      "mean": 0.0724,
+      "p50": 0.0707,
+      "p90": 0.0788,
+      "p99": 0.1044,
+      "max": 0.4301
+     },
+     "input_latency_ms": null
+    },
+    {
+     "label": "after",
+     "start_s": 142.171,
+     "duration_s": 0.002,
+     "frames": 1,
+     "gameplay_frames": 0,
+     "cpu_update_ms": {
+      "n": 1,
+      "mean": 1.8418,
+      "p50": 1.8418,
+      "p90": 1.8418,
+      "p99": 1.8418,
+      "max": 1.8418
+     },
+     "cpu_paint_ms": {
+      "n": 1,
+      "mean": 0.0002,
+      "p50": 0.0002,
+      "p90": 0.0002,
+      "p99": 0.0002,
+      "max": 0.0002
+     },
+     "cpu_frame_ms": {
+      "n": 1,
+      "mean": 1.842,
+      "p50": 1.842,
+      "p90": 1.842,
+      "p99": 1.842,
+      "max": 1.842
+     },
+     "frame_interval_ms": null,
+     "gpu_frame_ms": null,
+     "input_latency_ms": null
+    }
+   ],
+   "wall_s": 142.39277637300006
+  },
+  "songselect": [
+   {
+    "schema": 1,
+    "tool": "FrameStats",
+    "startup": {
+     "first_frame_ms": 164.744
+    },
+    "memory": {
+     "rss_mb": 535.0,
+     "peak_rss_mb": 564.6
+    },
+    "segments": [
+     {
+      "label": "startup",
+      "start_s": 0.0,
+      "duration_s": 0.152,
+      "frames": 0,
+      "gameplay_frames": 0,
+      "cpu_update_ms": null,
+      "cpu_paint_ms": null,
+      "cpu_frame_ms": null,
+      "frame_interval_ms": null,
+      "gpu_frame_ms": null,
+      "input_latency_ms": null
+     },
+     {
+      "label": "load",
+      "start_s": 0.152,
+      "duration_s": 15.0,
+      "frames": 60912,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 60912,
+       "mean": 0.0035,
+       "p50": 0.0024,
+       "p90": 0.0028,
+       "p99": 0.0108,
+       "max": 11.4917
+      },
+      "cpu_paint_ms": {
+       "n": 60912,
+       "mean": 0.2419,
+       "p50": 0.2154,
+       "p90": 0.3167,
+       "p99": 0.5219,
+       "max": 2.4762
+      },
+      "cpu_frame_ms": {
+       "n": 60912,
+       "mean": 0.2454,
+       "p50": 0.2179,
+       "p90": 0.3206,
+       "p99": 0.5246,
+       "max": 12.6697
+      },
+      "frame_interval_ms": {
+       "n": 60912,
+       "mean": 0.2463,
+       "p50": 0.2186,
+       "p90": 0.3215,
+       "p99": 0.5256,
+       "max": 12.6767
+      },
+      "gpu_frame_ms": {
+       "n": 60908,
+       "mean": 0.0707,
+       "p50": 0.0707,
+       "p90": 0.0727,
+       "p99": 0.0891,
+       "max": 0.4352
+      },
+      "input_latency_ms": null
+     },
+     {
+      "label": "songselect_idle",
+      "start_s": 15.152,
+      "duration_s": 8.0,
+      "frames": 32114,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 32114,
+       "mean": 0.0025,
+       "p50": 0.0024,
+       "p90": 0.0028,
+       "p99": 0.0046,
+       "max": 0.1643
+      },
+      "cpu_paint_ms": {
+       "n": 32114,
+       "mean": 0.2458,
+       "p50": 0.2154,
+       "p90": 0.3163,
+       "p99": 0.7063,
+       "max": 1.6073
+      },
+      "cpu_frame_ms": {
+       "n": 32114,
+       "mean": 0.2483,
+       "p50": 0.2178,
+       "p90": 0.3199,
+       "p99": 0.7088,
+       "max": 1.6096
+      },
+      "frame_interval_ms": {
+       "n": 32114,
+       "mean": 0.2491,
+       "p50": 0.2186,
+       "p90": 0.3209,
+       "p99": 0.7096,
+       "max": 1.6112
+      },
+      "gpu_frame_ms": {
+       "n": 32114,
+       "mean": 0.0703,
+       "p50": 0.0707,
+       "p90": 0.0727,
+       "p99": 0.085,
+       "max": 0.4813
+      },
+      "input_latency_ms": null
+     },
+     {
+      "label": "songselect_scroll_keys",
+      "start_s": 23.152,
+      "duration_s": 8.012,
+      "frames": 28386,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 28386,
+       "mean": 0.0118,
+       "p50": 0.004,
+       "p90": 0.0105,
+       "p99": 0.0229,
+       "max": 6.6167
+      },
+      "cpu_paint_ms": {
+       "n": 28386,
+       "mean": 0.2695,
+       "p50": 0.2459,
+       "p90": 0.3434,
+       "p99": 0.6308,
+       "max": 1.8469
+      },
+      "cpu_frame_ms": {
+       "n": 28386,
+       "mean": 0.2813,
+       "p50": 0.2516,
+       "p90": 0.3514,
+       "p99": 0.6449,
+       "max": 7.6371
+      },
+      "frame_interval_ms": {
+       "n": 28386,
+       "mean": 0.2822,
+       "p50": 0.2525,
+       "p90": 0.3525,
+       "p99": 0.646,
+       "max": 7.6447
+      },
+      "gpu_frame_ms": {
+       "n": 28386,
+       "mean": 0.0861,
+       "p50": 0.0881,
+       "p90": 0.0901,
+       "p99": 0.1004,
+       "max": 0.4557
+      },
+      "input_latency_ms": {
+       "n": 80,
+       "mean": 0.7008,
+       "p50": 0.6178,
+       "p90": 0.911,
+       "p99": 1.2377,
+       "max": 1.8713
+      }
+     },
+     {
+      "label": "songselect_scroll_wheel",
+      "start_s": 31.164,
+      "duration_s": 6.01,
+      "frames": 20920,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 20920,
+       "mean": 0.0028,
+       "p50": 0.0025,
+       "p90": 0.0033,
+       "p99": 0.0096,
+       "max": 0.0518
+      },
+      "cpu_paint_ms": {
+       "n": 20920,
+       "mean": 0.2835,
+       "p50": 0.235,
+       "p90": 0.394,
+       "p99": 0.7307,
+       "max": 1.9593
+      },
+      "cpu_frame_ms": {
+       "n": 20920,
+       "mean": 0.2864,
+       "p50": 0.2378,
+       "p90": 0.3971,
+       "p99": 0.7354,
+       "max": 1.9711
+      },
+      "frame_interval_ms": {
+       "n": 20920,
+       "mean": 0.2873,
+       "p50": 0.2387,
+       "p90": 0.3982,
+       "p99": 0.7365,
+       "max": 1.978
+      },
+      "gpu_frame_ms": {
+       "n": 20920,
+       "mean": 0.0724,
+       "p50": 0.0707,
+       "p90": 0.0748,
+       "p99": 0.0993,
+       "max": 0.8694
+      },
+      "input_latency_ms": null
+     },
+     {
+      "label": "after",
+      "start_s": 37.174,
+      "duration_s": 0.002,
+      "frames": 1,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 1,
+       "mean": 1.6391,
+       "p50": 1.6391,
+       "p90": 1.6391,
+       "p99": 1.6391,
+       "max": 1.6391
+      },
+      "cpu_paint_ms": {
+       "n": 1,
+       "mean": 0.0002,
+       "p50": 0.0002,
+       "p90": 0.0002,
+       "p99": 0.0002,
+       "max": 0.0002
+      },
+      "cpu_frame_ms": {
+       "n": 1,
+       "mean": 1.6393,
+       "p50": 1.6393,
+       "p90": 1.6393,
+       "p99": 1.6393,
+       "max": 1.6393
+      },
+      "frame_interval_ms": null,
+      "gpu_frame_ms": null,
+      "input_latency_ms": null
+     }
+    ],
+    "wall_s": 37.3402059980001
+   },
+   {
+    "schema": 1,
+    "tool": "FrameStats",
+    "startup": {
+     "first_frame_ms": 165.129
+    },
+    "memory": {
+     "rss_mb": 508.9,
+     "peak_rss_mb": 523.3
+    },
+    "segments": [
+     {
+      "label": "startup",
+      "start_s": 0.0,
+      "duration_s": 0.151,
+      "frames": 0,
+      "gameplay_frames": 0,
+      "cpu_update_ms": null,
+      "cpu_paint_ms": null,
+      "cpu_frame_ms": null,
+      "frame_interval_ms": null,
+      "gpu_frame_ms": null,
+      "input_latency_ms": null
+     },
+     {
+      "label": "load",
+      "start_s": 0.151,
+      "duration_s": 15.0,
+      "frames": 54346,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 54346,
+       "mean": 0.0038,
+       "p50": 0.0025,
+       "p90": 0.0035,
+       "p99": 0.0096,
+       "max": 12.5851
+      },
+      "cpu_paint_ms": {
+       "n": 54346,
+       "mean": 0.2713,
+       "p50": 0.2265,
+       "p90": 0.3549,
+       "p99": 0.9026,
+       "max": 2.2464
+      },
+      "cpu_frame_ms": {
+       "n": 54346,
+       "mean": 0.2751,
+       "p50": 0.2292,
+       "p90": 0.3582,
+       "p99": 0.9088,
+       "max": 13.7294
+      },
+      "frame_interval_ms": {
+       "n": 54346,
+       "mean": 0.276,
+       "p50": 0.2301,
+       "p90": 0.3593,
+       "p99": 0.91,
+       "max": 13.7363
+      },
+      "gpu_frame_ms": {
+       "n": 54342,
+       "mean": 0.0717,
+       "p50": 0.0717,
+       "p90": 0.0737,
+       "p99": 0.0911,
+       "max": 1.5053
+      },
+      "input_latency_ms": null
+     },
+     {
+      "label": "songselect_idle",
+      "start_s": 15.152,
+      "duration_s": 8.0,
+      "frames": 29866,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 29866,
+       "mean": 0.0028,
+       "p50": 0.0025,
+       "p90": 0.0032,
+       "p99": 0.0074,
+       "max": 0.1798
+      },
+      "cpu_paint_ms": {
+       "n": 29866,
+       "mean": 0.2642,
+       "p50": 0.2239,
+       "p90": 0.3443,
+       "p99": 0.9114,
+       "max": 1.9405
+      },
+      "cpu_frame_ms": {
+       "n": 29866,
+       "mean": 0.267,
+       "p50": 0.2265,
+       "p90": 0.3487,
+       "p99": 0.9138,
+       "max": 1.9429
+      },
+      "frame_interval_ms": {
+       "n": 29866,
+       "mean": 0.2679,
+       "p50": 0.2273,
+       "p90": 0.35,
+       "p99": 0.9154,
+       "max": 1.9459
+      },
+      "gpu_frame_ms": {
+       "n": 29866,
+       "mean": 0.0709,
+       "p50": 0.0717,
+       "p90": 0.0727,
+       "p99": 0.0809,
+       "max": 0.7813
+      },
+      "input_latency_ms": null
+     },
+     {
+      "label": "songselect_scroll_keys",
+      "start_s": 23.152,
+      "duration_s": 8.015,
+      "frames": 26949,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 26949,
+       "mean": 0.0093,
+       "p50": 0.0058,
+       "p90": 0.0099,
+       "p99": 0.0163,
+       "max": 6.1531
+      },
+      "cpu_paint_ms": {
+       "n": 26949,
+       "mean": 0.2872,
+       "p50": 0.2491,
+       "p90": 0.3745,
+       "p99": 0.912,
+       "max": 1.9024
+      },
+      "cpu_frame_ms": {
+       "n": 26949,
+       "mean": 0.2965,
+       "p50": 0.2549,
+       "p90": 0.3828,
+       "p99": 0.9532,
+       "max": 7.127
+      },
+      "frame_interval_ms": {
+       "n": 26949,
+       "mean": 0.2974,
+       "p50": 0.2558,
+       "p90": 0.3839,
+       "p99": 0.9542,
+       "max": 7.1327
+      },
+      "gpu_frame_ms": {
+       "n": 26949,
+       "mean": 0.0869,
+       "p50": 0.0891,
+       "p90": 0.0911,
+       "p99": 0.1004,
+       "max": 0.4936
+      },
+      "input_latency_ms": {
+       "n": 80,
+       "mean": 0.7214,
+       "p50": 0.673,
+       "p90": 0.9126,
+       "p99": 1.344,
+       "max": 1.6091
+      }
+     },
+     {
+      "label": "songselect_scroll_wheel",
+      "start_s": 31.167,
+      "duration_s": 6.008,
+      "frames": 22347,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 22347,
+       "mean": 0.0029,
+       "p50": 0.0025,
+       "p90": 0.0031,
+       "p99": 0.0066,
+       "max": 3.3475
+      },
+      "cpu_paint_ms": {
+       "n": 22347,
+       "mean": 0.2651,
+       "p50": 0.2269,
+       "p90": 0.3574,
+       "p99": 0.822,
+       "max": 2.6417
+      },
+      "cpu_frame_ms": {
+       "n": 22347,
+       "mean": 0.268,
+       "p50": 0.2296,
+       "p90": 0.361,
+       "p99": 0.8312,
+       "max": 4.062
+      },
+      "frame_interval_ms": {
+       "n": 22347,
+       "mean": 0.2689,
+       "p50": 0.2305,
+       "p90": 0.3619,
+       "p99": 0.8326,
+       "max": 4.0653
+      },
+      "gpu_frame_ms": {
+       "n": 22347,
+       "mean": 0.073,
+       "p50": 0.0717,
+       "p90": 0.0809,
+       "p99": 0.0963,
+       "max": 1.3701
+      },
+      "input_latency_ms": null
+     },
+     {
+      "label": "after",
+      "start_s": 37.176,
+      "duration_s": 0.002,
+      "frames": 1,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 1,
+       "mean": 1.5834,
+       "p50": 1.5834,
+       "p90": 1.5834,
+       "p99": 1.5834,
+       "max": 1.5834
+      },
+      "cpu_paint_ms": {
+       "n": 1,
+       "mean": 0.0002,
+       "p50": 0.0002,
+       "p90": 0.0002,
+       "p99": 0.0002,
+       "max": 0.0002
+      },
+      "cpu_frame_ms": {
+       "n": 1,
+       "mean": 1.5836,
+       "p50": 1.5836,
+       "p90": 1.5836,
+       "p99": 1.5836,
+       "max": 1.5836
+      },
+      "frame_interval_ms": null,
+      "gpu_frame_ms": null,
+      "input_latency_ms": null
+     }
+    ],
+    "wall_s": 37.350775443999964
+   },
+   {
+    "schema": 1,
+    "tool": "FrameStats",
+    "startup": {
+     "first_frame_ms": 152.443
+    },
+    "memory": {
+     "rss_mb": 540.9,
+     "peak_rss_mb": 591.4
+    },
+    "segments": [
+     {
+      "label": "startup",
+      "start_s": 0.0,
+      "duration_s": 0.141,
+      "frames": 0,
+      "gameplay_frames": 0,
+      "cpu_update_ms": null,
+      "cpu_paint_ms": null,
+      "cpu_frame_ms": null,
+      "frame_interval_ms": null,
+      "gpu_frame_ms": null,
+      "input_latency_ms": null
+     },
+     {
+      "label": "load",
+      "start_s": 0.141,
+      "duration_s": 15.0,
+      "frames": 58742,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 58742,
+       "mean": 0.0038,
+       "p50": 0.0025,
+       "p90": 0.0029,
+       "p99": 0.0101,
+       "max": 10.8889
+      },
+      "cpu_paint_ms": {
+       "n": 58742,
+       "mean": 0.2508,
+       "p50": 0.2208,
+       "p90": 0.3312,
+       "p99": 0.6639,
+       "max": 2.0242
+      },
+      "cpu_frame_ms": {
+       "n": 58742,
+       "mean": 0.2545,
+       "p50": 0.2233,
+       "p90": 0.3341,
+       "p99": 0.6671,
+       "max": 11.9214
+      },
+      "frame_interval_ms": {
+       "n": 58742,
+       "mean": 0.2554,
+       "p50": 0.2241,
+       "p90": 0.3351,
+       "p99": 0.6679,
+       "max": 11.9286
+      },
+      "gpu_frame_ms": {
+       "n": 58738,
+       "mean": 0.0712,
+       "p50": 0.0717,
+       "p90": 0.0727,
+       "p99": 0.0901,
+       "max": 1.3855
+      },
+      "input_latency_ms": null
+     },
+     {
+      "label": "songselect_idle",
+      "start_s": 15.141,
+      "duration_s": 8.0,
+      "frames": 34362,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 34362,
+       "mean": 0.0024,
+       "p50": 0.0024,
+       "p90": 0.0026,
+       "p99": 0.0033,
+       "max": 0.149
+      },
+      "cpu_paint_ms": {
+       "n": 34362,
+       "mean": 0.2296,
+       "p50": 0.2196,
+       "p90": 0.2766,
+       "p99": 0.3964,
+       "max": 1.4666
+      },
+      "cpu_frame_ms": {
+       "n": 34362,
+       "mean": 0.2321,
+       "p50": 0.222,
+       "p90": 0.2797,
+       "p99": 0.3993,
+       "max": 1.4695
+      },
+      "frame_interval_ms": {
+       "n": 34362,
+       "mean": 0.2328,
+       "p50": 0.2228,
+       "p90": 0.2805,
+       "p99": 0.4002,
+       "max": 1.4708
+      },
+      "gpu_frame_ms": {
+       "n": 34362,
+       "mean": 0.0704,
+       "p50": 0.0717,
+       "p90": 0.0727,
+       "p99": 0.0778,
+       "max": 0.3369
+      },
+      "input_latency_ms": null
+     },
+     {
+      "label": "songselect_scroll_keys",
+      "start_s": 23.141,
+      "duration_s": 8.015,
+      "frames": 27566,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 27566,
+       "mean": 0.0129,
+       "p50": 0.0049,
+       "p90": 0.0104,
+       "p99": 0.022,
+       "max": 6.6598
+      },
+      "cpu_paint_ms": {
+       "n": 27566,
+       "mean": 0.2769,
+       "p50": 0.2425,
+       "p90": 0.376,
+       "p99": 0.6861,
+       "max": 1.9839
+      },
+      "cpu_frame_ms": {
+       "n": 27566,
+       "mean": 0.2898,
+       "p50": 0.2482,
+       "p90": 0.3841,
+       "p99": 0.712,
+       "max": 7.693
+      },
+      "frame_interval_ms": {
+       "n": 27566,
+       "mean": 0.2907,
+       "p50": 0.2491,
+       "p90": 0.3852,
+       "p99": 0.7143,
+       "max": 7.6997
+      },
+      "gpu_frame_ms": {
+       "n": 27566,
+       "mean": 0.0857,
+       "p50": 0.0891,
+       "p90": 0.0911,
+       "p99": 0.1044,
+       "max": 1.2728
+      },
+      "input_latency_ms": {
+       "n": 80,
+       "mean": 0.7341,
+       "p50": 0.6698,
+       "p90": 0.9111,
+       "p99": 1.8937,
+       "max": 2.1118
+      }
+     },
+     {
+      "label": "songselect_scroll_wheel",
+      "start_s": 31.155,
+      "duration_s": 6.01,
+      "frames": 22498,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 22498,
+       "mean": 0.0034,
+       "p50": 0.0026,
+       "p90": 0.0032,
+       "p99": 0.0097,
+       "max": 6.6925
+      },
+      "cpu_paint_ms": {
+       "n": 22498,
+       "mean": 0.2629,
+       "p50": 0.2219,
+       "p90": 0.3669,
+       "p99": 0.5644,
+       "max": 1.8052
+      },
+      "cpu_frame_ms": {
+       "n": 22498,
+       "mean": 0.2663,
+       "p50": 0.2245,
+       "p90": 0.3703,
+       "p99": 0.5678,
+       "max": 7.7432
+      },
+      "frame_interval_ms": {
+       "n": 22498,
+       "mean": 0.2672,
+       "p50": 0.2253,
+       "p90": 0.3714,
+       "p99": 0.5688,
+       "max": 7.7475
+      },
+      "gpu_frame_ms": {
+       "n": 22498,
+       "mean": 0.0718,
+       "p50": 0.0707,
+       "p90": 0.0788,
+       "p99": 0.0932,
+       "max": 0.4229
+      },
+      "input_latency_ms": null
+     },
+     {
+      "label": "after",
+      "start_s": 37.166,
+      "duration_s": 0.002,
+      "frames": 1,
+      "gameplay_frames": 0,
+      "cpu_update_ms": {
+       "n": 1,
+       "mean": 1.8393,
+       "p50": 1.8393,
+       "p90": 1.8393,
+       "p99": 1.8393,
+       "max": 1.8393
+      },
+      "cpu_paint_ms": {
+       "n": 1,
+       "mean": 0.0002,
+       "p50": 0.0002,
+       "p90": 0.0002,
+       "p99": 0.0002,
+       "max": 0.0002
+      },
+      "cpu_frame_ms": {
+       "n": 1,
+       "mean": 1.8394,
+       "p50": 1.8394,
+       "p90": 1.8394,
+       "p99": 1.8394,
+       "max": 1.8394
+      },
+      "frame_interval_ms": null,
+      "gpu_frame_ms": null,
+      "input_latency_ms": null
+     }
+    ],
+    "wall_s": 37.31773433600006
+   }
+  ]
+ }
+}

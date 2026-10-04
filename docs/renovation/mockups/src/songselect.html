@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mikosu song select mockup</title>
+<link rel="stylesheet" href="mockup.css">
+<style>
+  .only-faithful, .only-refined, .only-bold { display: none !important; }
+  .v-faithful .only-faithful, .v-refined .only-refined, .v-bold .only-bold { display: flex !important; }
+  .v-faithful .only-faithful.blk, .v-refined .only-refined.blk, .v-bold .only-bold.blk { display: block !important; }
+  .v-refined .only-refined.grid { display: grid !important; }
+  .v-faithful .not-faithful, .v-bold .not-bold { display: none !important; }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="dim"></div>
+<div class="glow-wash only-bold blk"></div>
+<div class="topshade not-bold"></div>
+
+<div class="carousel" id="carousel"></div>
+
+<section class="ss-info">
+  <div class="title only-faithful blk">Aurora Drift - Lanternfall <span class="diff">[Kaze's Extra]</span></div>
+  <div class="title only-refined blk">Lanternfall <span class="diff">Kaze's Extra</span></div>
+  <div class="title only-bold blk">Lanternfall<span class="diff">Kaze's Extra</span></div>
+  <div class="by only-faithful">Mapped by kazehana</div>
+  <div class="by only-refined">Aurora Drift &middot; mapped by kazehana</div>
+  <div class="by only-bold">Aurora Drift &middot; mapped by kazehana</div>
+
+  <div class="stats only-faithful"><span>Length: <b>3:42</b></span><span>BPM: <b>174</b></span><span>Objects: <b>1284</b></span></div>
+  <div class="stats only-faithful"><span>Circles: <b>702</b></span><span>Sliders: <b>578</b></span><span>Spinners: <b>4</b></span></div>
+  <div class="attrs only-faithful"><span>CS:4.2</span><span>AR:9.3</span><span>OD:8.8</span><span>HP:5</span><span>Stars:6.71</span></div>
+
+  <div class="chips only-refined">
+    <span class="chip glass"><em>Length</em> 3:42</span>
+    <span class="chip glass"><em>BPM</em> 174</span>
+    <span class="chip glass"><em>Objects</em> 1,284</span>
+    <span class="chip glass"><em>Circles</em> 702 <em>&middot; Sliders</em> 578</span>
+  </div>
+  <div class="meters only-refined grid">
+    <div class="meter">CS <b>5.5</b><i style="--w:55%"></i></div>
+    <div class="meter">AR <b>10.0</b><i style="--w:100%"></i></div>
+    <div class="meter">OD <b>10.0</b><i style="--w:100%"></i></div>
+    <div class="meter">HP <b>7.0</b><i style="--w:70%"></i></div>
+  </div>
+  <div class="ppline only-refined">
+    <span class="srbig">&#9733; 7.38</span><span>with HD HR</span>
+    <span><b>312</b>pp 95%</span><span><b>351</b>pp 98%</span><span><b>368</b>pp 99%</span><span><b>392</b>pp SS</span>
+  </div>
+  <canvas class="strain only-refined blk" id="strain" width="1240" height="108"></canvas>
+
+  <div class="bignums only-bold">
+    <div class="hot"><b>&#9733;7.38</b><small>STARS &middot; HD HR</small></div>
+    <div class="hot"><b>392</b><small>PP IF SS</small></div>
+    <div><b>3:42</b><small>LENGTH</small></div>
+    <div><b>174</b><small>BPM</small></div>
+    <div><b>10</b><small>AR</small></div>
+  </div>
+</section>
+
+<section class="ss-top-right">
+  <div class="search glass" id="search"></div>
+  <div class="tabs"><span class="lbl">Group</span><span class="dd">By artist</span>
+    <span class="lbl" style="margin-left:14px">Sort</span><span class="dd">Date added</span>
+    <span class="lbl" style="margin-left:14px">Show</span><span class="dd">All maps</span></div>
+</section>
+
+<section class="board">
+  <div class="board-tabs"><span class="on">Local</span><span>Country</span><span>Global</span><span>Friends</span></div>
+  <div id="rows" style="display:flex;flex-direction:column;gap:8px"></div>
+</section>
+
+<footer class="bottombar glass" id="bottombar"></footer>
+<div class="logo playbtn" id="playlogo"></div>
+
+<script src="icons.js"></script>
+<script>
+const v = variant();
+
+document.getElementById("search").innerHTML =
+  `${icon("search")}<span>${v === "faithful" ? "Type to search!" : "Search 7,514 beatmaps &middot; try <b style=\"color:#fff\">stars&gt;6 ar&lt;9</b>"}</span><kbd>${v === "faithful" ? "" : "Ctrl+F"}</kbd>`;
+
+// carousel: the selected difficulty is centred at y=540; panels further away curve to the right, as in stable
+const items = [
+  { k: "set", t: "Fireline Theory", a: "Juno Park // Mirelle", art: "ember" },
+  { k: "set", t: "Paper Planes in June", a: "Kaori Nanase // Shibuki", art: "teal" },
+  { k: "set", t: "夜明けの灯", a: "星野ミオ // rinne", art: "violet", rank: "A" },
+  { k: "diff", d: "Easy", sr: 1.92, rank: "S" },
+  { k: "diff", d: "Normal", sr: 2.84, rank: "S" },
+  { k: "diff", d: "Hard", sr: 4.07, rank: "A" },
+  { k: "diff", d: "Insane", sr: 5.41, rank: "A" },
+  { k: "diff", d: "Kaze's Extra", sr: 6.71, rank: "S", sel: true },
+  { k: "set", t: "Velvet Static", a: "Lumen Kid // ponytail", art: "rose" },
+  { k: "set", t: "Glass Harbor", a: "Mareen // Shiro", art: "ocean", rank: "B" },
+  { k: "set", t: "Moss & Mirrors", a: "The Quiet Engine // Oak", art: "moss" },
+  { k: "set", t: "Fireline Theory (TV Size)", a: "Juno Park // kyuu", art: "ember" },
+];
+const step = v === "bold" ? 132 : 114;
+const carousel = document.getElementById("carousel");
+items.forEach((it, i) => {
+  const top = 410 - (v === "bold" ? 61 : 52) + (i - 7) * step;
+  const dist = Math.abs(top + 52 - 410);
+  const shift = Math.min(170, dist * dist * 0.00042 + (it.k === "diff" && !it.sel ? 26 : 0) + (it.k === "set" ? 50 : 0));
+  const el = document.createElement("div");
+  el.className = `panel ${it.k}${it.sel ? " sel" : ""} glass`;
+  el.style.top = top + "px";
+  el.style.right = -shift + "px";
+  const title = it.k === "diff" ? "Lanternfall" : it.t;
+  const artist = it.k === "diff" ? "Aurora Drift // kazehana" : it.a;
+  const art = it.k === "diff" ? "rose" : it.art;
+  const n = it.sr ? Math.round(it.sr) : 0;
+  const stars = it.sr ? `<span class="stars">${"&#9733;".repeat(n)}<span class="off">${"&#9733;".repeat(Math.max(0, 10 - n))}</span></span>` : "";
+  const sr = it.sr ? `<span class="sr s${Math.min(6, Math.floor(it.sr))}">&#9733; ${it.sr.toFixed(2)}</span>` : "";
+  el.innerHTML = `<div class="art" style="background-image:url(art/thumb-${art}.png)"></div>
+    <div class="txt"><div class="t">${title}</div><div class="a">${artist}</div>
+    <div class="d">${it.rank ? `<span class="rk ${it.rank.toLowerCase()}" style="${v === "faithful" ? `color:${it.rank === "S" ? (it.sel ? "#c98a00" : "#ffd36b") : it.rank === "A" ? "#7af0a8" : "#7ac8ff"}` : ""}">${it.rank}</span>` : ""}${it.d || ""}${sr}${stars}</div></div>`;
+  carousel.appendChild(el);
+});
+
+// leaderboard
+const rows = [
+  { g: "S", who: "taizaki", mods: ["hd", "hr"], score: "12,948,210", acc: "98.92%", combo: "1,284x", pp: "387pp", me: true },
+  { g: "A", who: "mochi_m", mods: ["hd"], score: "11,203,554", acc: "97.40%", combo: "1,102x", pp: "340pp" },
+  { g: "A", who: "ren_k", mods: [], score: "9,876,002", acc: "96.88%", combo: "803x", pp: "301pp" },
+  { g: "A", who: "solstice", mods: ["hr"], score: "8,442,190", acc: "96.10%", combo: "722x", pp: "288pp" },
+  { g: "B", who: "Velvet", mods: [], score: "6,120,775", acc: "93.05%", combo: "514x", pp: "214pp" },
+  { g: "B", who: "kitsu", mods: ["dt"], score: "5,980,340", acc: "92.77%", combo: "466x", pp: "251pp" },
+];
+document.getElementById("rows").innerHTML = rows.map((r) => `
+  <div class="row glass${r.me ? " me" : ""}">
+    <div class="grade g-${r.g.toLowerCase()}" style="${v === "faithful" ? `color:${r.g === "S" ? "#ffd36b" : r.g === "A" ? "#7af0a8" : "#7ac8ff"}` : ""}">${r.g}</div>
+    <div class="who"><b>${r.who}</b><small>${r.combo} &middot; ${r.acc} ${r.mods.map((m) => `<span class="mod ${m}">${m.toUpperCase()}</span>`).join("")}</small></div>
+    <div class="num"><b>${r.score}</b><small>${r.pp}</small></div>
+  </div>`).join("");
+
+// bottom bar
+document.getElementById("bottombar").innerHTML = `
+  <div class="back">${icon("back")} BACK</div>
+  <div class="bb-btn mode"><span class="ic">${icon("mode")}</span>osu!</div>
+  <div class="bb-btn mods"><span class="ic">${icon("mods")}</span>Mods<kbd>F1</kbd></div>
+  <div class="bb-btn random"><span class="ic">${icon("random")}</span>Random<kbd>F2</kbd></div>
+  <div class="bb-btn options"><span class="ic">${icon("options")}</span>Options<kbd>F3</kbd></div>
+  <div class="usercard"><div class="avatar">T</div><div><b>taizaki</b>
+    <small>4,218pp &middot; #48,213 &middot; 97.84%</small><small>Lv 92</small></div></div>`;
+
+const lg = document.getElementById("playlogo");
+lg.innerHTML = logoSVG(v, "p");
+
+// strain graph (refined only): smoothed noise with a kiai lift in the middle
+const c = document.getElementById("strain");
+if (c && v === "refined") {
+  const x = c.getContext("2d"), r = rng(42), W = c.width, H = c.height, N = 160;
+  let val = 0.4, pts = [];
+  for (let i = 0; i < N; i++) {
+    val += (r() - 0.5) * 0.18; val = Math.min(0.95, Math.max(0.15, val));
+    const kiai = i > 70 && i < 110 ? 0.25 : 0;
+    pts.push(Math.min(1, val * 0.8 + kiai));
+  }
+  const grad = x.createLinearGradient(0, 0, W, 0);
+  grad.addColorStop(0, "rgba(255,179,107,.85)"); grad.addColorStop(1, "rgba(255,111,155,.85)");
+  x.beginPath(); x.moveTo(0, H);
+  pts.forEach((p, i) => x.lineTo((i / (N - 1)) * W, H - p * H));
+  x.lineTo(W, H); x.closePath(); x.fillStyle = grad; x.globalAlpha = 0.55; x.fill();
+  x.globalAlpha = 1; x.beginPath();
+  pts.forEach((p, i) => (i ? x.lineTo : x.moveTo).call(x, (i / (N - 1)) * W, H - p * H));
+  x.strokeStyle = "#fff"; x.lineWidth = 2.5; x.stroke();
+  // playback position marker
+  x.fillStyle = "rgba(255,255,255,.9)"; x.fillRect(W * 0.31, 0, 3, H);
+}
+</script>
+</body>
+</html>
