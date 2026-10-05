@@ -36,6 +36,14 @@ Newest session first. Every claim cites its evidence (a test, a measurement or a
   - It falls back to the newest `osu!.*.cfg` when the Windows user name differs.
   - **Verified on a fresh data dir:** library, skin, volumes and scores came over; the osu! and McOsu folders were untouched (`find -newermt`).
 
+- **Stable scores:** every osu!standard score in stable's `scores.db` is imported, submitted or not: 84/84 (was 54; the 30 missing were the player's own unsubmitted plays, all with replays).
+- **Tooling:**
+  - `tools/screens/capture.py`: 8 screens × (1280×720, 1920×1080, 2560×1440, 3440×1440, 2560×1440 at 2× UI), generated content. The 3440×1440 capture shows song select's group/sort tabs shrinking (a layout bug for F).
+  - `headless_fps_max`: an opt-in frame cap for headless runs, so tests stay light while the user uses the PC.
+  - CI runs `tools/diffcalc test --tolerance` (11/11). Exact mode differs in the last digit on x86-64 gcc.
+  - `THIRD_PARTY_NOTICES.txt` and its generator. BASS in releases is flagged as a user decision (PLAN, H).
+- **Test leftovers:** `~/.local/share/mikosu` (a config and two logs from the 2026-10-04 datadirs test) was removed, so the play-test is a real first launch.
+
 ### Verified, and how
 - Linux sanity test passes on every branch tip (≈19.5 s).
 - CI is green on PRs #1 and #2.
@@ -52,10 +60,7 @@ Newest session first. Every claim cites its evidence (a test, a measurement or a
 ### Next
 1. Merge PR #3, then open PRs for `runner` (tools, simulator fixes, Wine test), `score-v1` and `detect`, in that order (each is stacked on the previous).
 2. Re-run the benchmark when idle, then hand the user the **M1 play-test**.
-3. Phase 1 leftovers:
-   - `THIRD_PARTY_NOTICES` (dependency licences, BASS's terms);
-   - the screenshot tool at 4 resolutions plus 2× UI scale;
-   - the doctest unit-test target.
+3. Phase 1 leftover: the doctest unit-test target (needs doctest.h: vendor it or fetch it with a pinned hash).
 4. Workstream C: spinner spin counting; the 7 no-spinner score outliers (compare combo-break placement using the replay's life-bar graph).
 5. Workstream B: the SR/pp parity corpus against osu-tools.
 6. Workstream F: start the "Slanted controls" redesign.
