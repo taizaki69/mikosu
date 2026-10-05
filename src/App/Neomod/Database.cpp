@@ -248,6 +248,8 @@ void Database::startLoader() {
     logIf(cv::debug_db.getBool() || cv::debug_async_db.getBool(), "start");
     this->destroyLoader();
 
+    migrate_neosu_to_neomod();
+
     this->peppy_root = Database::getOsuSongsFolder();
     this->needs_raw_load = Environment::directoryExists(this->peppy_root) &&
                            (!cv::database_enabled.getBool() || !isOsuDBReadable(getDBPath(DatabaseType::STABLE_MAPS)));
@@ -377,35 +379,27 @@ void Database::destroyLoader() {
 }
 
 bool Database::migrate_neosu_to_neomod() {
-    bool scores_migrated = false;
-    bool maps_migrated = false;
-
-    {
-        const std::string neomod_scores_path = getDBPath(DatabaseType::NEOMOD_SCORES);
-        const std::string old_neosu_scores_path = Mc::Paths::db() + "/neosu_scores.db";
-
-        // migrate scores
-        if(!Environment::fileExists(neomod_scores_path) && Environment::fileExists(old_neosu_scores_path)) {
-            if(!File::copy(old_neosu_scores_path, neomod_scores_path)) {
-                debugLog("WARNING: score database migration {}->{} failed!", old_neosu_scores_path, neomod_scores_path);
-            } else {
-                scores_migrated = true;
+    // a data folder that an older build used (a portable install placed in a neomod/neosu folder) has its databases
+    // under the old names: copy the newest-named one we find once. the original stays as it was (another client may
+    // still be using it); once mikosu's own file exists this does nothing
+    const auto adopt = [](DatabaseType type, std::string_view what) -> bool {
+        const std::string target = getDBPath(type);
+        if(Environment::fileExists(target)) return false;
+        for(const char *old_prefix : {"neomod", "neosu"}) {
+            const std::string old_path = fmt::format("{}/{}_{}.db", Mc::Paths::db(), old_prefix, what);
+            if(old_path == target || !Environment::fileExists(old_path)) continue;
+            if(!File::copy(old_path, target)) {
+                debugLog("WARNING: {} database migration {}->{} failed!", what, old_path, target);
+                return false;
             }
+            debugLog("Copied the {} database {} -> {}", what, old_path, target);
+            return true;
         }
-    }
-    {
-        const std::string neomod_maps_path = getDBPath(DatabaseType::NEOMOD_MAPS);
-        const std::string old_neosu_maps_path = Mc::Paths::db() + "/neosu_maps.db";
+        return false;
+    };
 
-        // migrate maps
-        if(!Environment::fileExists(neomod_maps_path) && Environment::fileExists(old_neosu_maps_path)) {
-            if(!File::copy(old_neosu_maps_path, neomod_maps_path)) {
-                debugLog("WARNING: map database migration {}->{} failed!", old_neosu_maps_path, neomod_maps_path);
-            } else {
-                maps_migrated = true;
-            }
-        }
-    }
+    const bool scores_migrated = adopt(DatabaseType::NEOMOD_SCORES, "scores");
+    const bool maps_migrated = adopt(DatabaseType::NEOMOD_MAPS, "maps");
 
     // TODO?: result unused, could maybe cache it in config or something to avoid the stat syscall
     return scores_migrated || maps_migrated;

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(neomod VERSION 43.14 LANGUAGES C CXX)
+project(mikosu VERSION 0.1 LANGUAGES C CXX)
 
 # MSVC specific configuration
 if(NOT MSVC)
@@ -43,8 +43,8 @@ if(NOT BASS_VERSION)
 endif()
 
 # Set variables for config.h generation
-set(PROJECT_TARNAME "neomod")
-set(PROJECT_URL "https://github.com/neomodnet/neomod")
+set(PROJECT_TARNAME "${PROJECT_NAME}")
+set(PROJECT_URL "https://github.com/taizaki69/mikosu")
 string(TIMESTAMP BUILD_TIMESTAMP %y%m%d%H%M UTC)
 message(STATUS "Build timestamp: ${BUILD_TIMESTAMP}")
 
@@ -219,7 +219,7 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
 )
 
 # Add main executable target
-add_executable(neomod ${SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Get all source files and extract their directories
 file(GLOB_RECURSE ALL_SOURCE_FILES CONFIGURE_DEPENDS
@@ -241,7 +241,7 @@ list(REMOVE_DUPLICATES SRC_DIRS)
 set(BASS_CACHE_DIR "${DEPS_CACHE}/bass-${BASS_VERSION}")
 
 # Include directories
-target_include_directories(neomod PRIVATE
+target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_BINARY_DIR}  # for generated config.h
     ${CMAKE_SOURCE_DIR}/../../src
     ${SRC_DIRS}
@@ -262,7 +262,7 @@ target_include_directories(neomod PRIVATE
 )
 
 # Precompiled header (C++ only, so filter out C sources from the glob)
-target_precompile_headers(neomod PRIVATE
+target_precompile_headers(${PROJECT_NAME} PRIVATE
     "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_SOURCE_DIR}/../../src/pch.h>"
 )
 
@@ -270,7 +270,7 @@ target_precompile_headers(neomod PRIVATE
 string(REGEX REPLACE "/EH[^ ]*" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 # Apply compiler options
-target_compile_options(neomod PRIVATE
+target_compile_options(${PROJECT_NAME} PRIVATE
     "/utf-8"
     "/Zc:preprocessor"
     "/Zc:__cplusplus"
@@ -288,7 +288,7 @@ target_compile_options(neomod PRIVATE
 )
 
 # Definitions
-target_compile_definitions(neomod PRIVATE
+target_compile_definitions(${PROJECT_NAME} PRIVATE
     GLM_ENABLE_EXPERIMENTAL
     FMT_USE_EXCEPTIONS=0
     _HAS_EXCEPTIONS=0
@@ -305,7 +305,7 @@ target_compile_definitions(neomod PRIVATE
 )
 
 # Link options
-target_link_options(neomod PRIVATE
+target_link_options(${PROJECT_NAME} PRIVATE
     $<$<CONFIG:Debug>:/DEBUG:FULL;/SUBSYSTEM:CONSOLE;/ENTRY:wmainCRTStartup;/INCREMENTAL;/FUNCTIONPADMIN;/OPT:NOREF;/OPT:NOICF>
     $<$<CONFIG:Release>:/DEBUG:FULL;/SUBSYSTEM:WINDOWS;/ENTRY:wWinMainCRTStartup;/OPT:REF;/OPT:ICF>
     /STACK:8388608 # 8MB default stack size
@@ -313,7 +313,7 @@ target_link_options(neomod PRIVATE
     ${PC_BROTLIDEC_STATIC_LDFLAGS}
 )
 
-target_link_directories(neomod PRIVATE
+target_link_directories(${PROJECT_NAME} PRIVATE
     ${DEPS_INSTALL_DIR}/lib
     ${BZIP2_STATIC_LIBRARY_DIRS}
     ${LIBARCHIVE_STATIC_LIBRARY_DIRS}
@@ -323,11 +323,11 @@ target_link_directories(neomod PRIVATE
 # binary resources (NASM object from generated assembly)
 add_library(binary_embed_obj OBJECT ${EMBED_SOURCE})
 set_property(TARGET binary_embed_obj PROPERTY ASM_NASM_OBJECT_FORMAT win64)
-target_link_libraries(neomod PRIVATE binary_embed_obj)
-target_include_directories(neomod PRIVATE ${EMBED_OUTPUT_DIR})
+target_link_libraries(${PROJECT_NAME} PRIVATE binary_embed_obj)
+target_include_directories(${PROJECT_NAME} PRIVATE ${EMBED_OUTPUT_DIR})
 
 # Link libraries
-target_link_libraries(neomod PRIVATE
+target_link_libraries(${PROJECT_NAME} PRIVATE
     OpenGL::GL
     OpenGL::GLU
     SDL3::SDL3-static
@@ -353,12 +353,12 @@ target_link_libraries(neomod PRIVATE
 )
 
 if(NOT DISABLE_NSYNC AND nsync_cpp_FOUND)
-    target_link_libraries(neomod PRIVATE nsync_cpp)
-    target_compile_definitions(neomod PRIVATE NSYNC_ATOMIC_CPP11 NSYNC_USE_CPP11_TIMEPOINT)
+    target_link_libraries(${PROJECT_NAME} PRIVATE nsync_cpp)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE NSYNC_ATOMIC_CPP11 NSYNC_USE_CPP11_TIMEPOINT)
 endif()
 
 # Installation
-install(TARGETS neomod RUNTIME DESTINATION bin)
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
 
 install(FILES $<TARGET_PDB_FILE:${PROJECT_NAME}> DESTINATION bin OPTIONAL)
 
@@ -380,7 +380,7 @@ install(FILES
 
 install(DIRECTORY DESTINATION bin/screenshots)
 
-message(STATUS "neomod Main Build Configuration:")
+message(STATUS "${PROJECT_NAME} Main Build Configuration:")
 message(STATUS "  Build Type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  Install Prefix: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "  Dependencies: ${DEPS_INSTALL_DIR}")
