@@ -424,13 +424,13 @@ msgstr "オンライン譜面"
 
 #: src/App/Neomod/MainMenu.cpp
 #, c++-format
-msgid "Version {:.2f} ({:s})"
-msgstr "バージョン {:.2f} ({:s})"
+msgid "Version {:s} ({:s})"
+msgstr "バージョン {:s} ({:s})"
 
 #: src/App/Neomod/MainMenu.cpp
 #, c++-format
-msgid "Version {:.2f}"
-msgstr "バージョン {:.2f}"
+msgid "Version {:s}"
+msgstr "バージョン {:s}"
 
 #: src/App/Neomod/MainMenu.cpp
 msgid "Downloading ..."
@@ -500,8 +500,8 @@ msgid "Press {:s} or {:s} anywhere to open chat."
 msgstr "どこでも {:s} または {:s} を押すとチャットを開きます。"
 
 #: src/App/Neomod/MainMenuTips.cpp
-msgid "Launch with the neomod-BASS shortcut to use BASS (ASIO/Exclusive mode) for audio."
-msgstr "オーディオにBASS (ASIO/排他モード) を使用するには、neomod-BASSショートカットで起動してください。"
+msgid "Launch with the mikosu-BASS shortcut to use BASS (ASIO/Exclusive mode) for audio."
+msgstr "オーディオにBASS (ASIO/排他モード) を使用するには、mikosu-BASSショートカットで起動してください。"
 
 #: src/App/Neomod/MainMenuTips.cpp
 msgid "Launch with \"-sound bass\" as a commandline argument to use BASS for audio."
@@ -509,12 +509,12 @@ msgstr "オーディオにBASSを使用するには、起動オプションに \
 
 #: src/App/Neomod/MainMenuTips.cpp
 #, fuzzy
-msgid "Put \"-gpu vk\" after the \"Target:\" field in a shortcut to neomod to use the Vulkan renderer."
-msgstr "D3D11レンダラーを使用するには、neomodのショートカットの「リンク先」の後に \"-dx11\" を追加してください。"
+msgid "Put \"-gpu vk\" after the \"Target:\" field in a shortcut to mikosu to use the Vulkan renderer."
+msgstr "D3D11レンダラーを使用するには、mikosuのショートカットの「リンク先」の後に \"-dx11\" を追加してください。"
 
 #: src/App/Neomod/MainMenuTips.cpp
-msgid "Put \"-dx11\" after the \"Target:\" field in a shortcut to neomod to use the D3D11 renderer."
-msgstr "D3D11レンダラーを使用するには、neomodのショートカットの「リンク先」の後に \"-dx11\" を追加してください。"
+msgid "Put \"-dx11\" after the \"Target:\" field in a shortcut to mikosu to use the D3D11 renderer."
+msgstr "D3D11レンダラーを使用するには、mikosuのショートカットの「リンク先」の後に \"-dx11\" を追加してください。"
 
 #: src/App/Neomod/MainMenuTips.cpp
 msgid "Launch with \"-dx11\" as a commandline argument to use the D3D11 renderer."

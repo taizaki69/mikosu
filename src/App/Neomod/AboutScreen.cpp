@@ -1,5 +1,6 @@
 // Copyright (c) 2017, PG & 2023-2025, kiwec, All rights reserved.
 #include "AboutScreen.h"
+#include "Branding.h"
 
 #include "CBaseUIButton.h"
 #include "CBaseUIContainer.h"
@@ -85,18 +86,14 @@ class ChangelogTitleLabel final : public CBaseUILabel {
         if(text.empty()) return;
 
         const auto [curVerStr, curVerNum] = parseVerFromText(text);
+        (void)previousText;
 
-        // NOTE: PACKAGE_URL should point to https://github.com/neomodnet/neomod
-        if(curVerNum < cv::version.getDouble()) {
-            // older version text, link to tag directly
-            this->clickableURL = fmt::format(PACKAGE_URL "/releases/tag/v{}", curVerStr);
-        } else if(const auto [prevVerStr, prevVerNum] = parseVerFromText(previousText);
-                  (Osu::isBleedingEdge() || Env::cfg(BUILD::DEBUG)) && !prevVerStr.empty() && prevVerNum <= curVerNum) {
-            // show latest commits
-            this->clickableURL = fmt::format(PACKAGE_URL "/compare/v{}...master", prevVerStr);
+        // the changelog is neomod's history (versions 38 and up, see parseVerFromText()); mikosu's own starts with its
+        // first release. so a version links to its tag in the upstream repository
+        if(!curVerStr.empty()) {
+            this->clickableURL = fmt::format(BRAND_UPSTREAM_REPO_URL "/releases/tag/v{}", curVerStr);
         } else {
-            // point to the github releases page by itself
-            this->clickableURL = PACKAGE_URL "/releases";
+            this->clickableURL = BRAND_RELEASES_URL;
         }
     }
 

@@ -220,7 +220,12 @@ bool is_updating_from_old_version() {
     }
 
     bool shouldSave = false;
-    if(version < 35.06) {
+
+    // neomod's migrations, for a version.txt that neomod (or neosu/McOsu, all 30+) wrote: a portable install placed
+    // in an old neomod folder. mikosu's own versions start over at 0.1, so without this check every one of them would
+    // look older than 35.06 and the whole chain (which remaps custom keybinds) would run again on every launch
+    const bool fromNeomodLineage = version >= 30.0;
+    if(fromNeomodLineage && version < 35.06) {
         // SoundEngine choking issues have been fixed, option has been removed from settings menu
         // We leave the cvar available as it could still be useful for some players
         cv::restart_sound_engine_before_playing.setValue(false);
@@ -237,7 +242,7 @@ bool is_updating_from_old_version() {
 
         shouldSave = true;
     }
-    if(version < 39.00) {
+    if(fromNeomodLineage && version < 39.00) {
         if(!cv::mp_password.getString().empty()) {
             const MD5String hash{crypto::hash::md5(cv::mp_password.getString())};
             cv::mp_password_md5.setValue(hash.string());
@@ -245,33 +250,30 @@ bool is_updating_from_old_version() {
             shouldSave = true;
         }
     }
-    if(version < 39.01) {
+    if(fromNeomodLineage && version < 39.01) {
         if(cv::fps_unlimited.getBool()) {
             cv::fps_max.setValue(0);
             shouldSave = true;
         }
     }
-    if(version < 40.00) {
+    if(fromNeomodLineage && version < 40.00) {
         for(auto *bind : OsuKeyBinds::getAll()) {
             if(bind->isDefault()) continue;
             bind->set(KeyBindings::old_keycode_to_sdl_scancode(bind->get()));
         }
         shouldSave = true;
     }
-    if(version < 40.06) {
+    if(fromNeomodLineage && version < 40.06) {
         cv::letterboxed_resolution.setValue(cv::resolution.getString());
         shouldSave = true;
     }
-    if(version < 43.02) {
+    if(fromNeomodLineage && version < 43.02) {
         if(cv::mp_server.getString() == "neosu.net"sv) {
             cv::mp_server.setValue(cv::mp_server.getDefaultString());
             shouldSave = true;
         }
-        if(Database::migrate_neosu_to_neomod()) {
-            debugLog("Migrated old neosu databases to neomod.");
-        }
     }
-    if(version < 43.04 || buildstamp <= 2602190926) {
+    if(fromNeomodLineage && (version < 43.04 || buildstamp <= 2602190926)) {
         cv::prefer_websockets.setValue(true);
         shouldSave = true;
     }
@@ -280,7 +282,7 @@ bool is_updating_from_old_version() {
     if(makeBackup) {
         // back up synchronously
         const std::string cfg_path = Mc::Paths::cfg() + "/osu.cfg";
-        const std::string backup_name = fmt::format("{}.{:.2f}{:s}.bak", cfg_path, version,
+        const std::string backup_name = fmt::format("{}.{}{:s}.bak", cfg_path, version,
                                                     gotLegitBuildstamp ? fmt::format("-{:d}", buildstamp) : "");
         debugLog("Backing up config {} -> {}", cfg_path, backup_name);
         if(!File::copy(cfg_path, backup_name)) {
@@ -1037,11 +1039,11 @@ void MainMenu::tick() {
 
     if(Osu::isBleedingEdge()) {
         static std::string versionString =
-            tformat("Version {:.2f} ({:s})", cv::version.getFloat(), cv::build_timestamp.getString());
+            tformat("Version {:s} ({:s})", cv::version.getString(), cv::build_timestamp.getString());
         this->versionButton->setTextColor(rgb(255, 220, 220));
         this->versionButton->setText(versionString);
     } else {
-        static std::string versionString = tformat("Version {:.2f}", cv::version.getFloat());
+        static std::string versionString = tformat("Version {:s}", cv::version.getString());
         this->versionButton->setTextColor(rgb(255, 255, 255));
         this->versionButton->setText(versionString);
     }

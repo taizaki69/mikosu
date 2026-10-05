@@ -424,13 +424,13 @@ msgstr "Beatmapy online"
 
 #: src/App/Neomod/MainMenu.cpp
 #, c++-format
-msgid "Version {:.2f} ({:s})"
-msgstr "Wersja {:.2f} ({:s})"
+msgid "Version {:s} ({:s})"
+msgstr "Wersja {:s} ({:s})"
 
 #: src/App/Neomod/MainMenu.cpp
 #, c++-format
-msgid "Version {:.2f}"
-msgstr "Wersja {:.2f}"
+msgid "Version {:s}"
+msgstr "Wersja {:s}"
 
 #: src/App/Neomod/MainMenu.cpp
 msgid "Downloading ..."
@@ -500,8 +500,8 @@ msgid "Press {:s} or {:s} anywhere to open chat."
 msgstr "Naciśnij {:s} lub {:s} gdziekolwiek, aby otworzyć czat."
 
 #: src/App/Neomod/MainMenuTips.cpp
-msgid "Launch with the neomod-BASS shortcut to use BASS (ASIO/Exclusive mode) for audio."
-msgstr "Uruchom za pomocą skrótu neomod-BASS, aby używać BASS (tryb ASIO/Wyłączności) dla dźwięku."
+msgid "Launch with the mikosu-BASS shortcut to use BASS (ASIO/Exclusive mode) for audio."
+msgstr "Uruchom za pomocą skrótu mikosu-BASS, aby używać BASS (tryb ASIO/Wyłączności) dla dźwięku."
 
 #: src/App/Neomod/MainMenuTips.cpp
 msgid "Launch with \"-sound bass\" as a commandline argument to use BASS for audio."
@@ -509,12 +509,12 @@ msgstr "Uruchom z argumentem wiersza poleceń \"-sound bass\", aby używać BASS
 
 #: src/App/Neomod/MainMenuTips.cpp
 #, fuzzy
-msgid "Put \"-gpu vk\" after the \"Target:\" field in a shortcut to neomod to use the Vulkan renderer."
-msgstr "Dodaj \"-dx11\" po polu \"Element docelowy:\" w skrócie do neomod, aby użyć renderera D3D11."
+msgid "Put \"-gpu vk\" after the \"Target:\" field in a shortcut to mikosu to use the Vulkan renderer."
+msgstr "Dodaj \"-dx11\" po polu \"Element docelowy:\" w skrócie do mikosu, aby użyć renderera D3D11."
 
 #: src/App/Neomod/MainMenuTips.cpp
-msgid "Put \"-dx11\" after the \"Target:\" field in a shortcut to neomod to use the D3D11 renderer."
-msgstr "Dodaj \"-dx11\" po polu \"Element docelowy:\" w skrócie do neomod, aby użyć renderera D3D11."
+msgid "Put \"-dx11\" after the \"Target:\" field in a shortcut to mikosu to use the D3D11 renderer."
+msgstr "Dodaj \"-dx11\" po polu \"Element docelowy:\" w skrócie do mikosu, aby użyć renderera D3D11."
 
 #: src/App/Neomod/MainMenuTips.cpp
 msgid "Launch with \"-dx11\" as a commandline argument to use the D3D11 renderer."
