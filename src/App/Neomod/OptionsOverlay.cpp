@@ -1510,6 +1510,13 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
                 &cv::win_global_media_hotkeys);
         }
     }
+    // mikosu: the system IME (off by default on Linux, where IBus made menus miss key presses; see main.cpp)
+    this->addCheckbox(_("Use the system input method (IME) for typing"),
+                      Env::cfg(OS::LINUX)
+                          ? _("For typing Japanese, Chinese, Korean and similar\n(IBus, Fcitx). Applies after a restart.\nWith IBus it can make menus miss key presses.")
+                          : _("For typing Japanese, Chinese, Korean and similar."),
+                      &cv::use_ime);
+    this->elemContainers.back()->searchTags = "ime ibus fcitx input method japanese chinese korean typing";
     UIButton *resetAllKeyBindingsButton = this->addButton(_("Reset all key bindings"));
     resetAllKeyBindingsButton->setColor(0xffd90000);
     resetAllKeyBindingsButton->setClickCallback(
