@@ -1,6 +1,6 @@
 {
   "updated": "2026-10-05",
-  "phase": "1 foundation: done (PRs #1-#6 merged); M1 play-test with the user",
+  "phase": "1 foundation: done; M1 play-tested (gameplay same as neomod), 4 reported issues fixed, awaiting re-test",
   "upstream": {
     "remote": "neomodnet/neomod",
     "fork_point": "0fedcafb3515c86d8be8ee736c76bce19d0198d3",

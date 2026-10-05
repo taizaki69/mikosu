@@ -2,6 +2,27 @@
 
 Newest session first. Every claim cites its evidence (a test, a measurement or a screenshot).
 
+## 2026-10-05 afternoon: M1 play-test feedback and fixes
+
+The user played the M1 build: "works the same as neomod" (gameplay unchanged). They reported 4 issues, all also present in neomod. Each one was reproduced and fixed:
+
+1. **Menus miss most key presses (Linux).**
+   - Reproduced on a private X display (Xvfb, private D-Bus and IBus, xdotool) with the user's setup (`XMODIFIERS=@im=ibus`, IBus 1.5.29 in XIM mode): 0 of 30 keys arrived.
+   - Cause: SDL hands every key to XIM while text input is active, and the menus keep it on.
+   - Fix: `use_ime` is off by default on Linux, and SDL's video init then sees `@im=none` (restored after). There's an Options checkbox (PLAN 24).
+   - Result: 30/30 keys.
+   - An SDL patch also fixes dead keys under XInput2 (´ + e → é), which never worked.
+2. **Alt-tab out of fullscreen breaks (Linux).**
+   - Reproduced under muffin on the private display: the old minimize-on-alt-tab got stuck minimized, came back non-fullscreen, and lost the custom 1280×960.
+   - Fix: "Minimize On ALT+TAB" is off by default on Linux, and entering or leaving fullscreen re-evaluates the resolution.
+   - Result: fullscreen and 1280×960 after every return, with the other window on top while away.
+3. **Custom resolutions needed a file edit.**
+   - Fix: "Custom..." in the resolution list prompts for any resolution, applies it and remembers it in `customres.cfg`.
+4. **FPS limits stopped at 1000.**
+   - Fix: both sliders go to 4000 (the limiter has no cap of its own).
+
+The test scripts (private display, IBus, muffin) live in the session scratchpad and aren't committed yet. Making them a proper Linux input/window test in `tests/` is a follow-up.
+
 ## 2026-10-04 evening to 2026-10-05: Session 1, continued (Phase 1 nearly done)
 
 ### What changed
