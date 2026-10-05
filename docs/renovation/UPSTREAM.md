@@ -41,6 +41,8 @@
 | Windows registry: mikosu's own ProgID and URL protocol only; neosu's entries no longer deleted | `NeomodEnvInterop.cpp` | don't take over or remove another client's registrations |
 | Old `neomod_*.db` / `neosu_*.db` copied to `mikosu_*.db` on load | `Database.cpp` | data folders from neomod builds (portable installs) |
 | UI test runner sends `force_oauth 1` before every script | `tests/ui/run.py` | the scripts were recorded against neomod's default server (compact OAuth form); mikosu's default server is empty |
+| Include dirs found relative to `src/` | `Makefile.am` (`NEOMOD_INCLUDE_FLAGS`) | upstream bug: a checkout below a hidden directory lost every include dir. **Worth offering upstream** |
+| Precompiled header compiled with `CCACHE_DISABLE=1` | `Makefile.am` | ccache returned a stale `.gch` after a `config.h` define changed (pch_defines sloppiness). **Worth offering upstream** |
 
 ## Review log
 
