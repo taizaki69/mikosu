@@ -41,7 +41,7 @@ If something still misbehaves, tell me what you did and what happened.
 
 - **First play-test:** you found gameplay the same as neomod.
 - **Fixed from your report:**
-  - Menu keys were going missing because of the Linux input-method system (IBus). mikosu now skips it unless you turn it on (Options → Input → Keyboard; only needed for typing Japanese, Chinese and similar). Accented letters (´ + e = é) now work too.
+  - Menu keys were going missing because of the Linux input-method system (IBus). mikosu now skips it unless you turn it on (Options → Input → Typing; only needed for typing Japanese, Chinese and similar). Accented letters (´ + e = é) now work too.
   - Alt-tab out of fullscreen used to get stuck or lose your resolution. It now just switches windows and comes back as it was.
   - A "Custom..." resolution option in-game, no file editing.
   - FPS limiters up to 4000.
