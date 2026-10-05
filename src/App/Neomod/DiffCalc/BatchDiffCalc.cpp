@@ -390,8 +390,8 @@ MapResult calc_map_attributes(BeatmapDifficulty* map, DatabaseBeatmap::PRIMITIVE
             {
                 uSz si = 0, sti = 0;
                 for(auto& obj : diffres.diffobjects) {
-                    obj.time = (i32)((f64)obj.baseTime * inv_speed);
-                    obj.endTime = (i32)((f64)obj.baseEndTime * inv_speed);
+                    obj.time = obj.baseTime * inv_speed;  // (exact, see DifficultyHitObject::time)
+                    obj.endTime = obj.baseEndTime * inv_speed;
                     if(obj.type == DifficultyHitObject::TYPE::SLIDER) {
                         obj.spanDuration = (f32)((f64)ctx.base_span_durations[si] * inv_speed);
                         for(auto& st : obj.scoringTimes) {

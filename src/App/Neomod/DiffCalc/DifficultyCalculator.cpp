@@ -40,7 +40,7 @@
 namespace neomod::DiffCalc {
 // see https://github.com/ppy/osu/pull/37850
 // NOTE: updated to 20260811 to force recalc over initial implementation divergences
-const u32 PP_ALGORITHM_VERSION{20260811};
+const u32 PP_ALGORITHM_VERSION{20261005};  // mikosu: exact (fractional) object times; slider tail leniency on the map timeline
 
 namespace {
 // internal helper utils (forward decls)
@@ -361,13 +361,13 @@ struct DifficultyHitObject::Computed {
     }
 };
 
-DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time) : DifficultyHitObject(type, pos, time, time) {}
+DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, f64 time) : DifficultyHitObject(type, pos, time, time) {}
 
-DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime)
+DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, f64 time, f64 endTime)
     : DifficultyHitObject(type, pos, time, endTime, 0.0f, SLIDERCURVETYPE{}, std::vector<vec2>(), 0.0f,
                           std::vector<SLIDER_SCORING_TIME>(), 0, true) {}
 
-DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime, f32 spanDuration,
+DifficultyHitObject::DifficultyHitObject(TYPE type, vec2 pos, f64 time, f64 endTime, f32 spanDuration,
                                          SLIDERCURVETYPE osuSliderCurveType, const std::vector<vec2> &controlPoints,
                                          f32 pixelLength, std::vector<SLIDER_SCORING_TIME> scoringTimes, i32 repeats,
                                          bool calculateSliderCurveInConstructor)
@@ -524,7 +524,12 @@ static void computeSliderCursorPosition(DifficultyHitObject &slider, f32 circleR
 
     // NOTE: although this looks like a duplicate of the end tick time, this really does have a noticeable impact on some maps due to precision issues
     // see: Ocelot - KAEDE (Hollow Wings) [EX EX]
-    const f64 tailLeniency = SLIDER_END_INSIDE_CHECK_OFFSET;
+    // mikosu: lazer applies the tail leniency on the slider's own timeline and divides by the clock rate afterwards
+    // (TravelTime = LazyTravelTime / clockRate); our times are already rate-adjusted, so the leniency must be too. it
+    // was 36ms on the adjusted timeline, i.e. 54ms of the map at DT, which skewed every DT aim rating
+    const f64 adjustedDuration = slider.getDurationExact();
+    const f64 clockRate = adjustedDuration > 0.0 ? (slider.baseEndTime - slider.baseTime) / adjustedDuration : 1.0;
+    const f64 tailLeniency = SLIDER_END_INSIDE_CHECK_OFFSET / clockRate;
     const f64 totalDuration = (f64)slider.spanDuration * slider.repeats;
     f64 trackingEndTime = (f64)slider.time + std::max(totalDuration - tailLeniency, totalDuration / 2.0);
 
@@ -550,9 +555,9 @@ static void computeSliderCursorPosition(DifficultyHitObject &slider, f32 circleR
             // NOTE: In lazer, the position of the slider end is at the visual end, but the time is at the scoring end
             diff = slider.curvePointAt(slider.repeats % 2 ? 1.0 : 0.0) - cursor_pos;
         } else {
-            f64 progress =
-                (std::clamp<f32>(slider.scoringTimes[i].time - (f32)slider.time, 0.0f, (f32)slider.getDuration())) /
-                slider.spanDuration;
+            f64 progress = std::clamp<f64>((f64)slider.scoringTimes[i].time - slider.time, 0.0,
+                                           slider.getDurationExact()) /
+                           slider.spanDuration;
             if(std::fmod(progress, 2.0) >= 1.0)
                 progress = 1.0 - std::fmod(progress, 1.0);
             else
@@ -603,7 +608,7 @@ static vec2 getSecondToLastNestedPosition(const DifficultyHitObject &slider) {
 
     const auto &scoringTime = slider.scoringTimes[slider.scoringTimes.size() - 2];
     f64 progress =
-        (std::clamp<f32>(scoringTime.time - (f32)slider.time, 0.0f, (f32)slider.getDuration())) / slider.spanDuration;
+        std::clamp<f64>((f64)scoringTime.time - slider.time, 0.0, slider.getDurationExact()) / slider.spanDuration;
     if(std::fmod(progress, 2.0) >= 1.0)
         progress = 1.0 - std::fmod(progress, 1.0);
     else
@@ -715,7 +720,7 @@ f64 calculateStarDiffForHitObjects(StarCalcParams &params) {
                     cur.c->travelTime = std::max(cur.c->lazyTravelTime, 25.0);
                 }
 
-                f64 cur_strain_time = (f64)std::max(cur.time - prev1.time, 25);  // strainTime isn't initialized here
+                f64 cur_strain_time = std::max(cur.time - prev1.time, 25.0);  // strainTime isn't initialized here
 
                 // (lazer sets this for every object, including spinners)
                 cur.c->minimumJumpTime = cur_strain_time;
@@ -1173,11 +1178,11 @@ namespace {
 // per object before moving on; the recorded per-object values here are lazer's
 // Skill.ObjectDifficulties, aggregated later by calculate_*_difficulty)
 static void calculate_strains(DifficultyHitObject &cur, const DifficultyHitObject &prev, const StrainEvalContext &ctx) {
-    const i32 time_elapsed = cur.time - prev.time;
+    const f64 time_elapsed = cur.time - prev.time;  // (exact, like lazer's DeltaTime; was whole milliseconds)
 
     // update our delta time
-    cur.c->deltaTime = (f64)time_elapsed;
-    cur.c->strainTime = (f64)std::max(time_elapsed, 25);  // == lazer AdjustedDeltaTime
+    cur.c->deltaTime = time_elapsed;
+    cur.c->strainTime = std::max(time_elapsed, 25.0);  // == lazer AdjustedDeltaTime
 
     // aim, both variants (lazer Aim.StrainValueAt): normalized EMA on AdjustedDeltaTime.
     // with autopilot lazer returns 0 before ever touching the running strain
@@ -2696,7 +2701,7 @@ void calculateScoreV1Attributes(DifficultyAttributes &attributes, const BeatmapD
             sliderScore += amountOfBigTicks * bigTickScore + amountOfSmallTicks * smallTickScore;
         } else if(hitObject.type == DifficultyHitObject::TYPE::SPINNER)
             // lazer's decoder clamps aspire spinners to a non-negative duration
-            spinnerScore += calculateScoreV1SpinnerScore(std::max(0, hitObject.baseEndTime - hitObject.baseTime));
+            spinnerScore += calculateScoreV1SpinnerScore(std::max(0.0, hitObject.baseEndTime - hitObject.baseTime));
     }
 
     attributes.NestedScorePerObject = (sliderScore + spinnerScore) / (f64)std::max(upToObjectIndex, 1);
@@ -2708,8 +2713,10 @@ void calculateScoreV1Attributes(DifficultyAttributes &attributes, const BeatmapD
     // (nearbyint) only differs on exact .5 ties, which f32 file values essentially never hit
     i32 drainLength = 0;
     if(!b.sortedHitObjects.empty())
-        drainLength =
-            (b.sortedHitObjects.back().baseTime - b.sortedHitObjects[0].baseTime - (i32)b.breakDuration) / 1000;
+        // (integer, like lazer's (int)Math.Round(StartTime) differences)
+        drainLength = ((i32)std::round(b.sortedHitObjects.back().baseTime) -
+                       (i32)std::round(b.sortedHitObjects[0].baseTime) - (i32)b.breakDuration) /
+                      1000;
     const f64 objectToDrainRatio =
         drainLength != 0 ? std::clamp((f64)b.sortedHitObjects.size() / drainLength * 8.0, 0.0, 16.0) : 16.0;
     attributes.LegacyScoreBaseMultiplier =

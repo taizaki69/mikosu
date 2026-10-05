@@ -66,16 +66,17 @@ class DifficultyHitObject {
     [[nodiscard]] inline bool isSpinner() const { return type == TYPE::SPINNER; }
     [[nodiscard]] inline bool isSlider() const { return type == TYPE::SLIDER; }
     [[nodiscard]] inline i32 getStack() const { return stack; }
-    [[nodiscard]] inline i32 getClickTime() const { return time; }
-    [[nodiscard]] inline i32 getEndTime() const { return time + getDuration(); }
+    // (whole milliseconds, for the stacking code shared with gameplay objects; the star calc uses time/endTime)
+    [[nodiscard]] inline i32 getClickTime() const { return (i32)time; }
+    [[nodiscard]] inline i32 getEndTime() const { return (i32)time + getDuration(); }
     inline void setStack(i32 newStack) { stack = newStack; }
 
    public:
     DifficultyHitObject() = delete;
 
-    DifficultyHitObject(TYPE type, vec2 pos, i32 time);               // circle
-    DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime);  // spinner
-    DifficultyHitObject(TYPE type, vec2 pos, i32 time, i32 endTime, f32 spanDuration,
+    DifficultyHitObject(TYPE type, vec2 pos, f64 time);               // circle
+    DifficultyHitObject(TYPE type, vec2 pos, f64 time, f64 endTime);  // spinner
+    DifficultyHitObject(TYPE type, vec2 pos, f64 time, f64 endTime, f32 spanDuration,
                         SLIDERCURVETYPE osuSliderCurveType, const std::vector<vec2> &controlPoints, f32 pixelLength,
                         std::vector<SLIDER_SCORING_TIME> scoringTimes, i32 repeats,
                         bool calculateSliderCurveInConstructor);  // slider
@@ -99,18 +100,22 @@ class DifficultyHitObject {
     [[nodiscard]] inline i32 getDuration() const {
         // Sanity clamp because of that one Aspire map
         // (MSVC std::clamp doesn't like when MAX < MIN)
-        return std::max(0, endTime - time);
+        return std::max(0, (i32)endTime - (i32)time);
     }
+    // exact (fractional) duration, for the star calc
+    [[nodiscard]] inline f64 getDurationExact() const { return std::max(0.0, endTime - time); }
 
    public:
     // circles (base)
     vec2 pos;
-    i32 time;
-    i32 baseTime;  // not adjusted by clockrate
+    // mikosu: exact and rate-adjusted, like lazer's StartTime/EndTime (doubles). these were whole milliseconds, which
+    // truncated every object time at DT (t / 1.5) and every slider's end time
+    f64 time;
+    f64 baseTime;  // not adjusted by clockrate
 
     // spinners + sliders
-    i32 endTime;
-    i32 baseEndTime;  // not adjusted by clockrate
+    f64 endTime;
+    f64 baseEndTime;  // not adjusted by clockrate
 
     // sliders
     std::vector<SLIDER_SCORING_TIME> scoringTimes;

@@ -1063,7 +1063,7 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
 
     for(auto &hitcircle : c.hitcircles) {
         result.diffobjects.emplace_back(DifficultyHitObject::TYPE::CIRCLE, vec2{hitcircle.x, hitcircle.y},
-                                        (i32)hitcircle.time);
+                                        (f64)hitcircle.time);
     }
 
     const bool calculateSliderCurveInConstructor =
@@ -1074,15 +1074,16 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
             return result;
         }
 
-        result.diffobjects.emplace_back(DifficultyHitObject::TYPE::SLIDER, vec2{slider.x, slider.y}, slider.time,
-                                        slider.time + (i32)slider.sliderTime, slider.sliderTimeWithoutRepeats,
+        // (end time exact, like lazer's EndTime = StartTime + SpanCount * SpanDuration; it was truncated to whole ms)
+        result.diffobjects.emplace_back(DifficultyHitObject::TYPE::SLIDER, vec2{slider.x, slider.y}, (f64)slider.time,
+                                        (f64)slider.time + (f64)slider.sliderTime, slider.sliderTimeWithoutRepeats,
                                         slider.type, slider.points, slider.pixelLength, slider.scoringTimesForStarCalc,
                                         slider.repeat, calculateSliderCurveInConstructor);
     }
 
     for(const auto &spinner : c.spinners) {
         result.diffobjects.emplace_back(DifficultyHitObject::TYPE::SPINNER, vec2{spinner.x, spinner.y},
-                                        (i32)spinner.time, (i32)spinner.endTime);
+                                        (f64)spinner.time, (f64)spinner.endTime);
     }
 
     if(dead.stop_requested()) {
@@ -1139,8 +1140,9 @@ DatabaseBeatmap::LOAD_DIFFOBJ_RESULT DatabaseBeatmap::loadDifficultyHitObjects(P
                 return result;
             }
 
-            result.diffobjects[i].time = (i32)((double)result.diffobjects[i].time * invSpeedMultiplier);
-            result.diffobjects[i].endTime = (i32)((double)result.diffobjects[i].endTime * invSpeedMultiplier);
+            // (exact, like lazer's StartTime / clockRate; truncating to whole ms skewed every DT star rating)
+            result.diffobjects[i].time = result.diffobjects[i].time * invSpeedMultiplier;
+            result.diffobjects[i].endTime = result.diffobjects[i].endTime * invSpeedMultiplier;
 
             result.diffobjects[i].spanDuration = (double)result.diffobjects[i].spanDuration * invSpeedMultiplier;
             for(auto &scoringTime : result.diffobjects[i].scoringTimes) {
