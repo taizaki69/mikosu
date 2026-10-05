@@ -2,6 +2,64 @@
 
 Newest session first. Every claim cites its evidence (a test, a measurement or a screenshot).
 
+## 2026-10-04 evening to 2026-10-05: Session 1, continued (Phase 1 nearly done)
+
+### What changed
+- **Design:** the user picked round 2, option 2 "Slanted controls" (PLAN 19, `DESIGN.md`).
+- **CI (PR #1, merged):** `.github/workflows/ci.yml` builds Linux and Windows x64 with `tools/build.sh` and smoke-tests both (Linux OpenGL; Windows SDL_gpu and D3D11 on windows-2025), with artifacts `mikosu-linux-x64` and `mikosu-win-x64`. The first run failed on a missing `libltdl-dev` (mpg123's autoreconf); fixed.
+- **Rebrand (PR #2, merged):** identity from `AC_INIT` and `src/Branding.h` (PLAN 20). A review agent's findings were all fixed before merging:
+  - neomod's config migrations would have re-run on every launch and remapped custom keybinds. They now run only for a neomod-lineage `version.txt` (30 and up).
+  - the version shows as "0.1", not "0.10" (translations updated).
+  - every server request sends mikosu's user agent, never `osu!` (PLAN 21).
+  - Windows registrations use only mikosu's own ProgID and `mikosu://`.
+  - `cmake-win` identity; the shortcut stamp; old `neomod_*.db` copied in.
+  - **Build fixes worth sending upstream:** the include-dir `find` excluded everything when the checkout sits below a hidden directory, and the PCH went stale through ccache.
+- **UI tests:** `run.py` sends `force_oauth 1` (scripts were recorded against neomod's default server's compact login form), and the logo probe samples the placeholder wordmark.
+  - **Baseline comparison on this machine:** a build of `main` passes 56/71, the rebrand 59/71.
+  - Fails on both (environmental or flaky here, not investigated yet): `console_suggestions`, `console_window_select`, `convar_invalid_text`, `convar_lock_vs_skin`, `convar_options_roundtrip`, `convar_skin_optout`, `convar_skin_reload`, `layered_scrollviews`, `mainmenu_nowplaying`, `roomscreen_modselector_overlay`.
+  - `dropdown_drag_chain` is flaky on both (1 of 3).
+- **Data folders (PR #3, open):** per-user data folder unless portable (PLAN 22).
+- **Replay runner** (`replay_run` console command, plus `tools/runner/replay_runner.py`, which matches replays to maps by MD5) found two simulator bugs, fixed:
+  - circles and follow circles were sized for the window (≈1.6× too big headless, ≈3× at 1440p), so watched and spectated replays were judged too leniently;
+  - the last object was never judged if the frames passed its end time first.
+  - **Results on the 84 local stable replays:** exact judgement counts 0 → 63 (75%), exact max combo 0 → 68 (81%). Every replay now judges all of its map's objects.
+- **ScoreV1 parity** (PLAN 23):
+  - a held slider's tail counts before the slider's judgement;
+  - the combo bonus is rounded once, like stable.
+  - **Exact total score: 0 → 36 of 84.** Every no-spinner replay whose judgements match now scores exactly, except 7 (sim slightly high, probably combo-break placement). All 14 with spinners are off by spinner spin points.
+- **Wine smoke test:** `tools/dev/wine-smoke` (own prefix `~/.local/share/mikosu-dev/wine-smoke`, never `~/.wine`).
+  - Wine 9.0: default renderer and `-dx11` pass.
+  - `-opengl` can't run headless on Windows (no EGL); exits cleanly.
+- **Stable detection:**
+  - `~/.local/share/osu-stable` is now among the fallback folders.
+  - The first-launch import of stable's settings now finds that folder itself. Before, it ran before the fallback and never worked on Linux.
+  - It falls back to the newest `osu!.*.cfg` when the Windows user name differs.
+  - **Verified on a fresh data dir:** library, skin, volumes and scores came over; the osu! and McOsu folders were untouched (`find -newermt`).
+
+### Verified, and how
+- Linux sanity test passes on every branch tip (≈19.5 s).
+- CI is green on PRs #1 and #2.
+- Windows cross-build passes, and so does the Wine smoke test.
+- Replay numbers: `tools/runner/replay_runner.py` over `~/.local/share/osu-stable/Data/r`.
+
+### Not verified
+- **Performance against `BASELINE.md`.** A run on 2026-10-05 showed every scene about 2× slower, song select included, which nothing here touches. The user was playing a game at the time (`hl2_linux` ≈150% CPU, plus Steam and Discord), so the run is void. **Re-measure when the PC is idle**, before M1 is called done.
+
+### Incidents
+- The app quit twice mid-run. Nothing was lost: work is committed as it goes, and stray test files were cleaned up.
+- The PC was rebooted overnight cleanly (orderly `systemd-reboot`, no OOM).
+
+### Next
+1. Merge PR #3, then open PRs for `runner` (tools, simulator fixes, Wine test), `score-v1` and `detect`, in that order (each is stacked on the previous).
+2. Re-run the benchmark when idle, then hand the user the **M1 play-test**.
+3. Phase 1 leftovers:
+   - `THIRD_PARTY_NOTICES` (dependency licences, BASS's terms);
+   - the screenshot tool at 4 resolutions plus 2× UI scale;
+   - the doctest unit-test target.
+4. Workstream C: spinner spin counting; the 7 no-spinner score outliers (compare combo-break placement using the replay's life-bar graph).
+5. Workstream B: the SR/pp parity corpus against osu-tools.
+6. Workstream F: start the "Slanted controls" redesign.
+
 ## 2026-10-04: Session 1, continued (stopped at the usage limit)
 
 ### What changed

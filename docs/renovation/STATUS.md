@@ -1,47 +1,53 @@
 # mikosu status
 
-*Last updated: 2026-10-04 (first session)*
+*Last updated: 2026-10-05*
 
 ## Where things stand
 
-mikosu now exists as a project. It starts from neomod, the newest descendant of McOsu, and it builds and runs on this PC. Nothing looks different from neomod yet: this first session was about setting things up, measuring, and planning.
+mikosu now has its own name and identity. Under the hood it is still neomod, the newest descendant of McOsu. The look hasn't changed yet: the redesign you picked ("Slanted controls") starts after the first play-test.
 
 **What works today**
-- The game builds on Linux with one command, and also builds for Windows from Linux.
-- It found your osu!stable library: 7,514 difficulties, 13 skins, 172 replays. It found the Windows copy and the Linux copy in `~/.local/share/osu-stable`. It also found osu!lazer's data and McOsu.
-- None of your osu! files were changed. Everything was read only.
-- It can run invisibly in the background, play maps on autoplay, and take screenshots. That lets me check the redesign myself without bothering you.
-- I measured how fast and responsive it is today (the "baseline"). From here on, every change gets checked against those numbers, so the game never gets slower without us noticing.
-- The official osu! pp calculator runs on this PC, offline. I'll use it to check mikosu's star rating and pp.
+- The game builds on Linux and Windows with one command. GitHub also builds and tests both automatically every time something changes.
+- It calls itself mikosu everywhere: the window, the files it writes, and what it tells servers. It never pretends to be the official osu! client or neomod. It has no default online server, and the self-updater is off.
+- On first launch it finds your osu!stable copy in `~/.local/share/osu-stable` by itself. It brings over your stable skin, volume and scores, and shows your whole library in song select. Your osu! and McOsu folders were only read, never changed.
+- It keeps its own files in `~/.local/share/mikosu` (or next to the program if you add a file called `portable` there).
+- **Replay checking:** I can now play your stable replays back through mikosu's gameplay invisibly and compare the result with what stable recorded. That found and fixed two bugs in the replay player inherited from neomod:
+  - it made circles too big, so replays came out better than they really were;
+  - it sometimes skipped the last note.
+- **Results on your 84 replays:**
+  - **the judgements** (how many 300s, 100s, 50s and misses) now match stable exactly on 3 out of 4 replays (before: none);
+  - **max combo** matches on 4 out of 5;
+  - **total score** matches exactly on 36. That's every replay without a spinner whose judgements match, except 7. Spinners are next.
+- The Windows version also runs under Wine on this PC.
 
 **Problems found so far** (all on the plan)
-- neomod's star rating and pp are close to the official numbers but not exact yet. The new "reading" part of the calculation is off the most.
-- neomod imports only 54 of your 84 stable scores. It skips the ones that were never submitted online.
-- neomod wouldn't find your Linux copy of osu! by itself, or a Windows drive, or osu!lazer.
-- neomod logs in to private servers pretending to be the official osu! client. mikosu will always say it's mikosu.
+- Star rating and pp are close to the official numbers but not exact yet.
+- Spinners: mikosu counts spins a little differently from stable, so scores on maps with spinners are off by a few hundred points.
+- Some of neomod's automated menu tests fail on this PC (they fail the same way on neomod itself, so it's not something I broke).
 - Two fonts and some skin images that came with McOsu may not be free to share. They'll be replaced before any public release.
-
-**About the two freezes on 2026-10-04:** that was my fault. A build helper I set up kept starting copies of itself until your PC ran out of memory. It's fixed, and every heavy job now runs inside a box with hard limits, so it can't take your PC down again.
 
 ## Waiting on you
 
-Nothing right now.
+Nothing right now. When the first play-test build is ready, I'll ask you to try it. That's the next step after one more speed check, which I'll run when the PC isn't busy with a game.
 
 ## Done since last time
 
-- The project is public on GitHub: https://github.com/taizaki69/mikosu
-- **Design chosen:** round 2, option 2 ("Slanted controls"). It keeps osu!stable's layout, with slanted buttons and map panels, a clean modern font, flat dark panels, and an accent colour taken from each map's background. The redesign follows this.
+- **Design chosen:** "Slanted controls".
+- Automatic builds and tests on GitHub.
+- The rename to mikosu, with honest identification everywhere.
+- Your own data folder, plus the portable option.
+- Replay checking, with the replay and score fixes above.
+- Finds your Linux osu!stable copy and its settings on first launch.
 
 ## What's next
 
-1. Rename everything to mikosu in one place: name, window title, where it saves data, how it identifies itself online. Remove neomod's update server and default online server.
-2. Automatic test builds for Windows and Linux, plus a test that replays maps invisibly.
-3. In parallel:
-   - make star rating and pp match the official numbers exactly;
-   - find your libraries automatically (Windows drive, Linux copy, lazer, McOsu);
-   - start the redesign in the direction you pick.
-4. First thing for you to play: a mikosu-branded build that opens straight into your library.
+1. A speed check against the numbers measured on day one (it has to wait for an idle PC: earlier you were playing a game, which makes the measurement meaningless).
+2. **First play-test** ("mikosu opens"): you launch it, check it finds your library and that gameplay feels the same as before.
+3. Then, in parallel:
+   - spinners and the last few score differences;
+   - exact star rating and pp;
+   - start building the new look.
 
 ## Things to try
 
-Nothing to try yet. The first play-test build comes at the first milestone.
+Nothing yet. The play-test build is coming next.
