@@ -144,9 +144,11 @@ void LiveScore::addHitResult(AbstractBeatmapInterface *beatmap, HitObject * /*hi
     if(!ignoreScore) {
         const int difficultyMultiplier = beatmap->getScoreV1DifficultyMultiplier();
         this->iScoreV1 += hitValue;
-        this->iScoreV1 += ((hitValue * (u32)((f64)scoreComboMultiplier * (f64)difficultyMultiplier *
-                                             (f64)this->getScoreMultiplier())) /
-                           (u32)25);
+        // osu!stable's combo bonus: (hitValue / 25) is integer division (12, 4 or 2), and the product is only rounded
+        // down at the end (as in lazer's OsuLegacyScoreSimulator). rounding combo * difficulty * mods down first lost
+        // up to 11 points per hit whenever the mod multiplier isn't a whole number
+        this->iScoreV1 += (u64)((f64)scoreComboMultiplier *
+                                ((f64)(hitValue / 25) * (f64)difficultyMultiplier * (f64)this->getScoreMultiplier()));
     }
 
     const float totalHitPoints = this->iNum50s * (1.0f / 6.0f) + this->iNum100s * (2.0f / 6.0f) + this->iNum300s;
