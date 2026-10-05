@@ -63,7 +63,7 @@ jobs:
 
       - name: Sanity test (OpenGL on llvmpipe)
         timeout-minutes: 10
-        run: python3 tests/sanity/run.py build/dist/bin-x86_64/neomod -- -opengl
+        run: python3 tests/sanity/run.py build/dist/bin-x86_64/mikosu -- -opengl
 
       - name: Package
         run: cd build/dist && zip -q -r -y -8 "$GITHUB_WORKSPACE/mikosu-linux-x64.zip" bin-x86_64
@@ -137,8 +137,8 @@ jobs:
 
       - name: Sanity test (SDL_gpu)
         timeout-minutes: 10
-        run: python tests/sanity/run.py artifact/bin-x86_64/neomod.exe
+        run: python tests/sanity/run.py artifact/bin-x86_64/mikosu.exe
 
       - name: Sanity test (Direct3D 11)
         timeout-minutes: 10
-        run: python tests/sanity/run.py artifact/bin-x86_64/neomod.exe -- -dx11
+        run: python tests/sanity/run.py artifact/bin-x86_64/mikosu.exe -- -dx11
