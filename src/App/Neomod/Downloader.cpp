@@ -339,7 +339,7 @@ i32 resolve_beatmapset_id_for(i32 beatmap_id, i32 set_id_hint) {
     BANCHO::Api::append_auth_params(url);
 
     Mc::Net::RequestOptions options{
-        .user_agent = "osu!",
+        .user_agent = BanchoState::user_agent,
         .timeout = 5,
         .connect_timeout = 5,
     };

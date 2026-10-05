@@ -99,7 +99,7 @@ void NetworkTest::update() { m->update(); }
 void NTImpl::startGet(std::string_view url, Capture& cap, Sync::stop_token token) {
     cap = {};
     RequestOptions options{
-        .user_agent = "neomod-NetworkTest",
+        .user_agent = PACKAGE_NAME "-NetworkTest",
         .timeout = 10,
         .connect_timeout = 5,
     };
@@ -121,7 +121,7 @@ void NTImpl::runUrlEncodeTests() {
 void NTImpl::runSyncTest() {
     TEST_SECTION("synchronous GET");
     RequestOptions options{
-        .user_agent = "neomod-NetworkTest",
+        .user_agent = PACKAGE_NAME "-NetworkTest",
         .timeout = 10,
         .connect_timeout = 5,
     };

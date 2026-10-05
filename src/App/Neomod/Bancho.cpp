@@ -874,7 +874,7 @@ void BanchoState::handle_packet(PacketReader &packet) {
 
                 // Submit map
                 Mc::Net::RequestOptions options{
-                    .user_agent = "osu!",
+                    .user_agent = BanchoState::user_agent,
                     .mime_parts{{
                         .filename = fmt::format("{}.osu", md5),
                         .name = "osu_file",
