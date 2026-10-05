@@ -434,6 +434,10 @@ CONVAR(speed_override, -1.0f, CLIENT | SERVER | GAMEPLAY);
 // (the mod selector's DT/HT buttons: their callbacks set speed_override as the client, so nobody else gets to set them)
 CONVAR(mod_doubletime_dummy, false, CLIENT);
 CONVAR(mod_halftime_dummy, false, CLIENT);
+// mikosu: the DT and HT buttons' second states (click DT once for DT, twice for NC, like stable): speed plus
+// nightcore_enjoyer (the NoPitchCorrection flag), which the "Prefer Nightcore" option used to set for good
+CONVAR(mod_nightcore_dummy, false, CLIENT);
+CONVAR(mod_daycore_dummy, false, CLIENT);
 
 // Non-vanilla mods
 CONVAR(ar_override, -1.0f, CLIENT | SERVER | PROTECTED | GAMEPLAY,

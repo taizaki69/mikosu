@@ -395,28 +395,20 @@ void ModSelector::updateButtons(bool initial) {
     setGridModbtn(this->getGridButton(SDPF_POS), 1, initial && osu->getModSS(), &cv::mod_perfect, "ss",
                   _("SS or quit."), MKIMGGETR(i_modselect_pf));
 
-    {
-        const bool nce = cv::nightcore_enjoyer.getBool();
-        // clang-format off
-        // TRANSLATORS: "A E S T H E T I C" is a vaporwave aesthetic meme. This is a joke tooltip for Half Time when Nightcore enjoyer mode is on.
-        std::string_view HTTooltip     = nce ? _("A E S T H E T I C") : _("Less zoom.");
-        std::string_view HTName        = nce ? "dc"                : "ht";
-        const SkinImageGetter HTMember = nce ?
-                                         MKIMGGETR(i_modselect_dc) :
-                                         MKIMGGETR(i_modselect_ht);
-
-        // TRANSLATORS: "uguuuuuuuu" is an anime-style meme sound/expression. This is a joke tooltip for Double Time when Nightcore enjoyer mode is on.
-        std::string_view DTTooltip     = nce ? _("uguuuuuuuu")     : _("Zoooooooooom.");
-        std::string_view DTName        = nce ? "nc"             : "dt";
-        const SkinImageGetter DTMember = nce ?
-                                         MKIMGGETR(i_modselect_nc) :
-                                         MKIMGGETR(i_modselect_dt);
-        // clang-format on
-        this->modButtonHT = setGridModbtn(this->getGridButton(HT_POS), 0, initial && cv::mod_halftime_dummy.getBool(),
-                                          &cv::mod_halftime_dummy, std::string{HTName}, HTTooltip, HTMember);
-        this->modButtonDT = setGridModbtn(this->getGridButton(DT_POS), 0, initial && cv::mod_doubletime_dummy.getBool(),
-                                          &cv::mod_doubletime_dummy, std::string{DTName}, DTTooltip, DTMember);
-    }
+    // mikosu: like stable, DT once is DT and twice is NC (and HT once is HT, twice DC); the second state used to need
+    // the "Prefer Nightcore" option, which then made plain DT unreachable
+    // clang-format off
+    this->modButtonHT = setGridModbtn(this->getGridButton(HT_POS), 0, initial && cv::mod_halftime_dummy.getBool(),
+                                      &cv::mod_halftime_dummy, "ht", _("Less zoom."), MKIMGGETR(i_modselect_ht));
+    // TRANSLATORS: "A E S T H E T I C" is a vaporwave aesthetic meme. This is a joke tooltip for Daycore (Half Time with lowered pitch).
+    setGridModbtn(this->getGridButton(HT_POS), 1, initial && cv::mod_daycore_dummy.getBool(),
+                  &cv::mod_daycore_dummy, "dc", _("A E S T H E T I C"), MKIMGGETR(i_modselect_dc));
+    this->modButtonDT = setGridModbtn(this->getGridButton(DT_POS), 0, initial && cv::mod_doubletime_dummy.getBool(),
+                                      &cv::mod_doubletime_dummy, "dt", _("Zoooooooooom."), MKIMGGETR(i_modselect_dt));
+    // TRANSLATORS: "uguuuuuuuu" is an anime-style meme sound/expression. This is a joke tooltip for Nightcore (Double Time with raised pitch).
+    setGridModbtn(this->getGridButton(DT_POS), 1, initial && cv::mod_nightcore_dummy.getBool(),
+                  &cv::mod_nightcore_dummy, "nc", _("uguuuuuuuu"), MKIMGGETR(i_modselect_nc));
+    // clang-format on
 
     this->modButtonHD = setGridModbtn(this->getGridButton(HD_POS), 0, initial && osu->getModHD(), &cv::mod_hidden, "hd",
                                       _("Play with no approach circles and fading notes for a slight score advantage."),
@@ -1245,6 +1237,9 @@ void ModSelector::resetMods() {
     // speed is set after this reset)
     cv::mod_doubletime_dummy.setValue(false, false);
     cv::mod_halftime_dummy.setValue(false, false);
+    cv::mod_nightcore_dummy.setValue(false, false);
+    cv::mod_daycore_dummy.setValue(false, false);
+    cv::nightcore_enjoyer.setValue(false, false);
 
     for(auto *modButton : this->modButtons) {
         modButton->resetState();
@@ -1287,10 +1282,13 @@ std::vector<ConVar *> ModSelector::getModConVars() const {
 
 // Updates the UI to match current game state (does not change any convars)
 void ModSelector::useCurrentMods() {
-    // (the DT/HT buttons' convars just mirror the speed)
+    // (the DT/HT buttons' convars just mirror the speed, and the pitch flag picks NC/DC, their second states)
     f32 speed = cv::speed_override.getFloat();
-    cv::mod_doubletime_dummy.setValue(speed == 1.5f, false);
-    cv::mod_halftime_dummy.setValue(speed == 0.75f, false);
+    const bool pitched = cv::nightcore_enjoyer.getBool();
+    cv::mod_doubletime_dummy.setValue(speed == 1.5f && !pitched, false);
+    cv::mod_nightcore_dummy.setValue(speed == 1.5f && pitched, false);
+    cv::mod_halftime_dummy.setValue(speed == 0.75f && !pitched, false);
+    cv::mod_daycore_dummy.setValue(speed == 0.75f && pitched, false);
 
     // every mod button is on in the (last) state that has its convar on, e.g. PF instead of SD
     for(auto *modButton : this->modButtons) {
@@ -1301,6 +1299,8 @@ void ModSelector::useCurrentMods() {
             if(modButton->states[i].cvar != nullptr && modButton->states[i].cvar->getBool()) state = i;
         }
         if(state >= 0 && modButton->getState() != state) modButton->setState(state);
+        // (an off button shows its first state again, e.g. DT after NC was replaced by HT, like after clicking it off)
+        if(state < 0 && modButton->getState() != 0) modButton->setState(0);
         modButton->setOn(state >= 0, true, false);
     }
 

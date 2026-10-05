@@ -1347,8 +1347,6 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
                       _("Apply a small logarithmic multiplier to non-sliderslide hitsounds."),
                       &cv::snd_boost_hitsound_volume);
     this->addCheckbox(_("Change hitsound pitch based on accuracy"), &cv::snd_pitch_hitsounds);
-    this->addCheckbox(_("Prefer Nightcore over Double Time"), &cv::nightcore_enjoyer)
-        ->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onModChangingToggle>(this));
 
     this->addSubSection(_("Songbrowser"));
     this->addCheckbox(_("Apply speed/pitch mods while browsing"),

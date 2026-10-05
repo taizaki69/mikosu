@@ -294,10 +294,23 @@ Osu::Osu()
     cv::playfield_mirror_vertical.setCallback(SA::MakeDelegate<&Osu::updateModsForConVarTemplate>(this));
     cv::playfield_rotation.setCallback(SA::MakeDelegate<&Osu::onPlayfieldChange>(this));
     cv::speed_override.setCallback(SA::MakeDelegate<&Osu::onSpeedChange>(this));
-    cv::mod_doubletime_dummy.setCallback(
-        [] { cv::speed_override.setValue(cv::mod_doubletime_dummy.getBool() ? "1.5" : "-1.0"); });
-    cv::mod_halftime_dummy.setCallback(
-        [] { cv::speed_override.setValue(cv::mod_halftime_dummy.getBool() ? "0.75" : "-1.0"); });
+    // (the pitch flag goes first: the speed change makes the mod selector re-read DT/NC/HT/DC from both)
+    cv::mod_doubletime_dummy.setCallback([] {
+        if(cv::mod_doubletime_dummy.getBool()) cv::nightcore_enjoyer.setValue(false);
+        cv::speed_override.setValue(cv::mod_doubletime_dummy.getBool() ? "1.5" : "-1.0");
+    });
+    cv::mod_nightcore_dummy.setCallback([] {
+        cv::nightcore_enjoyer.setValue(cv::mod_nightcore_dummy.getBool());
+        cv::speed_override.setValue(cv::mod_nightcore_dummy.getBool() ? "1.5" : "-1.0");
+    });
+    cv::mod_halftime_dummy.setCallback([] {
+        if(cv::mod_halftime_dummy.getBool()) cv::nightcore_enjoyer.setValue(false);
+        cv::speed_override.setValue(cv::mod_halftime_dummy.getBool() ? "0.75" : "-1.0");
+    });
+    cv::mod_daycore_dummy.setCallback([] {
+        cv::nightcore_enjoyer.setValue(cv::mod_daycore_dummy.getBool());
+        cv::speed_override.setValue(cv::mod_daycore_dummy.getBool() ? "0.75" : "-1.0");
+    });
     cv::draw_songbrowser_thumbnails.setCallback(SA::MakeDelegate<&Osu::onThumbnailsToggle>(this));
     cv::bleedingedge.setCallback(SA::MakeDelegate<&UpdateHandler::onBleedingEdgeChanged>(this->updateHandler.get()));
 
@@ -515,6 +528,8 @@ Osu::~Osu() {
         cv::speed_override.removeAllCallbacks();
         cv::mod_doubletime_dummy.removeAllCallbacks();
         cv::mod_halftime_dummy.removeAllCallbacks();
+        cv::mod_nightcore_dummy.removeAllCallbacks();
+        cv::mod_daycore_dummy.removeAllCallbacks();
         cv::draw_songbrowser_thumbnails.removeAllCallbacks();
         cv::bleedingedge.removeAllCallbacks();
         cv::mod_fullalternate.removeAllCallbacks();

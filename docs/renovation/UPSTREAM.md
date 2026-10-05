@@ -45,6 +45,7 @@
 | Precompiled header compiled with `CCACHE_DISABLE=1` | `Makefile.am` | ccache returned a stale `.gch` after a `config.h` define changed (pch_defines sloppiness). **Worth offering upstream** |
 | Linux: SDL's video init bypasses the X input method (`XMODIFIERS=@im=none`, restored after) unless `use_ime` (now off by default on Linux) or `-ime`; an Options checkbox for it | `src/Platform/main.cpp`, `ConVarDefs.h`, `OptionsOverlay.cpp`, translations | IBus's XIM bridge swallowed menu key presses (0 of 30 arrived on a test display; all 30 with the bypass). **Worth offering upstream** |
 | SDL patch: X11 keycode-0 key events (an input method's composed character) are handled even with XInput2 keyboards | `build-aux/misc/SDL3-x11-xinput2-ime-commit.patch`, `Makefile.am` (SDL now rebuilds when its patches change) | dead keys (´ + e → é) typed nothing. **Worth offering to SDL** |
+| DT/HT mod buttons have NC/DC as second states (new `mod_nightcore_dummy`/`mod_daycore_dummy`); "Prefer Nightcore" option removed | `ModSelector.cpp`, `Osu.cpp`, `Replay.cpp`, `OsuConVarDefs.h`, `OptionsOverlay.cpp`, translations | user request (PLAN 25), like stable |
 
 ## Review log
 
