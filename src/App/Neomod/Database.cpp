@@ -166,7 +166,7 @@ Database::DatabaseType Database::getDBType(std::string_view db_path) {
         // mcosu/neomod collections
         return MCNEOMOD_COLLECTIONS;
     }
-    if(db_name == PACKAGE_NAME "_scores.db"sv || db_name == "neosu_scores.db"sv) {
+    if(db_name == PACKAGE_NAME "_scores.db"sv || db_name == "neomod_scores.db"sv || db_name == "neosu_scores.db"sv) {
         // neomod!
         return NEOMOD_SCORES;
     }
@@ -2239,7 +2239,7 @@ void Database::loadOldMcNeomodScores(std::string_view dbPath) {
                 sc.numHitObjects = (i32)dbr.read<u32>();
                 sc.numCircles = (i32)dbr.read<u32>();
                 sc.bancho_score_id = dbr.read<u32>();
-                sc.client = PACKAGE_NAME "-win64-release-35.10";  // we don't know the actual version
+                sc.client = "neosu-win64-release-35.10";  // imported from an old neosu database; we don't know the actual version
                 dbr.read_string(sc.server);
 
                 std::string experimentalModsConVars = dbr.read_string();

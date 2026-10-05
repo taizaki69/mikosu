@@ -13,7 +13,7 @@ Ground rule 4: measure before changing anything. These numbers are the bar every
   - 2560×1440, which is the user's monitor resolution.
   - Frame rate uncapped (the limiter is off in headless mode); dummy audio.
   - Runs under `tools/dev/guarded --bench`: memory caps, normal priority.
-- **Tool:** `python3 tools/bench/bench.py --game build/dist/bin-x86_64/neomod --renderer gl|sdlgpu --runs 3 --library ~/.local/share/osu-stable`.
+- **Tool:** `python3 tools/bench/bench.py --game build/dist/bin-x86_64/mikosu --renderer gl|sdlgpu --runs 3 --library ~/.local/share/osu-stable`.
   - Every number is the median over 3 runs.
   - Summaries: `tools/bench/report.py <json>`.
 - **Scenes:**

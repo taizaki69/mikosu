@@ -21,8 +21,9 @@ DiscordActivity create_base_activity() { return DiscordActivity{}; }
 #include "ConVar.h"
 #include "Engine.h"
 #include "Logging.h"
+#include "Branding.h"
 
-#define DISCORD_CLIENT_ID "1474141308183380181"
+#define DISCORD_CLIENT_ID BRAND_DISCORD_CLIENT_ID
 
 namespace cv {
 static ConVar debug_discord_rpc("debug_discord_rpc", false, CLIENT, "print verbose discord rpc activity details");
@@ -54,6 +55,8 @@ static void on_errored(int errorCode, const char* message) {
 
 void init() {
     if(initialized) return;
+    // presence must run under mikosu's own Discord application (see Branding.h), never another client's
+    if constexpr(sizeof(DISCORD_CLIENT_ID) <= 1) return;
 
     // TODOs:
     // - set up more event handlers

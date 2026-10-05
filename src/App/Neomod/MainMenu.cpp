@@ -53,6 +53,7 @@
 #include "crypto.h"
 #include "MainMenuTips.h"
 #include "MainMenuNowPlaying.h"
+#include "Branding.h"
 
 #include <algorithm>
 #include <cmath>
@@ -385,12 +386,13 @@ MainMenu::MainMenu() : UIScreen() {
     this->onlineBeatmapsButton->setClickCallback(SA::MakeDelegate<&MainMenu::onOnlineBeatmapsButtonPressed>(this));
     this->addBaseUIElement(this->onlineBeatmapsButton);
 
-    this->discordButton = new UIButtonWithIcon(NEOMOD_DOMAIN "/discord", Icons::DISCORD);
-    this->discordButton->setClickCallback([]() { env->openURLInDefaultBrowser("https://" NEOMOD_DOMAIN "/discord"); });
+    // the project page (mikosu has no Discord server or social accounts yet; these buttons used to point at neomod's)
+    this->discordButton = new UIButtonWithIcon(PACKAGE_NAME " on GitHub", Icons::GLOBE);
+    this->discordButton->setClickCallback([]() { env->openURLInDefaultBrowser(BRAND_REPO_URL); });
     this->addBaseUIElement(this->discordButton);
 
-    this->twitterButton = new UIButtonWithIcon("@PlayNeomod", Icons::TWITTER);
-    this->twitterButton->setClickCallback([]() { env->openURLInDefaultBrowser("https://x.com/PlayNeomod"); });
+    this->twitterButton = new UIButtonWithIcon("Report a problem", Icons::WRENCH);
+    this->twitterButton->setClickCallback([]() { env->openURLInDefaultBrowser(BRAND_ISSUES_URL); });
     this->addBaseUIElement(this->twitterButton);
     cv::adblock.setCallback(SA::MakeDelegate<&MainMenu::onAdblockChangeCallback>(this));
 
@@ -1760,7 +1762,7 @@ void MainMenu::onUpdatePressed() {
     if(status == STATUS_DOWNLOAD_COMPLETE)
         updateHandler->installUpdate();
     else if(status == STATUS_MANUAL_UPDATE)
-        env->openURLInDefaultBrowser("https://" NEOMOD_DOMAIN);
+        env->openURLInDefaultBrowser(BRAND_RELEASES_URL);
     else if(status == STATUS_ERROR)
         updateHandler->checkForUpdates(true);
 }

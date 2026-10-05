@@ -183,7 +183,7 @@ void submit_score(FinishedScore score) {
         auto mods_data_b64 = crypto::conv::encode64(packet.data);
 
         options.mime_parts.push_back({
-            .name = PACKAGE_NAME "-mods",
+            .name = "neomod-mods",  // form field name the server API expects
             .data = {mods_data_b64.begin(), mods_data_b64.end()},
         });
     }

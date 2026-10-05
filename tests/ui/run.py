@@ -7,7 +7,7 @@ usage:
   run.py --record [...]           (re)record golden traces instead of checking
   run.py --bin /path/to/neomod    use a specific binary
 
-the binary is autodiscovered as the most recently built <repo>/*/dist/bin-*/neomod;
+the binary is autodiscovered as the most recently built <repo>/*/dist/bin-*/mikosu;
 --bin or the NEOMOD_BIN env var override it. --record or RECORD_GOLDEN=1 records goldens.
 
 read-only fixtures (uitest_osu_folder*, uitest_import) live next to the binary, since the scripts
@@ -48,7 +48,7 @@ def find_binary(explicit):
             sys.exit(f"error: binary not found or not executable: {p}")
         return p
     candidates = sorted(
-        (p for p in REPO_ROOT.glob("*/dist/bin-*/neomod") if os.access(p, os.X_OK)),
+        (p for p in REPO_ROOT.glob("*/dist/bin-*/mikosu") if os.access(p, os.X_OK)),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )

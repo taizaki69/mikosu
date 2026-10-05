@@ -767,7 +767,7 @@ bool Skin::parseSkinINI(std::string_view filepath, std::vector<std::pair<ConVar 
             curBlock = FONTS;
             continue;
         } else if(curLine.find("[" PACKAGE_NAME "]") != std::string::npos ||
-                  curLine.find("[neosu]") != std::string::npos) {
+                  curLine.find("[neomod]") != std::string::npos || curLine.find("[neosu]") != std::string::npos) {
             curBlock = NEOMOD;
             continue;
         }

@@ -31,6 +31,7 @@
 
 #include "environment_private.h"
 #include "AppDescriptor.h"
+#include "Branding.h"
 
 #include <locale>
 #include <clocale>
@@ -246,9 +247,9 @@ MAIN_FUNC /* int argc, char *argv[] */
     // set up some common app metadata (SDL says these should be called as early as possible)
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, PACKAGE_NAME);
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, PACKAGE_VERSION_UNCACHED);
-    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, "net.neomodnet." PACKAGE_NAME);
-    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, "kiwec/spectator/McKay");
-    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, "MIT/GPL3");  // neomod is gpl3, mcengine is mit
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, BRAND_APP_ID);
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, BRAND_CREATOR);
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, "GPL-3.0");  // mikosu and neomod are GPL-3.0, McEngine is MIT
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, PACKAGE_URL);
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
 

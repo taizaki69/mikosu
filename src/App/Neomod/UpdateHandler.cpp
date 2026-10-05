@@ -17,6 +17,7 @@
 #include "Environment.h"
 #include "Paths.h"
 #include "MakeDelegateWrapper.h"
+#include "Branding.h"
 
 #ifndef _WIN32
 #include <sys/stat.h>
@@ -49,6 +50,12 @@ void UpdateHandler::onBleedingEdgeChanged(float oldVal, float newVal) {
 }
 
 void UpdateHandler::checkForUpdates(bool force_update) {
+    // mikosu has no update service yet. neomod's (below) would download *neomod* builds over this installation,
+    // so it stays unreachable until the GitHub Releases check (workstream H) replaces it.
+    (void)force_update;
+    debugLog("UpdateHandler: no update service yet; new versions are published at " BRAND_RELEASES_URL);
+    return;
+
     if(this->getStatus() != STATUS_IDLE && this->getStatus() != STATUS_ERROR) {
         debugLog("We're already updating!");
         return;

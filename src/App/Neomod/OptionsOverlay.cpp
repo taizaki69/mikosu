@@ -4491,7 +4491,7 @@ bool OptionsOverlayImpl::should_use_oauth_login() const {
 
     // Addresses for which we should use OAuth login instead of username:password login
     static constexpr const auto oauth_servers = std::array{
-        "neosu.local"sv, "neosu.net"sv, PACKAGE_NAME ".localhost"sv, PACKAGE_NAME ".local"sv, PACKAGE_NAME ".net"sv,
+        "neosu.local"sv, "neosu.net"sv, "neomod.localhost"sv, "neomod.local"sv, "neomod.net"sv,
     };
 
     const std::string server_endpoint{this->serverTextbox->getText()};
