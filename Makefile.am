@@ -1752,7 +1752,8 @@ endif
 
 # --- wine audio backend shortcuts (windows cross-compile only) ---
 if AUDIO_SHORTCUTS
-stamp-install-wine-shortcuts: | install-dirs
+# the shortcuts name the program and the backend list, which come from the Makefile: remake them when it changes
+stamp-install-wine-shortcuts: Makefile | install-dirs
 	@cd "$(DESTDIR)$(bindir)" && \
 	for backend in $(AUDBACKENDLIST); do \
 		echo 'Set WshShell = CreateObject("WScript.Shell")' > temp.vbs && \

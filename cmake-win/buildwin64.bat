@@ -152,5 +152,5 @@ if %ERRORLEVEL% neq 0 (
 
 echo.
 echo Build completed successfully!
-echo Executable: %INSTALL_PREFIX%\bin\neomod.exe
+echo Executable: %INSTALL_PREFIX%\bin\mikosu.exe
 echo Dependencies cached in: depcache (reused across builds)
