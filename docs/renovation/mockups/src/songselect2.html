@@ -65,7 +65,7 @@ const items = [
   { k: "set", t: "Moss & Mirrors", a: "The Quiet Engine // Oak", art: "moss" },
 ];
 const carousel = document.getElementById("carousel");
-const centre = 436;           // relative to the carousel's top (540 on screen)
+const centre = 390;           // relative to the carousel's top (540 on screen)
 const heights = items.map((it) => (it.k === "diff" ? 74 : 92));
 const selIndex = items.findIndex((it) => it.sel);
 // lay out top-down so the selected panel's centre lands on `centre`
@@ -80,7 +80,7 @@ items.forEach((it, i) => {
   el.className = `panel ${it.k}${it.sel ? " sel" : ""}`;
   el.style.top = yPos + "px";
   el.style.right = (-60 - drift) + "px";
-  const sr = it.sr ? `<span class="sr${it.sel ? "" : " dim"}">&#9733; ${it.sr.toFixed(2)}</span>` : "";
+  const sr = it.sr ? `<span class="sr${it.sel ? "" : " muted"}">&#9733; ${it.sr.toFixed(2)}</span>` : "";
   const rk = it.rank ? `<span class="rk g-${it.rank.toLowerCase()}">${it.rank}</span>` : "";
   el.innerHTML = `<div class="art" style="background-image:url(art/thumb-${it.art || "rose"}.png)"></div>
     <div class="txt"><div class="t">${it.t || ""}</div><div class="a">${it.a || ""}</div>
