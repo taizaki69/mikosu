@@ -2107,16 +2107,21 @@ void Slider::onHit(LiveHitResult result, i32 delta, bool isEndCircle, f32 target
             // XXX: remove this
             const bool isLazer2020Drain = false;
 
-            addHitResult(result, delta, m_endOfCombo, getRawPosAt(getEndTime()), -1.0f, 0.0f, true, !m_heldTillEnd,
-                         isLazer2020Drain);  // end of combo, ignore in hiterrorbar, depending on heldTillEnd increase
-                                             // combo or not, increase score, increase health depending on drain type
-
-            // add bonus score + extra health manually
+            // the tail comes first, like in osu!stable: its +30 and its combo step, so that the slider's own judgement
+            // below gets the combo bonus for it (stable's ScoreV1 multiplies a slider's 300/100/50 by the combo
+            // including its tail; judging the slider first was one combo step short on every held slider)
             if(m_heldTillEnd) {
-                m_pi->addHitResult(this, LiveHitResult::HIT_SLIDER30, 0, false, true, true, true, true,
-                                   false);  // only increase health
+                m_pi->addHitResult(this, LiveHitResult::HIT_SLIDER30, 0, false, true, true, false, true,
+                                   false);  // not end of combo, ignore in hiterrorbar, ignore for accuracy, increase
+                                            // combo, don't count towards score, increase health
                 m_pi->addScorePoints(30);
-            } else {
+            }
+
+            addHitResult(result, delta, m_endOfCombo, getRawPosAt(getEndTime()), -1.0f, 0.0f, true, true,
+                         isLazer2020Drain);  // end of combo, ignore in hiterrorbar, no combo step (the tail took it, if
+                                             // held), increase score, increase health depending on drain type
+
+            if(!m_heldTillEnd) {
                 // special case: missing the endcircle drains HIT_MISS_SLIDERBREAK health (and not HIT_MISS health)
                 // NOTE: yes, this will drain twice for the end of a slider (once for the judgement of the whole slider
                 // above, and once for the endcircle here)
