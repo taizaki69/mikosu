@@ -1,0 +1,14 @@
+--- a/src/video/x11/SDL_x11events.c
++++ b/src/video/x11/SDL_x11events.c
+@@ -1886,8 +1886,10 @@
+     case KeyRelease:
+     {
+         SDL_KeyboardID keyboardID = SDL_GLOBAL_KEYBOARD_ID;
+-        if (data->xinput2_keyboard_enabled) {
++        if (data->xinput2_keyboard_enabled && xevent->xkey.keycode != 0) {
+             // This input is being handled by XInput2.
++            // (but not a keycode 0 event: that's an input method putting back a composed character, e.g. a dead key
++            // followed by a letter in Xlib's built-in input method, and it never comes through XInput2)
+             break;
+         } else if (xevent->xkey.serial == videodata->xinput_last_key_serial) {
+             // Use the device ID from the XInput2 event if the serials match.
