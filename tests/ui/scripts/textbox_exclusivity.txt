@@ -32,7 +32,7 @@ mouse_up
 @wait 3
 sendtext abc
 @wait 3
-ui_assert text options_server_box neomod.netabc
+ui_assert text options_server_box abc
 ui_prompt pick_a_name
 @wait 3
 ui_assert visible promptoverlay 1
@@ -45,7 +45,7 @@ mouse_up
 sendtext xyz
 @wait 3
 ui_assert text prompt_input xyz
-ui_assert text options_server_box neomod.netabc
+ui_assert text options_server_box abc
 mouse_to 705 427
 @wait 2
 mouse_down
