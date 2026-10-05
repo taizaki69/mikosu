@@ -29,23 +29,22 @@ mikosu now has its own name and identity. Under the hood it is still neomod, the
 
 ## Waiting on you
 
-**The first play-test ("mikosu opens"), whenever you have 15 minutes.** The command is in my last chat message. It opens mikosu in a normal window. Please check:
-1. It starts and shows the mikosu main menu.
-2. Song select shows your osu!stable library, in the skin you use in stable, with your local scores on the maps you've played.
-3. Play a few maps you know well. Does it feel the same as McOsu or stable (timing, cursor, sliders)? Anything that feels off is worth telling me, even if it's vague.
-4. If you know them, try a few extras: FPoSu, the AR/OD overrides in mod select, scrubbing through a map, the console.
+**A quick re-test of the four things you reported**, whenever you play next (same command as before; rebuild not needed, it's already built):
+1. Keyboard in the menus: arrows, Enter, Escape, F1 and typing in song select should all respond every time now.
+2. Alt-tab out of fullscreen and back: it should come back fullscreen, at your custom resolution, every time.
+3. Options → Graphics → Select Resolution → "Custom...": type any resolution, like 1600x900.
+4. Options → Graphics → FPS Limiter: now goes up to 4000.
 
-mikosu keeps its own files in `~/.local/share/mikosu`. It only reads your osu! folders and never changes them.
+If something still misbehaves, tell me what you did and what happened.
 
 ## Done since last time
 
-- **Design chosen:** "Slanted controls".
-- Automatic builds and tests on GitHub.
-- The rename to mikosu, with honest identification everywhere.
-- Your own data folder, plus the portable option.
-- Replay checking, with the replay and score fixes above.
-- Finds your Linux osu!stable copy, its settings and all of your scores on first launch.
-- A screenshot tool that shows me every screen at your monitor's size and others, for the redesign.
+- **First play-test:** you found gameplay the same as neomod.
+- **Fixed from your report:**
+  - Menu keys were going missing because of the Linux input-method system (IBus). mikosu now skips it unless you turn it on (Options → Input → Keyboard; only needed for typing Japanese, Chinese and similar). Accented letters (´ + e = é) now work too.
+  - Alt-tab out of fullscreen used to get stuck or lose your resolution. It now just switches windows and comes back as it was.
+  - A "Custom..." resolution option in-game, no file editing.
+  - FPS limiters up to 4000.
 
 ## What's next
 
