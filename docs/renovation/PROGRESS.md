@@ -56,7 +56,7 @@ Newest session first. Every claim cites its evidence (a test, a measurement or a
 
 ### Verified, and how
 
-- **Linux build:** `tools/build.sh linux` passes; the binary is `build/dist/bin-x86_64/neomod`.
+- **Linux build:** `tools/build.sh linux` passes; the binary was `build/dist/bin-x86_64/neomod` (renamed to `mikosu` in Phase 1).
 - **Sanity test:** `tests/sanity/run.py` passes with `-opengl` (19.4 s) and with the default SDL_gpu (20.0 s).
 - **Headless rendering at 2560×1440** on the real GPU (NVIDIA EGL), after the SDL patch and `-w/-h`. The screenshots show the full gameplay HUD and the user's library in song select.
 - **The user's data was found and only read:**

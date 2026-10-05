@@ -10,7 +10,7 @@ scenarios:
   startup     launch -> first frame -> ready for input, with a warm data dir
 
 usage:
-  bench.py --game build/dist/bin-x86_64/neomod [--library ~/.local/share/osu-stable] [--renderer gl|sdlgpu]
+  bench.py --game build/dist/bin-x86_64/mikosu [--library ~/.local/share/osu-stable] [--renderer gl|sdlgpu]
            [--res 2560x1440] [--runs 3] [--out results.json] [scenario ...]
 
 The user's osu! folder is only ever read (the game keeps its own databases in the bench data dir).

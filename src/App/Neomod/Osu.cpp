@@ -77,6 +77,7 @@
 #include "Logging.h"
 #include "Graphics.h"
 #include "i18n.h"
+#include "Branding.h"
 
 #include "score.h"
 #include "NeomodEnvInterop.h"
@@ -218,7 +219,7 @@ Osu::Osu()
 
     // load main menu icon before skin
     resourceManager->requestNextLoadAsync();
-    resourceManager->loadImage(PACKAGE_NAME ".png", "NEOMOD_LOGO", true /* mipmapped */);
+    resourceManager->loadImage(BRAND_LOGO_IMAGE, "NEOMOD_LOGO", true /* mipmapped */);
 
     // exec the main config file (this must be right here!)
     Console::execConfigFile("underride");  // same as override, but for defaults
@@ -282,9 +283,9 @@ Osu::Osu()
         BanchoState::neomod_version = fmt::format("release-{:.2f}-" OS_NAME, cv::version.getFloat());
     }
 
-    BanchoState::user_agent = "Mozilla/5.0 (compatible; " PACKAGE_NAME "/";
+    BanchoState::user_agent = BRAND_USER_AGENT_PREFIX;
     BanchoState::user_agent.append(BanchoState::neomod_version);
-    BanchoState::user_agent.append("; +https://" NEOMOD_DOMAIN "/)");
+    BanchoState::user_agent.append(BRAND_USER_AGENT_SUFFIX);
 
     // Convar callbacks that should be set after loading the config
     cv::mod_mafham.setCallback(SA::MakeDelegate<&Osu::rebuildRenderTargets>(this));

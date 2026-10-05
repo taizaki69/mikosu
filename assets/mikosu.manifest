@@ -2,11 +2,11 @@
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <assemblyIdentity
     type="win32"
-    name="neomod"
-    version="43.14.0.0"
+    name="mikosu"
+    version="0.1.0.0"
     processorArchitecture="*"/>
 
-  <description>neomod</description>
+  <description>mikosu</description>
 
   <!-- execution level -->
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">

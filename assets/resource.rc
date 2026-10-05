@@ -5,8 +5,8 @@
 
 // version information
 1 VERSIONINFO
-FILEVERSION 43,14,0,0
-PRODUCTVERSION 43,14,0,0
+FILEVERSION 0,1,0,0
+PRODUCTVERSION 0,1,0,0
 FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
 #ifdef _DEBUG
 FILEFLAGS VS_FF_DEBUG
@@ -21,14 +21,14 @@ BEGIN
     BEGIN
         BLOCK "040904B0"  // US English, Unicode
         BEGIN
-            VALUE "CompanyName", "neomod"
-            VALUE "FileDescription", "neomod"
-            VALUE "FileVersion", "43.14.0.0"
-            VALUE "InternalName", "neomod"
-            VALUE "LegalCopyright", "Copyright (C) 2025-2026"
-            VALUE "OriginalFilename", "neomod.exe"
-            VALUE "ProductName", "neomod"
-            VALUE "ProductVersion", "43.14"
+            VALUE "CompanyName", "mikosu"
+            VALUE "FileDescription", "mikosu (based on neomod and McOsu)"
+            VALUE "FileVersion", "0.1.0.0"
+            VALUE "InternalName", "mikosu"
+            VALUE "LegalCopyright", "GPL-3.0; mikosu contributors, neomod contributors, McKay"
+            VALUE "OriginalFilename", "mikosu.exe"
+            VALUE "ProductName", "mikosu"
+            VALUE "ProductVersion", "0.1"
         END
     END
     BLOCK "VarFileInfo"
@@ -38,4 +38,4 @@ BEGIN
 END
 
 // application manifest
-1 24 "neomod.manifest"
+1 24 "mikosu.manifest"

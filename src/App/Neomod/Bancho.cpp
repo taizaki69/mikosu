@@ -853,7 +853,7 @@ void BanchoState::handle_packet(PacketReader &packet) {
 
             // craft submission url now, file read may complete after auth params changed
             std::string url =
-                fmt::format("osu.{}/web/" PACKAGE_NAME "-submit-map.php?hash={}", BanchoState::endpoint, md5);
+                fmt::format("osu.{}/web/neomod-submit-map.php?hash={}", BanchoState::endpoint, md5);  // server API name
             BANCHO::Api::append_auth_params(url);
 
             std::string file_path{map->getFilePath()};
@@ -918,8 +918,8 @@ std::string BanchoState::build_login_packet() {
         req.append("\n");
     }
 
-    // OSU_VERSION is something like "b20200201.2"
-    req.append(OSU_VERSION "|");
+    // honest client identification (see BANCHO_CLIENT_VERSION): "mikosu-<version>", not an osu! build string
+    req.append(BANCHO_CLIENT_VERSION "|");
 
     // UTC offset
     const time_t now = time(nullptr);
@@ -990,7 +990,7 @@ void BanchoState::update_channel(const std::string &name, const std::string &top
                 .author_name = {},
                 .text = fmt::format("{:s}: {:s}", name, topic),
             };
-            ui->getChat()->addMessage(BanchoState::is_oauth ? "#" PACKAGE_NAME : "#osu", msg, false);
+            ui->getChat()->addMessage(BanchoState::is_oauth ? "#neomod" : "#osu", msg, false);  // server channel name
         }
     } else {
         chan = it->second;

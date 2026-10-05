@@ -69,7 +69,7 @@ cond_sources "if BUILD_TESTS"  "TEST_SOURCES"      src/App/Tests
 
 # unconditional sources + conditional variable references
 {
-    printf '\nneomod_SOURCES = \\\n'
+    printf '\nmikosu_SOURCES = \\\n'
 
     find_sources src libraries \
         -not -path 'src/Engine/Renderer/DirectX11/*' \
@@ -118,7 +118,7 @@ echo "Running autotools..."
 autoreconf -iv
 
 echo "
-Bootstrap complete. You can now build neomod either:
+Bootstrap complete. You can now build mikosu either:
 
 For development (recommended, out-of-tree build):
   mkdir build

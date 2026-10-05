@@ -2,7 +2,7 @@
 """Captures the game's current main menu and song select headless, with a small generated library that uses the
 mockups' original artwork (no user content), for side-by-side comparison with the design mockups.
 
-usage: capture_before.py --game build/dist/bin-x86_64/neomod --out docs/renovation/screens/before [--res 1920x1080]
+usage: capture_before.py --game build/dist/bin-x86_64/mikosu --out docs/renovation/screens/before [--res 1920x1080]
 """
 
 import argparse

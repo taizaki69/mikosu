@@ -21,7 +21,7 @@ else
   SEDCMD=("sed" "-Ei" "")
 fi
 
-"${SEDCMD[@]}" "s/version=\"[0-9]+\.[0-9]+\.0\.0\"/version=\"$VERSION.0.0\"/" assets/neomod.manifest
+"${SEDCMD[@]}" "s/version=\"[0-9]+\.[0-9]+\.0\.0\"/version=\"$VERSION.0.0\"/" assets/mikosu.manifest
 
 "${SEDCMD[@]}" "s/[0-9]+,[0-9]+,0,0/$VERSION_RC,0,0/g" assets/resource.rc
 "${SEDCMD[@]}" "s/(\"FileVersion\", \")[0-9]+\.[0-9]+\.0\.0/\1$VERSION.0.0/" assets/resource.rc

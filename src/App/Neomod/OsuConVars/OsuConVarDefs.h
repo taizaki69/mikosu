@@ -536,7 +536,7 @@ CONVAR(skip_time, 5000.0f, CLIENT | SERVER | PROTECTED | GAMEPLAY,
 CONVAR(avoid_flashes, false, CLIENT, "disable flashing elements (like FL dimming on sliders)");
 
 // Auto-updater
-CONVAR(auto_update, true, CLIENT);
+CONVAR(auto_update, false, CLIENT);  // no mikosu update service yet (see UpdateHandler)
 CONVAR(bleedingedge, false, CLIENT);
 CONVAR(is_bleedingedge, false, CLIENT | HIDDEN,
        "used by the updater to tell if it should nag the user to 'update' to the correct release stream");
@@ -597,7 +597,7 @@ CONVAR(mp_autologin, false, CLIENT);
 CONVAR(mp_oauth_token, ""sv, CLIENT | HIDDEN);
 CONVAR(mp_password, ""sv, CLIENT | HIDDEN | NOSAVE);
 CONVAR(mp_password_md5, ""sv, CLIENT | HIDDEN);
-CONVAR(mp_server, NEOMOD_DOMAIN ""sv, CLIENT);
+CONVAR(mp_server, ""sv, CLIENT);  // mikosu ships with no default server
 CONVAR(name, "Guest"sv, CLIENT);
 CONVAR(prefer_websockets, true, CLIENT, "prefer websocket connections over http polling");
 CONVAR(net_transfer_timeout, 300, CLIENT | SERVER, "default upload/download timeout (in seconds)");
@@ -824,7 +824,7 @@ CONVAR(notelock_stable_tolerance2b, 3, CLIENT | SERVER | PROTECTED | GAMEPLAY,
        "time tolerance in milliseconds to allow hitting simultaneous objects close "
        "together (e.g. circle at end of slider)");
 CONVAR(notelock_type, 2, CLIENT | SERVER | PROTECTED | GAMEPLAY,
-       "which notelock algorithm to use (0 = None, 1 = " PACKAGE_NAME ", 2 = osu!stable, 3 = osu!lazer 2020)");
+       "which notelock algorithm to use (0 = None, 1 = McOsu, 2 = osu!stable, 3 = osu!lazer 2020)");
 CONVAR(notification_duration, 1.25f, CLIENT | SKINS | SERVER);
 CONVAR(notify_friend_status_change, true, CLIENT, "notify when friends change status");
 CONVAR(number_max, 0, CLIENT | SKINS | SERVER,

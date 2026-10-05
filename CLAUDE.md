@@ -70,8 +70,8 @@ sudo apt install g++-14 git cmake ninja-build autoconf automake libtool libtool-
 **Build commands:**
 
 ```
-tools/build.sh linux            # release build -> build/dist/bin-x86_64/neomod
-tools/build.sh windows          # cross-build with llvm-mingw (downloaded and verified on first use) -> build-win64/dist/bin-x86_64/neomod.exe
+tools/build.sh linux            # release build -> build/dist/bin-x86_64/mikosu
+tools/build.sh windows          # cross-build with llvm-mingw (downloaded and verified on first use) -> build-win64/dist/bin-x86_64/mikosu.exe
 tools/build.sh linux --dev      # with in-binary tests (-testapp), in build-dev/
 ```
 
@@ -85,10 +85,10 @@ tools/build.sh linux --dev      # with in-binary tests (-testapp), in build-dev/
 ## Run and test
 
 ```
-build/dist/bin-x86_64/neomod                                  # normal run (writes its data next to the binary)
-build/dist/bin-x86_64/neomod -datadir /tmp/x -multi          # throwaway data dir, alongside a running instance
-python3 tests/sanity/run.py build/dist/bin-x86_64/neomod -- -opengl   # headless smoke test (also without -opengl)
-python3 tools/bench/bench.py --game build/dist/bin-x86_64/neomod --renderer gl --library ~/.local/share/osu-stable --out x.json
+build/dist/bin-x86_64/mikosu                                  # normal run (writes its data next to the binary)
+build/dist/bin-x86_64/mikosu -datadir /tmp/x -multi          # throwaway data dir, alongside a running instance
+python3 tests/sanity/run.py build/dist/bin-x86_64/mikosu -- -opengl   # headless smoke test (also without -opengl)
+python3 tools/bench/bench.py --game build/dist/bin-x86_64/mikosu --renderer gl --library ~/.local/share/osu-stable --out x.json
 ref/osu-tools/PerformanceCalculator/bin/Release/net10.0/PerformanceCalculator difficulty <map.osu> -j   # oracle, offline
 ```
 
