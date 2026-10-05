@@ -1414,7 +1414,9 @@ endif # BUILD_PCH
 $(mikosu_OBJECTS): $(BUILT_SOURCES) $(PCH_OUTPUT) | $(EMBED_OUTPUT) $(TRANSLATIONS_HEADER)
 
 # add all paths with sources as an include ("-I") flag
-NEOMOD_INCLUDE_FLAGS := $(shell find $(srcdir)/src -not -path '*/.*' -type d -print | $(SED) 's|^|-I|' | tr '\n' ' ')
+# every directory under src/ except hidden ones. matched relative to src/: matching the full path dropped them all when
+# the checkout itself sits below a hidden directory (~/.local/src/..., a .claude/worktrees/... worktree)
+NEOMOD_INCLUDE_FLAGS := $(shell cd $(srcdir)/src && find . -not -path '*/.*' -type d -print | $(SED) 's|^\.|-I$(srcdir)/src|' | tr '\n' ' ')
 
 mikosu_CPPFLAGS := $(NEOMOD_CPPFLAGS)
 
