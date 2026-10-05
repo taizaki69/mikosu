@@ -1235,6 +1235,18 @@ msgid "Layout"
 msgstr ""
 
 #: src/App/Neomod/OptionsOverlay.cpp
+msgid "Custom..."
+msgstr ""
+
+#: src/App/Neomod/OptionsOverlay.cpp
+msgid "Resolution, width x height (for example 1600x900):"
+msgstr ""
+
+#: src/App/Neomod/OptionsOverlay.cpp
+msgid "\"{}\" isn't a resolution like 1600x900 (320x240 or more)."
+msgstr ""
+
+#: src/App/Neomod/OptionsOverlay.cpp
 msgid "Select Resolution"
 msgstr ""
 

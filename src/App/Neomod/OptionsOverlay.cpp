@@ -30,6 +30,7 @@
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
 #include "UI.h"
+#include "PromptOverlay.h"
 #include "UIButton.h"
 #include "UIContextMenu.h"
 #include "UISearchOverlay.h"
@@ -64,10 +65,16 @@
 #include "fmt/chrono.h"
 
 #include <cwctype>
+#include <fstream>
 #include <algorithm>
 #include <atomic>
 #include <optional>
 #include <utility>
+
+namespace {
+// the "Custom..." entry of the resolution list (the others are plain resolutions, id -1)
+constexpr int CUSTOM_RESOLUTION_ID = 1;
+}  // namespace
 
 #include <atomic>
 #include <utility>
@@ -152,6 +159,7 @@ struct OptionsOverlayImpl final {
     void onSkinSelect2(std::string_view skinName, int id = -1);
     void onResolutionSelect();
     void onResolutionSelect2(std::string_view resolution, int id = -1);
+    void onCustomResolutionEntered(std::string_view text);
     void onOutputDeviceResetUpdate();
     void onOutputDeviceSelect();
     void onOutputDeviceSelect2(std::string_view outputDeviceName, int id = -1);
@@ -1037,12 +1045,13 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
 
     this->addSpacer();
 
-    CBaseUISlider *fpsSlider = this->addSlider(_("FPS Limiter:"), 0.0f, 1000.0f, &cv::fps_max, -1.0f, true);
+    // mikosu: up to 4000 (was 1000); the limiter has no cap of its own, and the arrow keys still step by 1
+    CBaseUISlider *fpsSlider = this->addSlider(_("FPS Limiter:"), 0.0f, 4000.0f, &cv::fps_max, -1.0f, true);
     fpsSlider->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onFPSSliderChange>(this));
     fpsSlider->setKeyDelta(1);
 
     CBaseUISlider *fpsSlider2 =
-        this->addSlider(_("FPS Limiter (menus):"), 0.0f, 1000.0f, &cv::fps_max_menu, -1.0f, true);
+        this->addSlider(_("FPS Limiter (menus):"), 0.0f, 4000.0f, &cv::fps_max_menu, -1.0f, true);
     fpsSlider2->setChangeCallback(SA::MakeDelegate<&OptionsOverlayImpl::onFPSSliderChange>(this));
     fpsSlider2->setKeyDelta(1);
 
@@ -3299,6 +3308,8 @@ void OptionsOverlayImpl::onResolutionSelect() {
     for(const auto customResolution : customResolutions) {
         this->contextMenu->addButton(fmt::format("{}x{}", customResolution.x, customResolution.y));
     }
+    // mikosu: type in any resolution; it's then remembered in customres.cfg, so it shows up in this list too
+    this->contextMenu->addButton(_("Custom..."), CUSTOM_RESOLUTION_ID);
     this->contextMenu->end(false, false);
     this->contextMenu->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onResolutionSelect2>(this));
 
@@ -3313,7 +3324,12 @@ void OptionsOverlayImpl::onResolutionSelect() {
     this->options->setScrollSizeToContent();
 }
 
-void OptionsOverlayImpl::onResolutionSelect2(std::string_view resolution, int /*id*/) {
+void OptionsOverlayImpl::onResolutionSelect2(std::string_view resolution, int id) {
+    if(id == CUSTOM_RESOLUTION_ID) {
+        ui->getPromptOverlay()->prompt(_("Resolution, width x height (for example 1600x900):"),
+                                       SA::MakeDelegate<&OptionsOverlayImpl::onCustomResolutionEntered>(this));
+        return;
+    }
     const bool win_fs = env->winFullscreened();
     if(win_fs && cv::letterboxing.getBool()) {
         cv::letterboxed_resolution.setValue(resolution);
@@ -3322,6 +3338,47 @@ void OptionsOverlayImpl::onResolutionSelect2(std::string_view resolution, int /*
     } else {
         cv::windowed_resolution.setValue(resolution);
     }
+}
+
+// mikosu: a resolution typed in from the "Custom..." entry: "1600x900" (also "1600 x 900", "1600X900", "1600*900")
+void OptionsOverlayImpl::onCustomResolutionEntered(std::string_view text) {
+    std::string cleaned;
+    for(size_t i = 0; i < text.size(); i++) {
+        const char c = text[i];
+        if(c == ' ' || c == '\t') continue;
+        if(c == 'X' || c == '*') {
+            cleaned += 'x';
+        } else if(text.substr(i).starts_with("\xC3\x97")) {  // UTF-8 multiplication sign
+            cleaned += 'x';
+            i++;
+        } else {
+            cleaned += c;
+        }
+    }
+    const auto parsed = Parsing::parse_resolution(cleaned);
+    if(!parsed) {
+        ui->getNotificationOverlay()->addToast(
+            fmt::format(fmt::runtime(_("\"{}\" isn't a resolution like 1600x900 (320x240 or more).")), text),
+            ERROR_TOAST);
+        return;
+    }
+    const std::string resolution = fmt::format("{}x{}", parsed->x, parsed->y);
+
+    // remember it in customres.cfg (the list's own source of custom resolutions), once
+    const std::string customres_path = Mc::Paths::cfg() + "/customres.cfg";
+    bool known = false;
+    {
+        File customres(customres_path);
+        for(auto line = customres.readLine(); !line.empty() || customres.canRead(); line = customres.readLine()) {
+            if(Parsing::parse_resolution(line) == parsed) known = true;
+        }
+    }
+    if(!known) {
+        std::ofstream out(File::getFsPath(customres_path), std::ios::app);
+        out << resolution << '\n';
+    }
+
+    this->onResolutionSelect2(resolution, -1);
 }
 
 void OptionsOverlayImpl::onOutputDeviceSelect() {
