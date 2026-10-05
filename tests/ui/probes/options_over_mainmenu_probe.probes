@@ -1,9 +1,9 @@
 # draw-order pins for options-over-mainmenu (1280x720, options slide-in settled).
-# the options panel spans x=82..709; the mainmenu logo cube sits centered (boot color
-# #eaeaea at screen center). avoid the panel/logo EDGES: edge pixels carry AA jitter
-# and the logo pulses to wall-clock music (cost one rejected point at 0.6 0.5).
-# options row background above the menu logo at the overlap point (if the base screen
-# ever draws above the overlay band, this reads the logo's #eaeaea instead)
-0.5 0.5 1f1f1f 8
-# solid logo interior peeking right of the panel edge = the base still draws beneath
-0.61 0.5 eaeaea 8
+# the options panel spans x=82..709; the mainmenu logo (mikosu's placeholder wordmark, white #f5f5f5 letters on a
+# transparent face) sits centered and pulses to wall-clock music, so both points sit 7+ px inside a letter stroke
+# (picked by scanning a capture for the largest uniform patch).
+# options row background above the menu logo at the overlap point: the "o" of the wordmark, dimmed by the panel
+# (if the base screen ever draws above the overlay band, this reads the logo's #f5f5f5 instead)
+0.5117 0.5167 212121 8
+# solid logo interior peeking right of the panel edge (the "u") = the base still draws beneath
+0.6219 0.5153 f5f5f5 8
