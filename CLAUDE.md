@@ -97,6 +97,7 @@ ref/osu-tools/PerformanceCalculator/bin/Release/net10.0/PerformanceCalculator di
 python3 tools/runner/replay_runner.py --game build/dist/bin-x86_64/mikosu --songs ~/.local/share/osu-stable/Songs --replays ~/.local/share/osu-stable/Data/r
 python3 tools/screens/capture.py --game build/dist/bin-x86_64/mikosu --out /tmp/shots   # add --screens / --res to narrow it
 tools/dev/wine-smoke -- -dx11                                 # after tools/build.sh windows
+python3 tests/desktop/run.py                                  # Linux: real window on a private display: menu keys with IBus, dead keys, alt-tab under muffin
 ```
 
 **When the user is using the PC** (a game running, say): skip benchmarks, since the numbers would be void. Keep headless runs gentle with `headless_fps_max 60` (`capture.py` does this by default), since uncapped headless rendering takes the GPU.
