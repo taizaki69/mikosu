@@ -28,6 +28,7 @@
 #include "UniString.h"
 
 #include <algorithm>
+#include <charconv>
 #include <cstddef>
 #include <filesystem>
 #include <numeric>
@@ -44,6 +45,7 @@
 #include <freetype/ftglyph.h>
 #include <freetype/ftoutln.h>
 #include <freetype/fttrigon.h>
+#include <freetype/ftmm.h>
 #include <ft2build.h>
 
 // TODO: use fontconfig on linux?
@@ -107,10 +109,14 @@ struct LastSizedFTFace {
 // one face per font file, shared by every font and fallback entry using that path
 // (each sizes it before use, see setFaceSize).
 // we map the file ourselves because freetype can't open non-ascii paths on windows
+// mikosu: a face key is the font file's path, plus "#wght=N" for a variable font at weight N (one face per weight:
+// the axis setting belongs to the face, which every font of that key shares)
+constexpr std::string_view FACE_WEIGHT_SEPARATOR{"#wght="};
+
 struct SharedFace {
     NOCOPY_NOMOVE(SharedFace)
    public:
-    explicit SharedFace(std::string_view path) : file(path) {
+    explicit SharedFace(std::string_view key) : file(key.substr(0, key.find(FACE_WEIGHT_SEPARATOR))) {
         const std::span<const u8> bytes = this->file.data();
         if(bytes.empty() || !std::in_range<FT_Long>(bytes.size()) ||
            FT_New_Memory_Face(s_sharedFtLibrary, bytes.data(), static_cast<FT_Long>(bytes.size()), 0, &this->face)) {
@@ -119,7 +125,29 @@ struct SharedFace {
         if(FT_Select_Charmap(this->face, FT_ENCODING_UNICODE)) {
             FT_Done_Face(this->face);
             this->face = nullptr;
+            return;
         }
+        if(const size_t sep = key.find(FACE_WEIGHT_SEPARATOR); sep != std::string_view::npos) {
+            i32 weight = 0;
+            const std::string_view digits = key.substr(sep + FACE_WEIGHT_SEPARATOR.size());
+            std::from_chars(digits.data(), digits.data() + digits.size(), weight);
+            setWeight(weight);
+        }
+    }
+
+    // sets the "wght" axis of a variable font (other axes keep their defaults); ignored for static fonts
+    void setWeight(i32 weight) {
+        FT_MM_Var *mm = nullptr;
+        if(weight <= 0 || !FT_HAS_MULTIPLE_MASTERS(this->face) || FT_Get_MM_Var(this->face, &mm)) return;
+        std::vector<FT_Fixed> coords(mm->num_axis);
+        for(FT_UInt i = 0; i < mm->num_axis; i++) {
+            coords[i] = mm->axis[i].def;
+            if(mm->axis[i].tag == FT_MAKE_TAG('w', 'g', 'h', 't')) {
+                coords[i] = std::clamp<FT_Fixed>((FT_Fixed)weight * 65536, mm->axis[i].minimum, mm->axis[i].maximum);
+            }
+        }
+        FT_Set_Var_Design_Coordinates(this->face, mm->num_axis, coords.data());
+        FT_Done_MM_Var(s_sharedFtLibrary, mm);
     }
     ~SharedFace() {
         if(!this->face) return;
@@ -200,6 +228,7 @@ struct McFontImpl final {
     };
 
     std::string m_sActualFilePath;
+    std::string m_sFaceKey;  // m_sActualFilePath, plus the weight for a variable font (see FACE_WEIGHT_SEPARATOR)
 
     std::vector<char32_t> m_vInitialGlyphs;
     Hash::flat::map<char32_t, std::unique_ptr<GLYPH_METRICS>> m_mGlyphMetrics;
@@ -441,9 +470,19 @@ void McFontImpl::init() {
 }
 
 void McFontImpl::initAsync() {
+    // mikosu: "name@600" loads a variable font at weight 600 (the suffix stays in sFilePath for reloads)
+    std::string requested = m_parent->sFilePath;
+    std::string weightSuffix;
+    if(const size_t at = requested.rfind('@');
+       at != std::string::npos && at + 1 < requested.size() &&
+       std::ranges::all_of(std::string_view{requested}.substr(at + 1), [](char c) { return c >= '0' && c <= '9'; })) {
+        weightSuffix = requested.substr(at);
+        requested.resize(at);
+    }
+
     // find best font
     if(m_sActualFilePath.empty()) {
-        std::string candidate = m_parent->sFilePath;
+        std::string candidate = requested;
         SString::to_lower(candidate);
         // if it already ends with a font extension, use it directly
         if((candidate.ends_with(".woff2") || candidate.ends_with(".woff") || candidate.ends_with(".ttf") ||
@@ -452,10 +491,10 @@ void McFontImpl::initAsync() {
             m_sActualFilePath = candidate;
         } else {
             for(const auto &ext : std::array{".woff2"s, ".woff"s, ".ttf"s, ".otf"s}) {
-                candidate = m_parent->sFilePath + ext;
+                candidate = requested + ext;
                 if(Environment::fileExists(candidate)) {
                     m_sActualFilePath = candidate;
-                    m_parent->sFilePath = m_sActualFilePath;
+                    m_parent->sFilePath = m_sActualFilePath + weightSuffix;
                     break;
                 }
             }
@@ -469,7 +508,10 @@ void McFontImpl::initAsync() {
     assert(s_sharedFtLibraryInitialized);
     assert(s_sharedFallbacksInitialized);
 
-    m_ftFace = acquireFace(m_sActualFilePath);
+    m_sFaceKey = weightSuffix.empty()
+                     ? m_sActualFilePath
+                     : m_sActualFilePath + std::string{FACE_WEIGHT_SEPARATOR} + weightSuffix.substr(1);
+    m_ftFace = acquireFace(m_sFaceKey);
     if(!m_ftFace) {
         engine->showMessageError("Font Error", "Couldn't load font file!");
         return;
@@ -501,7 +543,7 @@ void McFontImpl::destroy() {
     // shared resources are cleaned up separately via cleanupSharedResources()
 
     if(m_ftFace) {
-        releaseFace(m_sActualFilePath);
+        releaseFace(m_sFaceKey);
         m_ftFace = nullptr;
     }
     m_mGlyphMetrics.clear();

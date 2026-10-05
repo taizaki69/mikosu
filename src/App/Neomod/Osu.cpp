@@ -341,13 +341,13 @@ Osu::Osu()
     const int baseDPI = 96;
     const int newDPI = Osu::getUIScale() * baseDPI;
 
-    McFont *defaultFont = resourceManager->loadFont("weblysleekuisb", "FONT_DEFAULT", 15, true, newDPI);
-    this->titleFont = resourceManager->loadFont("SourceSansPro-Semibold", "FONT_OSU_TITLE", 60, true, newDPI);
-    this->subTitleFont = resourceManager->loadFont("SourceSansPro-Semibold", "FONT_OSU_SUBTITLE", 21, true, newDPI);
+    McFont *defaultFont = resourceManager->loadFont("outfit@500", "FONT_DEFAULT", 15, true, newDPI);
+    this->titleFont = resourceManager->loadFont("outfit@600", "FONT_OSU_TITLE", 60, true, newDPI);
+    this->subTitleFont = resourceManager->loadFont("outfit@600", "FONT_OSU_SUBTITLE", 21, true, newDPI);
     this->songBrowserFont =
-        resourceManager->loadFont("SourceSansPro-Regular", "FONT_OSU_SONGBROWSER", 35, true, newDPI);
+        resourceManager->loadFont("outfit@400", "FONT_OSU_SONGBROWSER", 35, true, newDPI);
     this->songBrowserFontBold =
-        resourceManager->loadFont("SourceSansPro-Bold", "FONT_OSU_SONGBROWSER_BOLD", 30, true, newDPI);
+        resourceManager->loadFont("outfit@700", "FONT_OSU_SONGBROWSER_BOLD", 30, true, newDPI);
 
     this->fontIcons = resourceManager->loadFont("forkawesome", "FONT_OSU_ICONS", Icons::icons, 26, true, newDPI);
 

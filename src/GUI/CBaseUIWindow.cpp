@@ -23,7 +23,7 @@ CBaseUIWindow::CBaseUIWindow(float xPos, float yPos, float xSize, float ySize, s
 
     // titlebar
     this->bDrawTitleBarLine = true;
-    this->titleFont = resourceManager->loadFont("weblysleekuisb", "FONT_WINDOW_TITLE", 13.0f, true, env->getDPI());
+    this->titleFont = resourceManager->loadFont("outfit@600", "FONT_WINDOW_TITLE", 13.0f, true, env->getDPI());
     this->iTitleBarHeight = this->titleFont->getHeight() + 12 * dpiScale;
     if(this->iTitleBarHeight < titleBarButtonSize) this->iTitleBarHeight = titleBarButtonSize + 4 * dpiScale;
 

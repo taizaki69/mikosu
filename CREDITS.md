@@ -41,7 +41,7 @@ Every component mikosu ships, links or includes is listed with its exact licence
 
 ## Fonts used by the design work
 
-- **Outfit**, by the Outfit Project Authors, SIL Open Font License 1.1: the chosen design's UI font, and the placeholder wordmark (`tools/brand/make_placeholder_assets.py`)
+- **Outfit**, by the Outfit Project Authors, SIL Open Font License 1.1: the game's UI font (`assets/fonts/outfit.ttf`), and the placeholder wordmark (`tools/brand/make_placeholder_assets.py`)
 - **M PLUS 1**, by the M+ Fonts Project Authors, SIL Open Font License 1.1: Japanese text in the chosen design
 - Round-1 mockups also used Nunito and M PLUS Rounded 1c (both OFL); neither is in the chosen direction.
 
