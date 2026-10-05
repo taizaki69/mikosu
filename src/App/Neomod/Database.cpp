@@ -2535,7 +2535,10 @@ void Database::loadPeppyScores(std::string_view dbPath) {
                 dbr.skip<f64>();  // total accuracy
             }
 
-            if(gamemode == 0 && sc.bancho_score_id != 0) {
+            // mikosu: every osu!standard score, submitted or not. neomod skipped the ones without an online score
+            // id (offline plays, unranked maps, failed submissions), though stable lists them as local scores and
+            // their replays are found by timestamp, not by id
+            if(gamemode == 0) {
                 sc.beatmap_hash = md5hash;
                 sc.grade = sc.calculate_grade();
 
