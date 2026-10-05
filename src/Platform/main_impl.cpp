@@ -824,8 +824,11 @@ SDL_AppResult SDLMain::iterate() {
 
     if constexpr(!Env::cfg(FEAT::MAINCB))  // main callbacks use SDL iteration rate to limit fps
     {
-        // run uncapped in headless mode
-        if(likely(!isHeadless())) {
+        // run uncapped in headless mode, unless asked for a cap (headless_fps_max: tests and screenshots that
+        // shouldn't take the GPU from whatever else the PC is doing)
+        if(unlikely(isHeadless())) {
+            if(const int cap = cv::headless_fps_max.getInt(); cap > 0) FPSLimiter::limit_frames(cap, false);
+        } else {
             VPROF_BUDGET("FPSLimiter", VPROF_BUDGETGROUP_SLEEP);
 
             // if minimized or unfocused, use BG fps, otherwise use fps_max (if 0 it's unlimited)
