@@ -35,6 +35,12 @@
 | SDL3 offscreen display size from `SDL_VIDEO_OFFSCREEN_DISPLAY_SIZE` | `build-aux/misc/SDL3-offscreen-display-size.patch`, `Makefile.am` | headless screenshots and benchmarks at real resolutions |
 | FrameStats benchmark recorder (`-benchout`) | `src/Engine/FrameStats.*`, `src/Platform/main*.cpp`, `LaunchArgs.*`, `SDLGLInterface.cpp` | performance baseline and regression checks |
 | Upstream CI workflows replaced by `.github/workflows/ci.yml` (Linux and Windows x64 only, built with `tools/build.sh`) | `.github/workflows/` | mikosu targets Linux and Windows; upstream's workflows use neomod's Docker image and the `master` branch. **Skip** workflow changes when cherry-picking |
+| Identity from `AC_INIT` and `src/Branding.h` (name, version 0.1, URLs, app id, user agent, logo, Discord id empty) | `configure.ac`, `Makefile.am`, `src/Branding.h`, `Osu.cpp`, `MainMenu.cpp`, `main.cpp`, `BanchoNetworking.h`, assets | rebrand (PLAN #20). **Check every cherry-pick for new user-visible "neomod" strings and new identity sent to servers** |
+| HTTP requests send mikosu's user agent, never `osu!` | `Bancho*.cpp`, `Chat.cpp`, `Downloader.cpp`, `LegacyReplay.cpp`, `OsuDirectScreen.cpp` | ground rule 1 (PLAN #21). **A cherry-pick that adds `.user_agent = "osu!"` must use `BanchoState::user_agent`** |
+| neomod's config migrations only for a neomod-lineage `version.txt` (>= 30) | `MainMenu.cpp` | mikosu's 0.x versions are below every threshold (PLAN #20). New upstream migrations go inside the same check |
+| Windows registry: mikosu's own ProgID and URL protocol only; neosu's entries no longer deleted | `NeomodEnvInterop.cpp` | don't take over or remove another client's registrations |
+| Old `neomod_*.db` / `neosu_*.db` copied to `mikosu_*.db` on load | `Database.cpp` | data folders from neomod builds (portable installs) |
+| UI test runner sends `force_oauth 1` before every script | `tests/ui/run.py` | the scripts were recorded against neomod's default server (compact OAuth form); mikosu's default server is empty |
 
 ## Review log
 
