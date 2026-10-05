@@ -375,8 +375,11 @@ void SimulatedBeatmapInterface::resetScore() {
 void SimulatedBeatmapInterface::update(f64 frame_time) {
     if(this->hitobjects.empty()) return;
 
+    // like BeatmapInterface: only stop once the last object has been judged too (a late hit on it, or its miss, comes
+    // after its end time)
     auto last_hitobject = this->hitobjectsSortedByEndTime.back();
-    const bool isAfterLastHitObject = (this->iCurMusicPos > (last_hitobject->getEndTime()));
+    const bool isAfterLastHitObject =
+        last_hitobject->isFinished() && (this->iCurMusicPos > (last_hitobject->getEndTime()));
     if(isAfterLastHitObject) {
         return;
     }
@@ -817,15 +820,18 @@ void SimulatedBeatmapInterface::updateAutoCursorPos() {
     }
 }
 
+// the simulation works in osu!pixels: replay cursor positions are osu!pixels and osuCoords2Pixels() doesn't scale.
+// so the playfield and the circle sizes must not be scaled to the window either (they used to be, which made circles
+// and follow circles ~1.6x too large in a 1024x768 window and ~3x at 1440p, so replays judged far too leniently)
 void SimulatedBeatmapInterface::updatePlayfieldMetrics() {
-    this->vPlayfieldSize = GameRules::getPlayfieldSize();
-    this->vPlayfieldCenter = GameRules::getPlayfieldCenter();
+    this->vPlayfieldSize = vec2{(f32)GameRules::OSU_COORD_WIDTH, (f32)GameRules::OSU_COORD_HEIGHT};
+    this->vPlayfieldCenter = this->vPlayfieldSize / 2.f;
 }
 
 void SimulatedBeatmapInterface::updateHitobjectMetrics() {
     this->fRawHitcircleDiameter = GameRules::getRawHitCircleDiameter(this->getCS());
-    this->fXMultiplier = GameRules::getHitCircleXMultiplier();
-    this->fHitcircleDiameter = GameRules::getRawHitCircleDiameter(this->getCS()) * GameRules::getHitCircleXMultiplier();
+    this->fXMultiplier = 1.0f;
+    this->fHitcircleDiameter = this->fRawHitcircleDiameter;
 
     const f32 followcircle_size_multiplier = 2.4f;
     const f32 sliderFollowCircleDiameterMultiplier =
