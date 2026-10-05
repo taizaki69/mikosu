@@ -1,0 +1,144 @@
+# mikosu CI: builds Linux and Windows x64 on every push and pull request, smoke-tests both, and uploads the
+# builds as artifacts. Uses the same one-command build as local development (tools/build.sh).
+name: ci
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "**/*.md"]
+  pull_request:
+    branches: [main]
+    paths-ignore: ["docs/**", "**/*.md"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  # build prerequisites, kept in sync with CLAUDE.md
+  APT_PACKAGES: >-
+    g++-14 git cmake ninja-build autoconf automake libtool libtool-bin autoconf-archive autopoint pkgconf meson
+    nasm patchelf ccache gettext glslc glslang-tools spirv-cross curl wget unzip zip python3
+    libx11-dev libxext-dev libxi-dev libxrandr-dev libxcursor-dev libxfixes-dev libxss-dev libxtst-dev
+    libxkbcommon-dev libgl-dev libegl-dev libgles-dev libglu1-mesa-dev libdrm-dev libgbm-dev libvulkan-dev
+    libwayland-dev wayland-protocols libdecor-0-dev libasound2-dev libpulse-dev libpipewire-0.3-dev libdbus-1-dev
+    libudev-dev libibus-1.0-dev libattr1-dev libssl-dev zlib1g-dev
+    libegl-mesa0 libgl1-mesa-dri
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends $APT_PACKAGES
+
+      - name: Cache dependency tarballs
+        uses: actions/cache@v4
+        with:
+          path: build-aux/cache
+          key: tarballs-${{ hashFiles('configure.ac', 'Makefile.am', 'mk/**', 'build-aux/misc/**') }}
+          restore-keys: tarballs-
+
+      - name: Cache built dependencies
+        uses: actions/cache@v4
+        with:
+          path: build/build/deps
+          key: deps-linux-x64-${{ hashFiles('configure.ac', 'Makefile.am', 'mk/**', 'build-aux/misc/**') }}
+
+      - name: Cache compiler output
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-linux-x64-${{ github.sha }}
+          restore-keys: ccache-linux-x64-
+
+      - name: Build
+        run: tools/build.sh linux
+
+      - name: Sanity test (OpenGL on llvmpipe)
+        timeout-minutes: 10
+        run: python3 tests/sanity/run.py build/dist/bin-x86_64/neomod -- -opengl
+
+      - name: Package
+        run: cd build/dist && zip -q -r -y -8 "$GITHUB_WORKSPACE/mikosu-linux-x64.zip" bin-x86_64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mikosu-linux-x64
+          path: mikosu-linux-x64.zip
+
+  windows:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends $APT_PACKAGES
+
+      - name: Cache the llvm-mingw toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/mikosu-dev/toolchains
+          key: llvm-mingw-${{ hashFiles('tools/build.sh') }}
+          restore-keys: llvm-mingw-
+
+      - name: Cache dependency tarballs
+        uses: actions/cache@v4
+        with:
+          path: build-aux/cache
+          key: tarballs-${{ hashFiles('configure.ac', 'Makefile.am', 'mk/**', 'build-aux/misc/**') }}
+          restore-keys: tarballs-
+
+      - name: Cache built dependencies
+        uses: actions/cache@v4
+        with:
+          path: build-win64/build/deps
+          key: deps-win-x64-${{ hashFiles('configure.ac', 'Makefile.am', 'mk/**', 'build-aux/misc/**') }}
+
+      - name: Cache compiler output
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-win-x64-${{ github.sha }}
+          restore-keys: ccache-win-x64-
+
+      - name: Build
+        run: tools/build.sh windows
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mikosu-win-x64
+          path: build-win64/dist
+
+  # boots the Windows build headless on a real Windows runner and autoplays a map (no GPU there: WARP)
+  windows-sanity:
+    needs: windows
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tests/sanity
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mikosu-win-x64
+          path: artifact
+
+      - name: Sanity test (SDL_gpu)
+        timeout-minutes: 10
+        run: python tests/sanity/run.py artifact/bin-x86_64/neomod.exe
+
+      - name: Sanity test (Direct3D 11)
+        timeout-minutes: 10
+        run: python tests/sanity/run.py artifact/bin-x86_64/neomod.exe -- -dx11

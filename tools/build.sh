@@ -2,6 +2,7 @@
 # One-command build for mikosu.
 #
 #   tools/build.sh [linux|windows] [--dev] [--debug] [-j N] [-- extra configure args]
+#   (MIKOSU_JOBS=N also sets the job count; on CI, where $CI is set, it defaults to all cores)
 #
 #   linux    (default) native Linux x86_64 build -> build/dist/bin-x86_64/
 #   windows  Windows x64 cross-build with llvm-mingw -> build-win64/dist/bin-x86_64/
@@ -42,9 +43,14 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+jobs="${jobs:-${MIKOSU_JOBS:-}}"
 if [[ -z "$jobs" ]]; then
     n=$(nproc 2>/dev/null || echo 4)
-    jobs=$(( n > 12 ? 10 : (n > 2 ? n - 2 : 1) ))
+    if [[ -n "${CI:-}" ]]; then
+        jobs=$n  # dedicated CI runner: use every core
+    else
+        jobs=$(( n > 12 ? 10 : (n > 2 ? n - 2 : 1) ))  # leave the desktop some room
+    fi
 fi
 
 log() { printf '\033[1m[build]\033[0m %s\n' "$*"; }
