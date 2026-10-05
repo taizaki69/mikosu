@@ -9,7 +9,7 @@ mikosu now has its own name and identity. Under the hood it is still neomod, the
 **What works today**
 - The game builds on Linux and Windows with one command. GitHub also builds and tests both automatically every time something changes.
 - It calls itself mikosu everywhere: the window, the files it writes, and what it tells servers. It never pretends to be the official osu! client or neomod. It has no default online server, and the self-updater is off.
-- On first launch it finds your osu!stable copy in `~/.local/share/osu-stable` by itself. It brings over your stable skin, volume and scores, and shows your whole library in song select. Your osu! and McOsu folders were only read, never changed.
+- On first launch it finds your osu!stable copy in `~/.local/share/osu-stable` by itself. It brings over your stable skin, volume and **all 84 of your scores** (neomod only took the 54 that were submitted online), and shows your whole library in song select. Your osu! and McOsu folders were only read, never changed.
 - It keeps its own files in `~/.local/share/mikosu` (or next to the program if you add a file called `portable` there).
 - **Replay checking:** I can now play your stable replays back through mikosu's gameplay invisibly and compare the result with what stable recorded. That found and fixed two bugs in the replay player inherited from neomod:
   - it made circles too big, so replays came out better than they really were;
@@ -37,7 +37,8 @@ Nothing right now. When the first play-test build is ready, I'll ask you to try 
 - The rename to mikosu, with honest identification everywhere.
 - Your own data folder, plus the portable option.
 - Replay checking, with the replay and score fixes above.
-- Finds your Linux osu!stable copy and its settings on first launch.
+- Finds your Linux osu!stable copy, its settings and all of your scores on first launch.
+- A screenshot tool that shows me every screen at your monitor's size and others, for the redesign.
 
 ## What's next
 
