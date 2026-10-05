@@ -39,6 +39,9 @@ If something still misbehaves, tell me what you did and what happened.
 
 ## Done since last time
 
+- **DT/NC like stable:** click DT once for DT, twice for NC, a third time to turn it off (HT does the same with Daycore). The old "Prefer Nightcore" setting is gone, since it isn't needed any more.
+- **Star rating with DT is now right.** mikosu's DT star ratings were off from the official ones by about 0.01 stars on a typical map, up to 0.2. Now they match to about 0.0001, like no-mod ratings, which also got closer. The first time you open song select after updating, mikosu recalculates the star ratings of your maps once, in the background.
+
 - **First play-test:** you found gameplay the same as neomod.
 - **Fixed from your report:**
   - Menu keys were going missing because of the Linux input-method system (IBus). mikosu now skips it unless you turn it on (Options → Input → Typing; only needed for typing Japanese, Chinese and similar). Accented letters (´ + e = é) now work too.
