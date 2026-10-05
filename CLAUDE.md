@@ -64,7 +64,7 @@ sudo apt install g++-14 git cmake ninja-build autoconf automake libtool libtool-
   libx11-dev libxext-dev libxi-dev libxrandr-dev libxcursor-dev libxfixes-dev libxss-dev libxtst-dev libxkbcommon-dev \
   libgl-dev libegl-dev libgles-dev libglu1-mesa-dev libdrm-dev libgbm-dev libvulkan-dev libwayland-dev \
   wayland-protocols libdecor-0-dev libasound2-dev libpulse-dev libpipewire-0.3-dev libdbus-1-dev libudev-dev \
-  libibus-1.0-dev libattr1-dev libssl-dev zlib1g-dev
+  libibus-1.0-dev libattr1-dev libltdl-dev libssl-dev zlib1g-dev
 ```
 
 **Build commands:**
