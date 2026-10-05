@@ -82,6 +82,35 @@ std::filesystem::path resolve_exe_path() {
     return MCENGINE_DATA_DIR PACKAGE_NAME;          // fallback to data dir + package name
 #endif
 }
+// mikosu: a portable install keeps its data next to the executable; it's marked by a file called "portable"
+// (or "portable.txt") in the executable's folder, e.g. in the Windows zip release
+bool is_portable_install(const std::string &exe_dir) {
+    std::error_code ec;
+    for(const char *marker : {"portable", "portable.txt"}) {
+        if(std::filesystem::exists(std::filesystem::path{exe_dir} / marker, ec)) return true;
+    }
+    return false;
+}
+
+// mikosu: the per-user data folder of an installed (non-portable) copy, empty if it can't be determined:
+// $XDG_DATA_HOME/mikosu or ~/.local/share/mikosu on Linux, %LOCALAPPDATA%\mikosu on Windows (beside osu!stable's
+// own folder; Local rather than Roaming because beatmaps and caches are large)
+std::string per_user_data_dir() {
+    if constexpr(Env::cfg(OS::LINUX)) {
+        if(const std::string xdg = Environment::getEnvVariable("XDG_DATA_HOME"); xdg.starts_with('/')) {
+            return strip_trailing_slashes(xdg) + "/" PACKAGE_NAME;
+        }
+        if(const std::string home = Environment::getEnvVariable("HOME"); !home.empty()) {
+            return strip_trailing_slashes(home) + "/.local/share/" PACKAGE_NAME;
+        }
+    } else if constexpr(Env::cfg(OS::WINDOWS)) {
+        if(std::string local = Environment::getEnvVariable("LOCALAPPDATA"); !local.empty()) {
+            File::normalizeSlashes(local, '\\', '/');
+            return strip_trailing_slashes(local) + "/" PACKAGE_NAME;
+        }
+    }
+    return {};
+}
 }  // namespace
 
 namespace detail {
@@ -121,6 +150,18 @@ void init() {
     s_dirs.data = strip_trailing_slashes(APP_DATA_DIR);
     std::string cache;  // empty = derived below
     std::string logs;
+
+    // mikosu: an installed copy keeps its writable data in the per-user folder (the executable's folder may not be
+    // writable, e.g. an AppImage or Program Files), unless it's a portable install or a packager set APP_DATA_DIR
+    if constexpr(Env::cfg(OS::LINUX) || Env::cfg(OS::WINDOWS)) {
+        if(std::string_view{APP_DATA_DIR} == std::string_view{MCENGINE_DATA_DIR} && !is_portable_install(s_dirs.exe_dir)) {
+            if(std::string per_user = per_user_data_dir(); !per_user.empty()) {
+                std::error_code ec;
+                std::filesystem::create_directories(File::getFsPath(per_user), ec);
+                if(!ec) s_dirs.data = std::move(per_user);
+            }
+        }
+    }
 
     if constexpr(Env::cfg(OS::MAC)) {
         // inside an app bundle the executable directory is sealed by the code signature, so assets come from
