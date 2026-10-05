@@ -49,6 +49,24 @@ EM_JS(void, js_fatal_error, (const char *str), { alert(UTF8ToString(str)); });
 #include "LPP_API_x64_CPP.h"
 #endif
 
+#ifdef MCENGINE_PLATFORM_LINUX
+#include <fstream>
+
+// mikosu: whether the player wants the system input method (IBus, Fcitx) for typing: -ime, or "use_ime 1" in osu.cfg.
+// read straight from the config file, since it has to be known before SDL's video init (the convar loads later)
+static bool wants_system_ime(bool ime_launch_flag) {
+    if(ime_launch_flag) return true;
+    bool wanted = false;  // use_ime's default on Linux
+    std::ifstream cfg(Mc::Paths::cfg() + "/osu.cfg");
+    for(std::string line; std::getline(cfg, line);) {
+        if(!line.starts_with("use_ime ")) continue;
+        const std::string_view value = std::string_view{line}.substr(sizeof("use_ime ") - 1);
+        wanted = value.starts_with('1') || value.starts_with("true");  // the last line wins, like the console
+    }
+    return wanted;
+}
+#endif
+
 //*********************************//
 //	SDL CALLBACKS/MAINLOOP BEGINS  //
 //*********************************//
@@ -295,10 +313,32 @@ MAIN_FUNC /* int argc, char *argv[] */
         }
     }
 
+#if defined(MCENGINE_PLATFORM_LINUX)
+    // mikosu: while text input is active (the menus keep it on, for type-to-search), SDL's X11 backend hands every key
+    // to the system input method (XIM) first, and IBus's XIM bridge swallows them: on a private test display, none of
+    // 30 menu key presses arrived with XMODIFIERS=@im=ibus, all 30 with @im=none. so unless the player wants the
+    // system input method (use_ime, or -ime), SDL's video init talks to X directly. typing still works, dead keys and
+    // compose included (Xlib's own input method). the variable is restored right after, for anything we launch
+    const bool bypass_input_method = !wants_system_ime(has_arg(MISC_ENABLE_IME).has_value());
+    bool xmodifiers_was_unset = false;
+    const std::string old_xmodifiers = Environment::getEnvVariable("XMODIFIERS", &xmodifiers_was_unset);
+    if(bypass_input_method) Environment::setEnvVariable("XMODIFIERS", "@im=none", true);
+#endif
+
     if(!SDL_Init(SDL_INIT_VIDEO)) {  // other subsystems can be init later
         debugLog("Couldn't SDL_Init(): {}", SDL_GetError());
         return SDL_APP_FAILURE;
     }
+
+#if defined(MCENGINE_PLATFORM_LINUX)
+    if(bypass_input_method) {
+        if(xmodifiers_was_unset) {
+            Environment::unsetEnvVariable("XMODIFIERS");
+        } else {
+            Environment::setEnvVariable("XMODIFIERS", old_xmodifiers, true);
+        }
+    }
+#endif
 
 #if defined(MCENGINE_PLATFORM_WASM) || defined(MCENGINE_FEATURE_MAINCALLBACKS)
     // need to manually scope profiler nodes in main callbacks,

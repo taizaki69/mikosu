@@ -1929,6 +1929,21 @@ msgstr ""
 "za pomocą przycisków multimedialnych na klawiaturze, nawet gdy zminimalizowane"
 
 #: src/App/Neomod/OptionsOverlay.cpp
+msgid "Use the system input method (IME) for typing"
+msgstr ""
+
+#: src/App/Neomod/OptionsOverlay.cpp
+msgid ""
+"For typing Japanese, Chinese, Korean and similar\n"
+"(IBus, Fcitx). Applies after a restart.\n"
+"With IBus it can make menus miss key presses."
+msgstr ""
+
+#: src/App/Neomod/OptionsOverlay.cpp
+msgid "For typing Japanese, Chinese, Korean and similar."
+msgstr ""
+
+#: src/App/Neomod/OptionsOverlay.cpp
 msgid "Reset all key bindings"
 msgstr "Zresetuj wszystkie przypisania klawiszy"
 
