@@ -1,6 +1,6 @@
 {
-  "updated": "2026-10-04",
-  "phase": "1 foundation: in progress",
+  "updated": "2026-10-05",
+  "phase": "1 foundation: nearly done (PRs #3+ open; M1 play-test next)",
   "upstream": {
     "remote": "neomodnet/neomod",
     "fork_point": "0fedcafb3515c86d8be8ee736c76bce19d0198d3",
@@ -8,8 +8,8 @@
   },
   "builds": {
     "linux_x64": {"local": "ok", "command": "tools/build.sh linux", "sanity_test": "pass (gl, sdlgpu)"},
-    "windows_x64": {"local": "cross-build via llvm-mingw 20260908", "command": "tools/build.sh windows", "smoke_test_wine": "not yet"},
-    "ci": "not set up (needs a GitHub repo)"
+    "windows_x64": {"local": "cross-build via llvm-mingw 20260908", "command": "tools/build.sh windows", "smoke_test_wine": "pass (default, dx11; opengl unsupported headless)", "wine_command": "tools/dev/wine-smoke"},
+    "ci": ".github/workflows/ci.yml: Linux + Windows x64 build and smoke tests, green on PRs #1 and #2"
   },
   "parity": {
     "oracle": "osu-tools 8ce45b3 (PerformanceCalculator) built against ppy/osu 2026.921.0-lazer",
@@ -23,7 +23,7 @@
        "neomod_reading": 0.8291758532814358, "oracle_reading": 0.8229208521405954}
     ]
   },
-  "replay_parity": {"stable": null, "lazer": null, "lazer_classic": null, "inputs_available": {"stable_replays": 86}},
+  "replay_parity": {"tool": "tools/runner/replay_runner.py (replay_run console command)", "stable": {"replays": 84, "exact_counts": 63, "exact_max_combo": 68, "exact_score": 36, "known_gaps": ["spinner spin counting (all 14 replays with spinners)", "7 no-spinner replays score slightly high"]}, "lazer": null, "lazer_classic": null, "inputs_available": {"stable_replays": 86}},
   "performance": {
     "reference_machine": "i5-13400F, RTX 4070 SUPER (610.57.04), Linux Mint 22.3, kernel 7.0.0-38",
     "method": "tools/bench/bench.py, headless offscreen on the real GPU, 2560x1440, uncapped, median of 3 runs",
