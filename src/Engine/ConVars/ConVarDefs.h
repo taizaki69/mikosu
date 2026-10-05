@@ -302,7 +302,10 @@ CONVAR(interpolate_music_pos, 2L, CLIENT | SKINS | SERVER,
        "interpolate song position with engine time (0 = none, 1 = new method, 2 = McOsu, 3 = \"lazer\" (broken?))");
 CONVAR(language, "en"sv, CLIENT | SKINS | SERVER, "display language used by the game" I18N_LOAD_CB);
 CONVAR(minimize_on_focus_lost_if_borderless_windowed_fullscreen, false, CLIENT | SKINS | SERVER);
-CONVAR(minimize_on_focus_lost_if_fullscreen, true, CLIENT | SKINS | SERVER);
+// mikosu: off on Linux. fullscreen there never changes the display mode, so there's nothing to undo on alt-tab, and
+// leaving fullscreen + minimizing + re-entering on the way back left the window unrestorable on some window
+// managers, or rendering at the desktop resolution instead of the custom one
+CONVAR(minimize_on_focus_lost_if_fullscreen, !Env::cfg(OS::LINUX), CLIENT | SKINS | SERVER);
 CONVAR(mouse_raw_input, Env::cfg(OS::MAC) ? true : false,
        CLIENT | SKINS | SERVER);  // non-raw-input behaves horribly on macos
 CONVAR(keyboard_raw_input, false, CLIENT | SKINS | SERVER,
