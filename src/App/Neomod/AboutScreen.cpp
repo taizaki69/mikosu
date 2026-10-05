@@ -394,8 +394,21 @@ void AboutScreen::onChangeClicked(CBaseUIButton *button) {
 void AboutScreen::buildChangelog() {
     std::vector<CHANGELOG> changelogs;
 
+    // mikosu's own entries (the version links point at mikosu's releases page; see ChangelogTitleLabel)
+    CHANGELOG mikosu_0_1;
+    mikosu_0_1.title = PACKAGE_NAME " " PACKAGE_VERSION " (" CHANGELOG_TIMESTAMP ")";
+    mikosu_0_1.changes = {
+        R"(- First mikosu build. It's based on neomod: every entry below this one is neomod's history)",
+        R"(- Identifies itself as mikosu everywhere; no default online server and no self-updater)",
+        R"(- Keeps its files in ~/.local/share/mikosu (Windows: %LOCALAPPDATA%\mikosu), or next to the game with a "portable" file)",
+        R"(- Finds osu!stable in ~/.local/share/osu-stable, and imports its settings and all of its local scores)",
+        R"(- Scores count slider ends and the combo bonus exactly like osu!stable)",
+        R"(- Watched replays are judged correctly again (circles were too large when judging replays))",
+    };
+    changelogs.push_back(std::move(mikosu_0_1));
+
     CHANGELOG v43_14;
-    v43_14.title = "43.14 (" CHANGELOG_TIMESTAMP ")";
+    v43_14.title = "43.14 (unreleased; mikosu started from here on 2026-10-04)";
     v43_14.changes = {
         R"(- Added a preview panel to online beatmaps screen)",
         R"(- Added audio previews to online beatmaps screen)",
