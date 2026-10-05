@@ -50,16 +50,20 @@ Newest session first. Every claim cites its evidence (a test, a measurement or a
 - Windows cross-build passes, and so does the Wine smoke test.
 - Replay numbers: `tools/runner/replay_runner.py` over `~/.local/share/osu-stable/Data/r`.
 
-### Not verified
-- **Performance against `BASELINE.md`.** A run on 2026-10-05 showed every scene about 2× slower, song select included, which nothing here touches. The user was playing a game at the time (`hl2_linux` ≈150% CPU, plus Steam and Discord), so the run is void. **Re-measure when the PC is idle**, before M1 is called done.
+### Performance
+- **Same-day A/B against a build of neomod's code** (`BASELINE.md` → "Checks"):
+  - gameplay p99 0.347 vs 0.417 ms;
+  - song select idle / keys / wheel p99 0.378 / 0.501 / 0.390 vs 0.418 / 0.518 / 0.434 ms (10 runs).
+  - **No regression.**
+- A first run while the user was playing a game was void (everything ≈2× slower).
 
 ### Incidents
 - The app quit twice mid-run. Nothing was lost: work is committed as it goes, and stray test files were cleaned up.
 - The PC was rebooted overnight cleanly (orderly `systemd-reboot`, no OOM).
 
 ### Next
-1. Merge PR #3, then open PRs for `runner` (tools, simulator fixes, Wine test), `score-v1` and `detect`, in that order (each is stacked on the previous).
-2. Re-run the benchmark when idle, then hand the user the **M1 play-test**.
+1. **Done:** PRs #3–#6 merged (data dirs; replay runner and simulator fixes with the Wine test and golden tests in CI; ScoreV1; first-launch detection, tools and notices). CI green on each.
+2. **M1 play-test** handed to the user (`STATUS.md` → "Waiting on you"). A baseline worktree of neomod's code is kept at `.claude/worktrees/baseline` (git-ignored, with the include-dir build fix applied locally) for same-day A/B benchmarks.
 3. Phase 1 leftover: the doctest unit-test target (needs doctest.h: vendor it or fetch it with a pinned hash).
 4. Workstream C: spinner spin counting; the 7 no-spinner score outliers (compare combo-break placement using the replay's life-bar graph).
 5. Workstream B: the SR/pp parity corpus against osu-tools.

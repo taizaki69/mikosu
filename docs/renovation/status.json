@@ -1,6 +1,6 @@
 {
   "updated": "2026-10-05",
-  "phase": "1 foundation: nearly done (PRs #3+ open; M1 play-test next)",
+  "phase": "1 foundation: done (PRs #1-#6 merged); M1 play-test with the user",
   "upstream": {
     "remote": "neomodnet/neomod",
     "fork_point": "0fedcafb3515c86d8be8ee736c76bce19d0198d3",
@@ -9,7 +9,7 @@
   "builds": {
     "linux_x64": {"local": "ok", "command": "tools/build.sh linux", "sanity_test": "pass (gl, sdlgpu)"},
     "windows_x64": {"local": "cross-build via llvm-mingw 20260908", "command": "tools/build.sh windows", "smoke_test_wine": "pass (default, dx11; opengl unsupported headless)", "wine_command": "tools/dev/wine-smoke"},
-    "ci": ".github/workflows/ci.yml: Linux + Windows x64 build and smoke tests, green on PRs #1 and #2"
+    "ci": ".github/workflows/ci.yml: Linux + Windows x64 builds, smoke tests (Linux GL; Windows SDL_gpu and D3D11), diffcalc golden tests; green on PRs #1-#6"
   },
   "parity": {
     "oracle": "osu-tools 8ce45b3 (PerformanceCalculator) built against ppy/osu 2026.921.0-lazer",
@@ -43,6 +43,7 @@
       "library_import_s": 0.44
     },
     "menu_budget_ms": {"cpu_p99": 1.5, "gpu_p99": 1.5, "worst_frame_scrolling": 8.0},
+    "checks": [{"date": "2026-10-05", "build": "main after PRs #1-#6", "method": "same-day A/B vs neomod code build", "gameplay_cpu_p99_ms": [0.347, 0.417], "songselect_cpu_p99_ms_idle_keys_wheel": [[0.378, 0.501, 0.390], [0.418, 0.518, 0.434]], "verdict": "no regression"}],
     "gameplay_regression_rule": "median-of-runs CPU p99 must not exceed max(1.05 x baseline median, slowest baseline run)"
   },
   "screens": {

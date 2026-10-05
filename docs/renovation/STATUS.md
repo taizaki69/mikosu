@@ -19,6 +19,7 @@ mikosu now has its own name and identity. Under the hood it is still neomod, the
   - **max combo** matches on 4 out of 5;
   - **total score** matches exactly on 36. That's every replay without a spinner whose judgements match, except 7. Spinners are next.
 - The Windows version also runs under Wine on this PC.
+- **Speed:** checked side by side with neomod's code on this PC. mikosu is as fast or slightly faster everywhere: gameplay and song select.
 
 **Problems found so far** (all on the plan)
 - Star rating and pp are close to the official numbers but not exact yet.
@@ -28,7 +29,13 @@ mikosu now has its own name and identity. Under the hood it is still neomod, the
 
 ## Waiting on you
 
-Nothing right now. When the first play-test build is ready, I'll ask you to try it. That's the next step after one more speed check, which I'll run when the PC isn't busy with a game.
+**The first play-test ("mikosu opens"), whenever you have 15 minutes.** The command is in my last chat message. It opens mikosu in a normal window. Please check:
+1. It starts and shows the mikosu main menu.
+2. Song select shows your osu!stable library, in the skin you use in stable, with your local scores on the maps you've played.
+3. Play a few maps you know well. Does it feel the same as McOsu or stable (timing, cursor, sliders)? Anything that feels off is worth telling me, even if it's vague.
+4. If you know them, try a few extras: FPoSu, the AR/OD overrides in mod select, scrubbing through a map, the console.
+
+mikosu keeps its own files in `~/.local/share/mikosu`. It only reads your osu! folders and never changes them.
 
 ## Done since last time
 
@@ -42,13 +49,12 @@ Nothing right now. When the first play-test build is ready, I'll ask you to try 
 
 ## What's next
 
-1. A speed check against the numbers measured on day one (it has to wait for an idle PC: earlier you were playing a game, which makes the measurement meaningless).
-2. **First play-test** ("mikosu opens"): you launch it, check it finds your library and that gameplay feels the same as before.
-3. Then, in parallel:
+1. Your play-test feedback, then fixes for anything you find.
+2. Then, in parallel:
    - spinners and the last few score differences;
    - exact star rating and pp;
-   - start building the new look.
+   - start building the new look ("Slanted controls").
 
 ## Things to try
 
-Nothing yet. The play-test build is coming next.
+The play-test above.
