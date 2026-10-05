@@ -19,6 +19,9 @@
 #define BRAND_RELEASES_URL PACKAGE_URL "/releases"
 #define BRAND_ISSUES_URL PACKAGE_URL "/issues"
 
+// the project mikosu is forked from (credits, and links to neomod's own release history)
+#define BRAND_UPSTREAM_REPO_URL "https://github.com/neomodnet/neomod"
+
 // reverse-DNS application id (SDL app metadata, Linux .desktop/MIME integration, Windows app user model id)
 #define BRAND_APP_ID "io.github.taizaki69." PACKAGE_NAME
 

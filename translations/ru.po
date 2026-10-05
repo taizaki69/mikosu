@@ -421,13 +421,13 @@ msgstr "Онлайн-карты"
 
 #: src/App/Neomod/MainMenu.cpp
 #, c++-format
-msgid "Version {:.2f} ({:s})"
-msgstr "Версия {:.2f} ({:s})"
+msgid "Version {:s} ({:s})"
+msgstr "Версия {:s} ({:s})"
 
 #: src/App/Neomod/MainMenu.cpp
 #, c++-format
-msgid "Version {:.2f}"
-msgstr "Версия {:.2f}"
+msgid "Version {:s}"
+msgstr "Версия {:s}"
 
 #: src/App/Neomod/MainMenu.cpp
 msgid "Downloading ..."
@@ -497,8 +497,8 @@ msgid "Press {:s} or {:s} anywhere to open chat."
 msgstr "Нажмите {:s} или {:s} в любом месте, чтобы открыть чат."
 
 #: src/App/Neomod/MainMenuTips.cpp
-msgid "Launch with the neomod-BASS shortcut to use BASS (ASIO/Exclusive mode) for audio."
-msgstr "Запустите через ярлык neomod-BASS, чтобы использовать BASS (ASIO/Exclusive mode) для звука."
+msgid "Launch with the mikosu-BASS shortcut to use BASS (ASIO/Exclusive mode) for audio."
+msgstr "Запустите через ярлык mikosu-BASS, чтобы использовать BASS (ASIO/Exclusive mode) для звука."
 
 #: src/App/Neomod/MainMenuTips.cpp
 msgid "Launch with \"-sound bass\" as a commandline argument to use BASS for audio."
@@ -506,12 +506,12 @@ msgstr "Запустите с аргументом командной строк
 
 #: src/App/Neomod/MainMenuTips.cpp
 #, fuzzy
-msgid "Put \"-gpu vk\" after the \"Target:\" field in a shortcut to neomod to use the Vulkan renderer."
-msgstr "Добавьте \"-dx11\" в поле \"Объект:\" ярлыка neomod, чтобы использовать рендерер D3D11."
+msgid "Put \"-gpu vk\" after the \"Target:\" field in a shortcut to mikosu to use the Vulkan renderer."
+msgstr "Добавьте \"-dx11\" в поле \"Объект:\" ярлыка mikosu, чтобы использовать рендерер D3D11."
 
 #: src/App/Neomod/MainMenuTips.cpp
-msgid "Put \"-dx11\" after the \"Target:\" field in a shortcut to neomod to use the D3D11 renderer."
-msgstr "Добавьте \"-dx11\" в поле \"Объект:\" ярлыка neomod, чтобы использовать рендерер D3D11."
+msgid "Put \"-dx11\" after the \"Target:\" field in a shortcut to mikosu to use the D3D11 renderer."
+msgstr "Добавьте \"-dx11\" в поле \"Объект:\" ярлыка mikosu, чтобы использовать рендерер D3D11."
 
 #: src/App/Neomod/MainMenuTips.cpp
 msgid "Launch with \"-dx11\" as a commandline argument to use the D3D11 renderer."

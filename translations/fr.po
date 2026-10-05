@@ -417,13 +417,13 @@ msgstr "Beatmaps en ligne"
 
 #: src/App/Neomod/MainMenu.cpp
 #, c++-format
-msgid "Version {:.2f} ({:s})"
-msgstr "Version {:.2f} ({:s})"
+msgid "Version {:s} ({:s})"
+msgstr "Version {:s} ({:s})"
 
 #: src/App/Neomod/MainMenu.cpp
 #, c++-format
-msgid "Version {:.2f}"
-msgstr "Version {:.2f}"
+msgid "Version {:s}"
+msgstr "Version {:s}"
 
 #: src/App/Neomod/MainMenu.cpp
 msgid "Downloading ..."
@@ -493,8 +493,8 @@ msgid "Press {:s} or {:s} anywhere to open chat."
 msgstr "Appuyez sur {:s} ou {:s} n'import où pour ouvrir le chat."
 
 #: src/App/Neomod/MainMenuTips.cpp
-msgid "Launch with the neomod-BASS shortcut to use BASS (ASIO/Exclusive mode) for audio."
-msgstr "Lancez avec le raccourci neomod-BASS pour utiliser le moteur audio BASS (ASIO/Mode exclusif)."
+msgid "Launch with the mikosu-BASS shortcut to use BASS (ASIO/Exclusive mode) for audio."
+msgstr "Lancez avec le raccourci mikosu-BASS pour utiliser le moteur audio BASS (ASIO/Mode exclusif)."
 
 #: src/App/Neomod/MainMenuTips.cpp
 msgid "Launch with \"-sound bass\" as a commandline argument to use BASS for audio."
@@ -502,11 +502,11 @@ msgstr "Lancez avec \"-sound bass\" en argument de ligne de commande pour utilis
 
 #: src/App/Neomod/MainMenuTips.cpp
 #, fuzzy
-msgid "Put \"-gpu vk\" after the \"Target:\" field in a shortcut to neomod to use the Vulkan renderer."
+msgid "Put \"-gpu vk\" after the \"Target:\" field in a shortcut to mikosu to use the Vulkan renderer."
 msgstr "Lancez avec \"-dx11\" en argument de ligne de commande pour utiliser le moteur de rendu D3D11."
 
 #: src/App/Neomod/MainMenuTips.cpp
-msgid "Put \"-dx11\" after the \"Target:\" field in a shortcut to neomod to use the D3D11 renderer."
+msgid "Put \"-dx11\" after the \"Target:\" field in a shortcut to mikosu to use the D3D11 renderer."
 msgstr "Lancez avec \"-dx11\" en argument de ligne de commande pour utiliser le moteur de rendu D3D11."
 
 #: src/App/Neomod/MainMenuTips.cpp

@@ -396,12 +396,12 @@ msgstr ""
 
 #: src/App/Neomod/MainMenu.cpp
 #, c++-format
-msgid "Version {:.2f} ({:s})"
+msgid "Version {:s} ({:s})"
 msgstr ""
 
 #: src/App/Neomod/MainMenu.cpp
 #, c++-format
-msgid "Version {:.2f}"
+msgid "Version {:s}"
 msgstr ""
 
 #: src/App/Neomod/MainMenu.cpp
@@ -472,7 +472,7 @@ msgid "Press {:s} or {:s} anywhere to open chat."
 msgstr ""
 
 #: src/App/Neomod/MainMenuTips.cpp
-msgid "Launch with the neomod-BASS shortcut to use BASS (ASIO/Exclusive mode) for audio."
+msgid "Launch with the mikosu-BASS shortcut to use BASS (ASIO/Exclusive mode) for audio."
 msgstr ""
 
 #: src/App/Neomod/MainMenuTips.cpp
@@ -480,11 +480,11 @@ msgid "Launch with \"-sound bass\" as a commandline argument to use BASS for aud
 msgstr ""
 
 #: src/App/Neomod/MainMenuTips.cpp
-msgid "Put \"-gpu vk\" after the \"Target:\" field in a shortcut to neomod to use the Vulkan renderer."
+msgid "Put \"-gpu vk\" after the \"Target:\" field in a shortcut to mikosu to use the Vulkan renderer."
 msgstr ""
 
 #: src/App/Neomod/MainMenuTips.cpp
-msgid "Put \"-dx11\" after the \"Target:\" field in a shortcut to neomod to use the D3D11 renderer."
+msgid "Put \"-dx11\" after the \"Target:\" field in a shortcut to mikosu to use the D3D11 renderer."
 msgstr ""
 
 #: src/App/Neomod/MainMenuTips.cpp

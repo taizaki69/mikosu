@@ -280,7 +280,7 @@ Osu::Osu()
     } else if(Osu::isBleedingEdge()) {
         BanchoState::neomod_version = fmt::format("bleedingedge-{}-" OS_NAME, cv::build_timestamp.getVal<u64>());
     } else {
-        BanchoState::neomod_version = fmt::format("release-{:.2f}-" OS_NAME, cv::version.getFloat());
+        BanchoState::neomod_version = fmt::format("release-{:s}-" OS_NAME, cv::version.getString());
     }
 
     BanchoState::user_agent = BRAND_USER_AGENT_PREFIX;

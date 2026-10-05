@@ -327,7 +327,7 @@ Async::Future<ExportResult> submit_export(const Skin &skin, std::string dir, std
         .default_dir = skin.is_default ? std::string{} : Mc::Paths::materials() + "/default/",
         .resolved = skin.files_for_export,
         .out_dir = std::move(dir),
-        .version = fmt::format("{} {:.2f} ({})", PACKAGE_NAME, cv::version.getFloat(), cv::build_timestamp.getString()),
+        .version = fmt::format("{} {} ({})", PACKAGE_NAME, cv::version.getString(), cv::build_timestamp.getString()),
         .mixed = skin.hasRandomElements(),
         .include_default = include_default,
     };

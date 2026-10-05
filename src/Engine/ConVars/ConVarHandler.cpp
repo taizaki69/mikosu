@@ -359,10 +359,10 @@ void ConVarHandler::ConVarBuiltins::dumpcommands(void) {
     html.append(R"(</section>)");
 
     html.append(fmt::format(R"(<p style="text-align:center">
-        This page was generated on {:%Y-%m-%d} for )" PACKAGE_NAME R"( v{:.2f}.<br>
+        This page was generated on {:%Y-%m-%d} for )" PACKAGE_NAME R"( v{:s}.<br>
         Use the <code>dumpcommands</code> command to regenerate it yourself.
     </p>)",
-                            fmt::gmtime(std::time(nullptr)), cv::version.getDouble()));
+                            fmt::gmtime(std::time(nullptr)), cv::version.getString()));
 
     constexpr std::string_view marker = "{{CONVARS_HERE}}"sv;
     size_t pos = html_template.find(marker);
