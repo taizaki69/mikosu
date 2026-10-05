@@ -1953,6 +1953,10 @@ msgid "For typing Japanese, Chinese, Korean and similar."
 msgstr ""
 
 #: src/App/Neomod/OptionsOverlay.cpp
+msgid "Typing"
+msgstr ""
+
+#: src/App/Neomod/OptionsOverlay.cpp
 msgid "Reset all key bindings"
 msgstr "すべてのキーバインドをリセットする"
 
