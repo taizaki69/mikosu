@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Runs the sanity test on a Windows build under Wine, in a Wine prefix of its own
+# (~/.local/share/mikosu-dev/wine-smoke), never ~/.wine: library detection scans that one, and it's the user's.
+#
+#   tools/dev/wine-smoke [build-win64/dist/bin-x86_64/mikosu.exe] [-- extra launch args, e.g. -dx11]
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+exe="$ROOT/build-win64/dist/bin-x86_64/mikosu.exe"
+if [[ $# -gt 0 && "$1" != "--" ]]; then exe="$1"; shift; fi
+
+export WINEPREFIX="$HOME/.local/share/mikosu-dev/wine-smoke"
+export WINEARCH=win64
+# no Mono/Gecko install prompts, no debug spam
+export WINEDLLOVERRIDES="mscoree=;mshtml="
+export WINEDEBUG=-all
+mkdir -p "$WINEPREFIX"
+if [[ ! -f "$WINEPREFIX/system.reg" ]]; then
+    echo "[wine-smoke] creating the prefix $WINEPREFIX"
+    "$ROOT/tools/dev/guarded" --mem 4G --tasks 512 -- wineboot -i >/dev/null 2>&1 || true
+fi
+exec "$ROOT/tools/dev/guarded" --mem 6G --tasks 1024 -- python3 "$ROOT/tests/sanity/run.py" --wine "$exe" "$@"

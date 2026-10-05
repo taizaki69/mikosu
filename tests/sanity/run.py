@@ -5,6 +5,8 @@ and quits (see run_args.txt). meant for CI, to catch builds that crash, hang or 
 usage:
   run.py <neomod executable> [-- extra launch args, e.g. -opengl]
   run.py <neomod.js>         the wasm build, run with node (which has no renderer, so there's no screenshot)
+  run.py --wine <neomod.exe> a Windows build under Wine (set WINEPREFIX to a prefix of its own, never ~/.wine;
+                             tools/dev/wine-smoke does that)
 
 a run passes if every ui_assert in run_args.txt passes, the game shuts down cleanly with exit code 0 and its
 screenshot of the ranking screen isn't blank. the data dir is kept if the run fails.
@@ -12,6 +14,7 @@ screenshot of the ranking screen isn't blank. the data dir is kept if the run fa
 
 import argparse
 import math
+import os
 import shutil
 import signal
 import struct
@@ -144,6 +147,7 @@ def main():
     ap.add_argument("target", type=Path, help="the neomod executable, or neomod.js of the wasm build")
     ap.add_argument("--timeout", type=float, default=120, metavar="SECS", help="when the run counts as hung")
     ap.add_argument("-v", "--verbose", action="store_true", help="print the game's output on success too")
+    ap.add_argument("--wine", action="store_true", help="run a Windows build under Wine (needs WINEPREFIX set)")
     # everything after -- goes to the game (split off by hand, argparse can't mix that with options on 3.9)
     argv = sys.argv[1:]
     split = argv.index("--") if "--" in argv else len(argv)
@@ -159,6 +163,13 @@ def main():
         shutil.rmtree(data, ignore_errors=True)
         game_data = "/persist/sanity"
         cmd = ["node", str(target)]
+    elif args.wine:
+        prefix = os.environ.get("WINEPREFIX", "")
+        if not prefix or Path(prefix).expanduser().resolve() == (Path.home() / ".wine").resolve():
+            sys.exit("--wine needs WINEPREFIX set to a prefix of its own (not ~/.wine)")
+        data = Path(tempfile.mkdtemp(prefix="neomod-sanity-"))
+        game_data = "Z:" + data.as_posix()  # wine maps the unix root to Z:
+        cmd = ["wine", str(target)]
     else:
         data = Path(tempfile.mkdtemp(prefix="neomod-sanity-"))
         game_data = data.as_posix()
