@@ -77,8 +77,13 @@ star/attribute medians agree to ~5e-5 at rate 1.0 over a 17.5k-map std corpus, a
 calculator is exact given equal attributes. 
 
 Known residual divergences:
-- non-1.0 rates (median ~2e-3 at 1.5x; our rate-divided object times truncate to integer ms where lazer keeps doubles)
 - coarse slider path resampling (`stars_slider_curve_points_separation` stays at 20px to bound memory; ~1e-5 median star cost vs 2px)
+
+mikosu (algo 20261005): object times are exact doubles like lazer's (they were whole milliseconds, truncated at
+non-1.0 rates and for every slider end), and the slider tail leniency applies on the map's own timeline before the
+clock rate, as in lazer. Against osu-tools at ppy/osu 2026.921.0 over 300 difficulties of a local library
+(`tools/parity/sr_corpus.py`), within 1e-4 stars: NM 189, HD 181, HR 152, DT 160, EZ 193 (were 110, 116, 99, 0,
+120); medians 4e-5 to 1e-4 (DT was 1.3e-2).
 
 ## Golden test suite
 
@@ -93,7 +98,7 @@ Run from the repo root (the default `--suite` is `tools/diffcalc/tests`):
 Runs every fixture through a fixed 14-config matrix (NM/HD/HR/EZ, rates 1.5/0.75/1.25, HD,HR,
 HD@1.5, RX/AP/TD, FL, HD,FL) and compares against the checked-in per-fixture goldens in
 `tests/golden/`. The goldens pin the current `PP_ALGORITHM_VERSION` exactly on the platform
-they were recorded on (arm64 macOS, Apple clang).
+they were recorded on (since algo 20261005: x86-64 Linux, gcc 14; before that arm64 macOS, Apple clang).
 
 Algorithm changes are expected to fail the suite until re-recorded together with a
 `PP_ALGORITHM_VERSION` bump; the golden diff is part of the review. HR/EZ apply the in-game

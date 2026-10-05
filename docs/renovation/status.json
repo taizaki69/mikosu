@@ -13,8 +13,12 @@
   },
   "parity": {
     "oracle": "osu-tools 8ce45b3 (PerformanceCalculator) built against ppy/osu 2026.921.0-lazer",
-    "algorithm": "neomod PP_ALGORITHM_VERSION 20260811",
-    "corpus_cases": 0,
+    "algorithm": "PP_ALGORITHM_VERSION 20261005 (exact object times)",
+    "corpus_cases": 300,
+    "corpus_tool": "tools/parity/sr_corpus.py (300 local difficulties, mods NM HD HR DT EZ)",
+    "sr_within_1e-4": {"NM": 189, "HD": 181, "HR": 152, "DT": 160, "EZ": 193},
+    "sr_median_abs_diff": {"NM": 5.9e-05, "HD": 5.5e-05, "HR": 9.8e-05, "DT": 8.1e-05, "EZ": 3.6e-05},
+    "sr_worst_known": "Risshuu feat. Choko - Take [Gust's Insane]: +0.010 NM, +0.027 HR",
     "sr_within_1e-4_rate": null,
     "pp_within_0.01_rate": null,
     "spot_checks": [
