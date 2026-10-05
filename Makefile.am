@@ -375,7 +375,9 @@ endif
 
 SDL3_CFLAGS += $(shell $(PKG_CONFIG) --cflags sdl3)
 SDL3_LIBS += $(shell $(PKG_CONFIG) --libs sdl3) $(SDL3_EXTRALIBS)
-$(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built: $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).tar.gz $(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built
+# (the patches are prerequisites too, so adding or changing one rebuilds SDL from a fresh copy of its source)
+$(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built: $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).tar.gz $(DEPS_PREFIX)/freetype-$(FREETYPE2_VERSION).built \
+		$(wildcard $(BUILD_MISCDIR)/SDL3-*.patch)
 	rm -rf $(DEPS_PREFIX)/SDL3
 	$(MKDIR_P) $(DEPS_PREFIX)/SDL3 $(DEPS_PREFIX)/lib/pkgconfig
 	$(TAR) xf $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).tar.gz -C $(DEPS_PREFIX)/SDL3 --strip-components=1 && \
@@ -387,6 +389,7 @@ $(DEPS_PREFIX)/SDL3-$(SDL3_VERSION).built: $(DEPS_CACHE)/SDL3-$(SDL3_VERSION).ta
 	patch -Np1<$(BUILD_MISCDIR)/SDL3-IS15656-D3D12-latency-poc.patch && \
 	patch -Np1<$(BUILD_MISCDIR)/SDL3-wayland-tablet-cursor-visibility.patch && \
 	patch -Np1<$(BUILD_MISCDIR)/SDL3-offscreen-display-size.patch && \
+	patch -Np1<$(BUILD_MISCDIR)/SDL3-x11-xinput2-ime-commit.patch && \
 	PKG_CONFIG="$(PKG_CONFIG)" LDFLAGS="$(LDFLAGS) $(if $(SDL3_STATIC),,$(SDL3_EXTRALIBS))" CC="$(CC)" CXX="$(CXX)" OBJCFLAGS="$(OBJCFLAGS)" \
 	$(CMAKE_CONF_PFX) $(CMAKE) -S . -B build -G "$(CMAKE_GEN)" \
 		-D CMAKE_BUILD_TYPE="$(if $(ENABLE_DEBUG),Debug,Release)" \
