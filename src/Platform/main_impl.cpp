@@ -596,12 +596,19 @@ SDL_AppResult SDLMain::handleEvent(SDL_Event *event) {
                 case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
                     cv::fullscreen.setValue(true, false);
                     m_bRestoreFullscreen = false;
+                    // mikosu: re-evaluate the resolution now that the window state says fullscreen. the size change
+                    // can arrive before this event (X11 sends the new size before the fullscreen state), and a
+                    // resize handled as "windowed" left the game at the desktop resolution instead of the
+                    // fullscreen/letterboxed one from the settings
+                    if(!winMinimized()) m_engine->requestResolutionChange(getWindowSize());
                     break;
 
                 case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
                     cv::fullscreen.setValue(false, false);
                     if(!m_bRestoreFullscreen) {  // make sure we re-add window borders, unless we're in the minimize-on-focus-lost-hack-state
                         SDL_SetWindowBordered(m_window, true);
+                        // mikosu: same as above, the other way round
+                        if(!winMinimized()) m_engine->requestResolutionChange(getWindowSize());
                     }
                     break;
 
