@@ -1387,7 +1387,10 @@ endif # CLANG_BUILD
 $(PCH_OUTPUT): $(PCH_SOURCE) $(BUILT_SOURCES)
 	@rm -f $(PCH_OUTPUT) # remove possibly existing-but-outdated pch to avoid recursively including it (sanity)
 	@$(MKDIR_P) $(dir $@)
-	$(CXX) -c -x c++-header -MMD -MF $(PCH_DEPS) $(PCH_BUILD_FLAGS) \
+	@# never through ccache: with the pch_defines sloppiness the wrapper sets, a header whose only change is a
+	@# #define value (config.h: PACKAGE_NAME, feature switches) preprocesses to the same text and ccache would hand
+	@# back the stale .gch
+	CCACHE_DISABLE=1 $(CXX) -c -x c++-header -MMD -MF $(PCH_DEPS) $(PCH_BUILD_FLAGS) \
 		$(CPPFLAGS) $(neomod_CPPFLAGS) $(neomod_CXXFLAGS) $(CXXFLAGS) \
 		-o $@ $(PCH_SOURCE)
 
