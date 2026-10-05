@@ -33,7 +33,7 @@ dist/
 dist-*/
 debug*/
 /*-build/
-release/
+/release/
 /build/
 /build-debug/
 /test-*/

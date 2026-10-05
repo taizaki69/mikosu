@@ -190,7 +190,9 @@ Storyboards (check upstream `sb` first), lazer mods (rate with a pitch option, D
 
 - **Packages:** an AppImage (Flatpak later), plus a Windows zip and an installer.
 - **Versions and updates:** versioning, a changelog, and a disclosed update check that can be turned off.
-- **Licensing:** `LICENSE`, `CREDITS.md`, `THIRD_PARTY_NOTICES`. Decide whether the default audio backend becomes SoLoud (open source) or stays BASS, from latency measurements.
+- **Licensing:** `LICENSE`, `CREDITS.md`, `THIRD_PARTY_NOTICES.txt` (generated: `tools/release/third_party_notices.py`). Decide whether the default audio backend becomes SoLoud (open source) or stays BASS, from latency measurements.
+  - **User decision (licence risk):** whether release builds include BASS at all. It's closed source and free for non-commercial use, shipped next to GPL-3.0 code (neomod does the same). The alternative is SoLoud-only releases.
+  - Generate the in-game Licenses tab (`assets/misc/licenses.txt`, neomod's hand-written list) from the same source as `THIRD_PARTY_NOTICES.txt`, so the two can't drift.
 - **README:** install, feature tour, parity guarantees and their limits, credits.
 - **Publishing:** walk the user through the GitHub release.
 
