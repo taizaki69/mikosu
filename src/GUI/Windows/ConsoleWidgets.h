@@ -12,7 +12,7 @@ class CBaseUIButton;
 class ConsoleSuggestionList;
 
 namespace Mc {
-// integer text scale for the console font (tahoma 8 @ 96 dpi without antialiasing, only crisp in whole steps)
+// integer text scale for the console font (outfit 8 @ 96 dpi; scaled in whole steps, as with the old pixel font)
 [[nodiscard]] float consoleLogScale(float dpiScale);
 }  // namespace Mc
 

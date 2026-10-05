@@ -1938,17 +1938,17 @@ Used as: vendored in libraries/demoji.c
 ####################################################################################################
 
 ----------------------------------------------------------------------------------------------------
-Source Sans Pro
+Outfit
 ----------------------------------------------------------------------------------------------------
-Homepage: https://github.com/adobe-fonts/source-sans
+Homepage: https://github.com/Outfitio/Outfit-Fonts
 Licence: OFL-1.1
-Used as: font (assets/fonts)
+Used as: UI font (assets/fonts/outfit.ttf)
 
-Copyright 2010, 2012, 2014 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name 'Source'. All Rights Reserved. Source is a trademark of Adobe Systems Incorporated in the United States and/or other countries.
+Copyright 2021 The Outfit Project Authors (https://github.com/Outfitio/Outfit-Fonts)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
-
-This license is copied below, and is also available with a FAQ at: http://scripts.sil.org/OFL
+This license is copied below, and is also available with a FAQ at:
+https://scripts.sil.org/OFL
 
 
 -----------------------------------------------------------
@@ -2054,7 +2054,7 @@ Homepage: https://forkaweso.me
 Licence: OFL-1.1
 Used as: icon font (assets/fonts)
 
-Fork Awesome, by the Fork Awesome contributors, licensed under the SIL Open Font License 1.1 (the full licence text is under Source Sans Pro above).
+Fork Awesome, by the Fork Awesome contributors, licensed under the SIL Open Font License 1.1 (the full licence text is under Outfit above).
 
 ####################################################################################################
 # Standard licence texts referred to above

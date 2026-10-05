@@ -9,11 +9,12 @@ Ground rule 3: ship nothing of ppy's, and only assets that are clearly redistrib
 
 | File | Source / licence | Verdict |
 |---|---|---|
-| `SourceSansPro-{Regular,Semibold,Bold}.woff2` | Adobe Source Sans Pro, SIL OFL 1.1 (`SourceSansLicense.txt`) | keep for now; the new UI uses Outfit + M PLUS 1 (both OFL) |
+| `outfit.ttf` (+ `OutfitLicense.txt`) | Outfit variable font (weights 100–900) by the Outfit Project Authors, SIL OFL 1.1, no reserved font name; the unmodified `Outfit[wght].ttf` from github.com/google/fonts (`ofl/outfit`) | keep: the UI font since 2026-10-05 (the engine picks weights with `outfit@600`-style names) |
 | `blobmoji.woff2` | Google Blobmoji, Apache 2.0 (`Blobmoji-LICENSE.txt`) | keep |
 | `forkawesome.woff2` | Fork Awesome icons, SIL OFL 1.1 (font) and MIT (code) | keep, but add its licence file |
-| `tahoma.woff2` | **Microsoft Tahoma, proprietary**; redistribution not permitted | **replace** (OFL alternative) |
-| `weblysleekuisb.woff2` | "Weblysleek UI Semibold", no licence found | **replace** |
+| ~~`tahoma.woff2`~~ | Microsoft Tahoma, proprietary | **removed 2026-10-05** (replaced by Outfit) |
+| ~~`weblysleekuisb.woff2`~~ | "Weblysleek UI Semibold", no licence found | **removed 2026-10-05** (replaced by Outfit) |
+| ~~`SourceSansPro-*.woff2`~~ | Adobe Source Sans Pro, OFL | removed 2026-10-05 (unused after the switch to Outfit) |
 
 ## UI images (`assets/materials/*.png`)
 

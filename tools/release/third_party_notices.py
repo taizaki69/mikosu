@@ -192,14 +192,14 @@ def main():
         ("demoji", "", "", "MIT", "vendored in libraries/demoji.c", leading_comment(lib / "demoji.c")),
     ]
     font_entries = [
-        ("Source Sans Pro", "", "https://github.com/adobe-fonts/source-sans", "OFL-1.1", "font (assets/fonts)",
-         (fonts / "SourceSansLicense.txt").read_text(encoding="utf-8", errors="replace").strip()),
+        ("Outfit", "", "https://github.com/Outfitio/Outfit-Fonts", "OFL-1.1", "UI font (assets/fonts/outfit.ttf)",
+         (fonts / "OutfitLicense.txt").read_text(encoding="utf-8", errors="replace").strip()),
         ("Blobmoji", "", "https://github.com/C1710/blobmoji", "Apache-2.0", "font (assets/fonts)",
          "Blobmoji, a fork of Google's Noto Emoji, by its contributors. Licensed under the Apache License 2.0 (below; "
          "also assets/fonts/Blobmoji-LICENSE.txt)."),
         ("Fork Awesome", "", "https://forkaweso.me", "OFL-1.1", "icon font (assets/fonts)",
          "Fork Awesome, by the Fork Awesome contributors, licensed under the SIL Open Font License 1.1 (the full "
-         "licence text is under Source Sans Pro above)."),
+         "licence text is under Outfit above)."),
     ]
 
     standard = {

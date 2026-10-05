@@ -14,9 +14,9 @@ namespace Mc::Tests {
 using std::string_view_literals::operator""sv;
 
 EmojiRenderTest::EmojiRenderTest() {
-    m_font16 = resourceManager->loadFont("weblysleekuisb", "EMOJI_TEST_16", 16, true);
-    m_font24 = resourceManager->loadFont("weblysleekuisb", "EMOJI_TEST_24", 24, true);
-    m_font32 = resourceManager->loadFont("weblysleekuisb", "EMOJI_TEST_32", 32, true);
+    m_font16 = resourceManager->loadFont("outfit@500", "EMOJI_TEST_16", 16, true);
+    m_font24 = resourceManager->loadFont("outfit@500", "EMOJI_TEST_24", 24, true);
+    m_font32 = resourceManager->loadFont("outfit@500", "EMOJI_TEST_32", 32, true);
 }
 
 EmojiRenderTest::~EmojiRenderTest() = default;
