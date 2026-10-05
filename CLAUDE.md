@@ -85,7 +85,7 @@ tools/build.sh linux --dev      # with in-binary tests (-testapp), in build-dev/
 ## Run and test
 
 ```
-build/dist/bin-x86_64/mikosu                                  # normal run (writes its data next to the binary)
+build/dist/bin-x86_64/mikosu                                  # normal run (data in ~/.local/share/mikosu; a "portable" file next to the binary keeps it there instead)
 build/dist/bin-x86_64/mikosu -datadir /tmp/x -multi          # throwaway data dir, alongside a running instance
 python3 tests/sanity/run.py build/dist/bin-x86_64/mikosu -- -opengl   # headless smoke test (also without -opengl)
 python3 tools/bench/bench.py --game build/dist/bin-x86_64/mikosu --renderer gl --library ~/.local/share/osu-stable --out x.json
