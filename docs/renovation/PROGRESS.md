@@ -2,6 +2,23 @@
 
 Newest session first. Every claim cites its evidence (a test, a measurement or a screenshot).
 
+## 2026-10-05 evening: DT/NC like stable; star rating parity at DT
+
+- **User re-test:** "works perfectly now" (keys, alt-tab, custom resolution, FPS).
+- **User request, done:**
+  - The DT button cycles DT → NC → off like stable, and HT cycles HT → DC → off.
+  - "Prefer Nightcore" is removed (PLAN 25).
+  - Checked headless with the DT/HT keys; the mod-menu UI tests pass.
+- **Star-rating parity (workstream B):** `tools/parity/sr_corpus.py` compares mikosu with osu-tools over 300 local difficulties.
+  - **Before:** DT was off by a median of 0.013 stars (max 0.20), with 0/300 within 1e-4.
+  - **Causes:**
+    - whole-millisecond object times (truncated at DT, and at every slider end);
+    - the slider tail leniency applied after the clock rate.
+  - **Fix:** PLAN 26, algorithm 20261005, goldens re-recorded.
+  - **After, within 1e-4:** NM 110 → 189, HD 116 → 181, HR 99 → 152, DT 0 → 160, EZ 120 → 193. The speed skill now matches to ~1e-9.
+  - **Remaining:** aim and reading medians of ~3e-5 to 6e-5, and one outlier map ("Risshuu feat. Choko - Take [Gust's Insane]", +0.010 NM, +0.027 HR).
+- **CI:** GitHub's hosted runners didn't pick up jobs from about 19:44 UTC (one run failed with "job was not acquired by Runner"; the next sat queued). Locally, Linux tests and the Windows cross-build with its Wine smoke tests pass for the whole stack. PR #8 waits for CI. The star-rating fix (branch `sr-exact-times`, on top of #8) becomes the next PR.
+
 ## 2026-10-05 afternoon: M1 play-test feedback and fixes
 
 The user played the M1 build: "works the same as neomod" (gameplay unchanged). They reported 4 issues, all also present in neomod. Each one was reproduced and fixed:
