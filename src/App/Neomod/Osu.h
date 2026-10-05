@@ -370,7 +370,11 @@ class Osu final : public App, public MouseListener, public TouchListener {
     friend class BeatmapInterface;
     bool bIsPlayingASelectedBeatmap{false};
 
+   public:
+    // where osu!stable usually is (looks for osu!.exe), else the user data path; also used by SettingsImporter
     [[nodiscard]] static std::string getDefaultFallbackOsuFolder();
+
+   private:
 
     // internal audio setup
     void setupAudio();
