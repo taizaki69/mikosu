@@ -34,6 +34,7 @@
 | `gen_translations.py` leaves the tracked `.pot`/`.po` alone unless the string set changed | `build-aux/gen_translations.py` | gettext < 0.22 rewrote them on every clean build |
 | SDL3 offscreen display size from `SDL_VIDEO_OFFSCREEN_DISPLAY_SIZE` | `build-aux/misc/SDL3-offscreen-display-size.patch`, `Makefile.am` | headless screenshots and benchmarks at real resolutions |
 | FrameStats benchmark recorder (`-benchout`) | `src/Engine/FrameStats.*`, `src/Platform/main*.cpp`, `LaunchArgs.*`, `SDLGLInterface.cpp` | performance baseline and regression checks |
+| Upstream CI workflows replaced by `.github/workflows/ci.yml` (Linux and Windows x64 only, built with `tools/build.sh`) | `.github/workflows/` | mikosu targets Linux and Windows; upstream's workflows use neomod's Docker image and the `master` branch. **Skip** workflow changes when cherry-picking |
 
 ## Review log
 
