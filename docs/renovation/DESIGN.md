@@ -1,6 +1,8 @@
 # mikosu design spec
 
-> **Status: draft, direction revised 2026-10-04.** The user rejected all three first-round mockups (A faithful, B refined, C bold) as "way too old style". The new direction, in the user's words: *keep the general osu!stable layout; some design aspects can be borrowed from osu!lazer; just not lazer's layout.* Their picks from lazer's styling: **slanted (sheared) shapes, a clean modern font, and flat dark panels**. Overall feel: **clean and calm** (few effects; the map background does the talking). Not picked, so not a focus: colour-coded star-rating badges. The second-round mockups follow this; the tokens below are rewritten once one is chosen.
+> **Status: direction chosen 2026-10-04.** Round-2 option **2, "Slanted controls"** (mockups: `mockups/{mainmenu2,songselect2}-controls.jpg`).
+> - **History:** the user rejected all round-1 looks as "way too old style". They then asked for stable's layout with styling borrowed from lazer: slanted shapes, a clean modern font, flat dark panels, calm. From the three round-2 variants they picked the one that slants controls and map panels, keeps lists straight and takes its accent from the map background.
+> - **Tokens:** the ones below are the working set. They're refined screen by screen in Phase 4.
 
 ## Intent
 
@@ -54,63 +56,90 @@ All three keep stable's layout (mockups: `mockups/{mainmenu,songselect}-{faithfu
   - light rays and particles;
   - neon selection.
 
-## Tokens (draft, from B)
+### Round 2 (chosen: option 2, 2026-10-04)
 
-**Colour roles.** Values are defaults. `accent` and `accent-2` are recomputed per background (see "Background accent").
+All three keep stable's layout and use Outfit, flat dark panels and a calm visualizer. Mockups: `mockups/{mainmenu2,songselect2}-{all,controls,accents}.jpg`; source in `mockups/src/{modern.css,*2.html}`.
+
+1. **Slanted everything:** every panel, button and leaderboard row slanted; one fixed accent.
+2. **Slanted controls (chosen):**
+   - buttons, tabs, dropdowns, search, map panels, the info wedge and the user card are slanted;
+   - lists and long text (leaderboard rows, options rows) stay straight for reading;
+   - the accent comes from the map's background.
+3. **Slanted accents:** straight panels with slanted edges, underlined tabs and accent stripes.
+
+## Tokens (working set for the chosen direction)
+
+**Shape:**
+- slant: `skewX(-11°)` (≈ 0.2 horizontal shear), with content counter-skewed so text stays upright;
+- corners: sharp (radius 0);
+- borders: 1 px hairline `line`.
+- Slanted elements:
+  - buttons (bottom bar, main menu, music controls);
+  - tabs, dropdowns and the search field;
+  - carousel panels (sets and difficulties);
+  - the song-select info wedge, which bleeds off the left edge;
+  - the user card and avatars.
+- Straight elements:
+  - leaderboard and score rows;
+  - options rows;
+  - dialogs;
+  - text blocks;
+  - gameplay HUD (skin-driven).
+
+**Colour roles:**
 
 | Role | Default | Use |
 |---|---|---|
-| `ink` | `#FFFFFF` | primary text on art |
-| `ink-2` | white 74% | secondary text |
-| `ink-3` | white 50% | hints, labels |
-| `glass` | `rgba(22,14,36,.46)` over the cached blur of the background | panels |
-| `glass-edge` | white 12% | 1 px panel border |
-| `shade` | `rgba(10,6,20,.28)` + vignette | dim over the background |
-| `accent` | `#FF7F9E` | selection, focus, primary action |
-| `accent-2` | `#FFB36B` | gradient partner, progress |
-| `grade-x/s/a/b/c/d` | skin grade images first; fallback gradients | grades |
-| `mod-*` | per-mod colours (HD gold, HR red, DT violet, …) | mod badges, when the skin has no mod images |
-| `sr-*` | difficulty colour ramp by star rating | star-rating pills |
+| `ink` / `ink-2` / `ink-3` | `#F3F5F9` / `#AAB0BE` / `#6F7686` | primary / secondary / hint text |
+| `panel` | map-tinted dark, e.g. `rgba(22,15,26,.94)` (neutral fallback `rgba(17,19,26,.94)`) | flat panels |
+| `panel-2` | `rgba(36,24,40,.97)` | selected or raised panel |
+| `panel-3` | `#3A2A40` | button fill |
+| `line` | white 7% | hairline borders |
+| `accent` | from the map background (coral `#FF7D85` for the twilight test art; neutral fallback `#FF5C8A`) | selection bar, primary button fill, progress, focus |
+| `accent-ink` | very dark version of the accent | text on accent fills |
+| `info` | `#5AC8FF` | secondary highlight (rare) |
+| `grade-*` | S `#FFCF5A`, A `#73E0A0`, B `#6FB8FF`, … (skin grade images win) | grades |
+| `dim` | left-weighted dark gradient over the background (72% → 30%) | readability over art |
 
-**Type.** Nunito (OFL; variable weight 200–1000) for UI text and numbers, with tabular figures for scores. M PLUS Rounded 1c (OFL) as the CJK fallback, which matches Nunito's rounded terminals.
+There's no glass, no blur, no glow and no gradients on panels; the background art is the only rich surface. Star ratings use the accent colour, not a difficulty spectrum (the user didn't pick colour-coding).
+
+**Type.** **Outfit** (OFL, variable 100–900) for all UI text, with tabular figures for numbers. **M PLUS 1** (OFL, variable) as the CJK fallback.
 
 | Token | Size / weight | Use |
 |---|---|---|
-| `display` | 44 / 800 | beatmap title in song select |
-| `title` | 25 / 800 | panel titles, menu buttons (40 / 900) |
-| `body` | 17–21 / 600–700 | rows, info |
-| `label` | 14–16 / 800, +0.08em tracking, uppercase | section labels, key hints |
-| `caption` | 15 / 600 | secondary lines |
+| `display` | 46 / 700, −1.5% tracking | song-select title |
+| `subhead` | 24 / 600, accent | difficulty name next to the title |
+| `button` | 34 / 600 (main menu), 16 / 600 (bars) | buttons |
+| `panel-title` | 22 / 600 | carousel titles |
+| `body` | 18–19 / 400–600 | info lines, rows |
+| `meta` | 14–15 / 400–500, `ink-3` | secondary lines |
+| `label` | 13–14 / 600, uppercase, +0.1em | field labels (Group, Sort, CS/AR…) |
 
-Sizes are in reference pixels at 1080p and scale with UI scale and resolution, because the UI renders as vectors and text, not stretched bitmaps.
+Sizes are reference pixels at 1080p and scale with resolution and UI scale; everything is drawn as vectors and text.
 
-**Spacing:** 4-pt base: 4, 8, 12, 16, 20, 24, 32, 40.
+**Spacing:** 4-pt grid. Carousel gap 8. List gap 6. Bar padding 22. Screen margins 28–34.
 
-**Radii:**
-- 8: badges
-- 12: rows
-- 14: carousel panels
-- 18: bars and buttons
-- 999: pills
-
-**Elevation:**
-- 0: on background
-- 1: glass panel (shadow `0 10 30 rgba(6,2,14,.35)`)
-- 2: selected (accent outline + glow `0 0 34 accent@45%`)
-- 3: overlays (mod select, options)
+**Elevation:** none (flat). Selection is shown by
+- an accent bar (6 px, inset on the slanted left edge),
+- a slightly lighter panel,
+- for the focused control, a 2 px accent outline.
 
 **Motion:**
 
 | Token | Duration | Curve | Use |
 |---|---|---|---|
-| `instant` | 0 ms, next frame | — | press feedback |
-| `quick` | 120 ms | out-cubic | hover, focus, small state |
-| `nav` | 180 ms | out-quart, 4% overshoot | screen and overlay transitions (≤ 200 ms rule) |
-| `carousel` | spring (stiffness 520, damping 38) | — | panel scrolling and selection |
-| `beat` | per beat, 80 ms attack and 260 ms decay | — | logo pulse, accent breathing |
-| `kiai` | 120 ms flash, then decay over the beat | — | kiai sections |
+| `instant` | next frame | — | press feedback |
+| `quick` | 120 ms | out-cubic | hover and focus |
+| `nav` | 180 ms | out-quart | screen and overlay transitions (≤ 200 ms rule) |
+| `carousel` | spring (stiffness 520, damping 38) | — | scrolling and selection |
+| `beat` | 80 ms attack, 260 ms decay | — | logo pulse; a subtle accent tick in the visualizer |
 
-**Background accent.** When the background changes, compute a small palette from the cached thumbnail (k-means on a few hundred pixels). Pick the most saturated mid-lightness colour as `accent`, and its warmer or cooler neighbour as `accent-2`. Clamp the contrast against `glass` to at least 3:1 for UI accents. Fall back to the defaults for greyscale art.
+Calm: no particles, light rays or kiai flashes beyond a soft accent pulse.
+
+**Background accent.** When the background changes, compute a small palette from the cached thumbnail (k-means on a few hundred pixels).
+- `accent`: the most saturated mid-lightness colour, contrast-checked against `panel` to at least 3:1.
+- `panel` tint: the darkest dominant hue at 6–10% saturation.
+- Fallback to neutral for greyscale art.
 
 ## Component inventory (to be detailed per screen in Phase 4)
 

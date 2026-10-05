@@ -25,11 +25,12 @@ mikosu now exists as a project. It starts from neomod, the newest descendant of 
 
 ## Waiting on you
 
-1. **The design, round 2.** You turned down all three first looks as too old-fashioned, and asked for osu!stable's layout with a modern look borrowing from lazer: slanted shapes, a clean modern font, flat dark panels, calm. New mockups are being made (paused at the usage limit); then you pick.
+Nothing right now.
 
 ## Done since last time
 
 - The project is public on GitHub: https://github.com/taizaki69/mikosu
+- **Design chosen:** round 2, option 2 ("Slanted controls"). It keeps osu!stable's layout, with slanted buttons and map panels, a clean modern font, flat dark panels, and an accent colour taken from each map's background. The redesign follows this.
 
 ## What's next
 
