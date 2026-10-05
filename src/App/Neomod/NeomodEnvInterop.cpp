@@ -262,15 +262,16 @@ void NeomodEnvInterop::setup_system_integrations() {
 
     SDL_SetWindowsMessageHook(sdl_windows_message_hook, nullptr);
 
-    // Register neomod as an application
+    // Register mikosu as an application, under its own name only: its ProgID and "mikosu://" URL protocol. Another
+    // client's (neomod's, neosu's) registrations are theirs and stay untouched
     HKEY neomod_key;
-    i32 err = RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Classes\\neomod", 0, nullptr, REG_OPTION_NON_VOLATILE,
-                              KEY_WRITE, nullptr, &neomod_key, nullptr);
+    i32 err = RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Classes\\" PACKAGE_NAME, 0, nullptr,
+                              REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &neomod_key, nullptr);
     if(err != ERROR_SUCCESS) {
         debugLog("Failed to register " PACKAGE_NAME " as an application. Error: {} (root)", err);
         return;
     }
-    RegSetValueExW(neomod_key, L"", 0, REG_SZ, (BYTE *)L"neomod", 12);
+    RegSetValueExW(neomod_key, L"", 0, REG_SZ, (const BYTE *)(L"" PACKAGE_NAME), sizeof(L"" PACKAGE_NAME));
     RegSetValueExW(neomod_key, L"URL Protocol", 0, REG_SZ, (BYTE *)L"", 2);
 
     HKEY app_key;
@@ -281,7 +282,7 @@ void NeomodEnvInterop::setup_system_integrations() {
         RegCloseKey(neomod_key);
         return;
     }
-    RegSetValueExW(app_key, L"ApplicationName", 0, REG_SZ, (BYTE *)L"neomod", 12);
+    RegSetValueExW(app_key, L"ApplicationName", 0, REG_SZ, (const BYTE *)(L"" PACKAGE_NAME), sizeof(L"" PACKAGE_NAME));
     RegCloseKey(app_key);
 
     HKEY cmd_key;
@@ -293,7 +294,7 @@ void NeomodEnvInterop::setup_system_integrations() {
         return;
     }
 
-    // Add current launch options, so doing "Open with -> neomod"
+    // Add current launch options, so doing "Open with -> mikosu"
     // will always use the last launch options the player used.
     // (just the switches, not the files/links this launch was asked to open)
     std::wstring command = L'"' + UniString::to_wide(Mc::Paths::exe()) + L'"';
@@ -312,7 +313,7 @@ void NeomodEnvInterop::setup_system_integrations() {
 
     RegCloseKey(neomod_key);
 
-    // Register neomod as .osk handler
+    // Register mikosu as a .osk handler (an "Open with" entry, not the default)
     HKEY osk_key;
     err = RegCreateKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Classes\\.osk\\OpenWithProgids"), 0, nullptr,
                          REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &osk_key, nullptr);
@@ -320,11 +321,10 @@ void NeomodEnvInterop::setup_system_integrations() {
         debugLog("Failed to register " PACKAGE_NAME " as .osk format handler. Error: {}", err);
         return;
     }
-    RegSetValueEx(osk_key, TEXT("neomod"), 0, REG_SZ, (BYTE *)TEXT(""), sizeof(TEXT("")));
-    RegDeleteValue(osk_key, TEXT("neosu"));
+    RegSetValueExW(osk_key, L"" PACKAGE_NAME, 0, REG_SZ, (const BYTE *)L"", sizeof(L""));
     RegCloseKey(osk_key);
 
-    // Register neomod as .osr handler
+    // Register mikosu as a .osr handler (an "Open with" entry, not the default)
     HKEY osr_key;
     err = RegCreateKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Classes\\.osr\\OpenWithProgids"), 0, nullptr,
                          REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &osr_key, nullptr);
@@ -332,11 +332,10 @@ void NeomodEnvInterop::setup_system_integrations() {
         debugLog("Failed to register " PACKAGE_NAME " as .osr format handler. Error: {}", err);
         return;
     }
-    RegSetValueEx(osr_key, TEXT("neomod"), 0, REG_SZ, (BYTE *)TEXT(""), sizeof(TEXT("")));
-    RegDeleteValue(osr_key, TEXT("neosu"));
+    RegSetValueExW(osr_key, L"" PACKAGE_NAME, 0, REG_SZ, (const BYTE *)L"", sizeof(L""));
     RegCloseKey(osr_key);
 
-    // Register neomod as .osz handler
+    // Register mikosu as a .osz handler (an "Open with" entry, not the default)
     HKEY osz_key;
     err = RegCreateKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Classes\\.osz\\OpenWithProgids"), 0, nullptr,
                          REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &osz_key, nullptr);
@@ -344,8 +343,7 @@ void NeomodEnvInterop::setup_system_integrations() {
         debugLog("Failed to register " PACKAGE_NAME " as .osz format handler. Error: {}", err);
         return;
     }
-    RegSetValueEx(osz_key, TEXT("neomod"), 0, REG_SZ, (BYTE *)TEXT(""), sizeof(TEXT("")));
-    RegDeleteValue(osz_key, TEXT("neosu"));
+    RegSetValueExW(osz_key, L"" PACKAGE_NAME, 0, REG_SZ, (const BYTE *)L"", sizeof(L""));
     RegCloseKey(osz_key);
 }
 }  // namespace neomod

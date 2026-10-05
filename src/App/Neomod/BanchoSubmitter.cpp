@@ -30,7 +30,7 @@ void submit_score(FinishedScore score) {
     crypto::rng::get_rand(iv);
 
     Mc::Net::RequestOptions options{
-        .user_agent = "osu!",
+        .user_agent = BanchoState::user_agent,
         .timeout = cv::net_transfer_timeout.getVal<long>(),
         .connect_timeout = 5,
     };

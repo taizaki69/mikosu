@@ -1326,7 +1326,7 @@ void OsuDirectScreen::search(std::string_view query) {
     BANCHO::Api::append_auth_params(url);
 
     Mc::Net::RequestOptions options{
-        .user_agent = "osu!",
+        .user_agent = BanchoState::user_agent,
         .timeout = 5,
         .connect_timeout = 5,
         .flags = Mc::Net::RequestOptions::FOLLOW_REDIRECTS,

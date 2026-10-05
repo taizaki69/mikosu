@@ -182,7 +182,7 @@ void fetch_online_scores(const DatabaseBeatmap *beatmap) {
 
     const auto map_md5 = beatmap->getMD5();
     Mc::Net::RequestOptions options{
-        .user_agent = "osu!",
+        .user_agent = BanchoState::user_agent,
         .timeout = 5,
         .connect_timeout = 5,
     };

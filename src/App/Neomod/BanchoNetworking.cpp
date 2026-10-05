@@ -103,7 +103,7 @@ void attempt_logging_in() {
 
     Mc::Net::RequestOptions options{
         .post_data = BanchoState::build_login_packet(),
-        .user_agent = "osu!",
+        .user_agent = BanchoState::user_agent,
         .timeout = 30,
         .connect_timeout = 5,
     };
@@ -163,7 +163,7 @@ void send_bancho_packet_http(std::span<const u8> batch) {
     if(auth_token.empty()) return;
 
     Mc::Net::RequestOptions options{
-        .user_agent = "osu!",
+        .user_agent = BanchoState::user_agent,
         .timeout = 30,
         .connect_timeout = 5,
     };
@@ -387,7 +387,7 @@ void BanchoState::disconnect(bool shutdown) {
 
         Mc::Net::RequestOptions options{
             .post_data = std::string(batch.data.begin(), batch.data.end()),
-            .user_agent = "osu!",
+            .user_agent = BanchoState::user_agent,
             .timeout = 5,
             .connect_timeout = 5,
         };
@@ -510,7 +510,7 @@ void BanchoState::reconnect_websocket() {
     if(!BANCHO::Net::use_websockets) return;
 
     Mc::Net::WSOptions options;
-    options.user_agent = "osu!";
+    options.user_agent = BanchoState::user_agent;
     options.headers["x-mcosu-ver"] = BanchoState::neomod_version;
     options.headers["osu-token"] = BANCHO::Net::auth_token;
 

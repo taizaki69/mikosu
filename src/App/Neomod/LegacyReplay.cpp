@@ -438,7 +438,7 @@ void load_and_watch(FinishedScore score) {
         fmt::format("osu.{:s}/web/osu-getreplay.php?m=0&c={:d}", BanchoState::endpoint, score.bancho_score_id);
     BANCHO::Api::append_auth_params(url);
     Mc::Net::RequestOptions options{
-        .user_agent = "osu!",
+        .user_agent = BanchoState::user_agent,
         .timeout = 5,
         .connect_timeout = 5,
     };
