@@ -44,7 +44,11 @@ mikosu is an osu! client: a fork of neomod (itself McOsu's descendant) being ren
 | `tools/build.sh` | one-command build (Linux or Windows cross) |
 | `tools/dev/guarded` | resource-capped runner for heavy commands |
 | `tools/bench/bench.py` | performance benchmark (frame times, latency, startup, memory) |
-| `tools/diffcalc/` | standalone star/pp calculator with golden fixtures |
+| `tools/diffcalc/` | standalone star/pp calculator with golden fixtures (`diffcalc test --tolerance`, also in CI) |
+| `tools/runner/replay_runner.py` | plays .osr replays through the gameplay code headless (`replay_run`) and compares judgements, combo, score with the recorded ones |
+| `tools/screens/capture.py` | headless screenshots of every screen at 4 resolutions + 2× UI scale, with generated content (F QA loop) |
+| `tools/dev/wine-smoke` | sanity test of the Windows build under Wine, in its own prefix (never `~/.wine`) |
+| `tools/release/third_party_notices.py` | regenerates `THIRD_PARTY_NOTICES.txt` from the sources a build unpacked |
 | `tests/sanity/`, `tests/ui/` | headless end-to-end smoke test, scripted UI tests |
 | `docs/renovation/` | `BRIEF`, `PLAN` (phases and decision log), `PROGRESS` (session log), `STATUS` (plain-language status for the user), `status.json`, `ARCHITECTURE`, `FEATURES` (brief vs neomod matrix), `BASELINE`, `UPSTREAM`, `DESIGN`, `mockups/`, `screens/` |
 | `ref/` (git-ignored) | read-only reference checkouts: `McOsu`, `McEngine`, `osu` (ppy/osu at the pinned tag), `osu-tools` (the oracle, switched to the local `osu` with `UseLocalOsu.sh`), `rosu-pp` |
@@ -90,7 +94,12 @@ build/dist/bin-x86_64/mikosu -datadir /tmp/x -multi          # throwaway data di
 python3 tests/sanity/run.py build/dist/bin-x86_64/mikosu -- -opengl   # headless smoke test (also without -opengl)
 python3 tools/bench/bench.py --game build/dist/bin-x86_64/mikosu --renderer gl --library ~/.local/share/osu-stable --out x.json
 ref/osu-tools/PerformanceCalculator/bin/Release/net10.0/PerformanceCalculator difficulty <map.osu> -j   # oracle, offline
+python3 tools/runner/replay_runner.py --game build/dist/bin-x86_64/mikosu --songs ~/.local/share/osu-stable/Songs --replays ~/.local/share/osu-stable/Data/r
+python3 tools/screens/capture.py --game build/dist/bin-x86_64/mikosu --out /tmp/shots   # add --screens / --res to narrow it
+tools/dev/wine-smoke -- -dx11                                 # after tools/build.sh windows
 ```
+
+**When the user is using the PC** (a game running, say): skip benchmarks, since the numbers would be void. Keep headless runs gentle with `headless_fps_max 60` (`capture.py` does this by default), since uncapped headless rendering takes the GPU.
 
 **Headless runs and screenshots:**
 - Add `-headless`, which gives offscreen GL on the real GPU and dummy audio, and drive the game through stdin. Commands: `set_active_ui_screen songbrowser`, `sendkey Return`, `mouse_to x y`, `@wait_secs N`, `take_screenshot name.png` (written to the data dir), `ui_assert ...`, `exit`.
