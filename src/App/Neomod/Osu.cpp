@@ -2343,7 +2343,9 @@ std::string Osu::getDefaultFallbackOsuFolder() {
         if(!toplevelDir.empty() && !toplevelDir.ends_with('/')) {
             toplevelDir.push_back('/');
         }
-        for(std::string_view subdir : {"osu!/", "osu-wine/", "osu-wine/osu!/", "osu/", "osu/osu!/"}) {
+        // (mikosu: also "osu-stable/", where some Linux setups and installers put it)
+        for(std::string_view subdir :
+            {"osu!/", "osu-stable/", "osu-wine/", "osu-wine/osu!/", "osu-stable/osu!/", "osu/", "osu/osu!/"}) {
             const std::string checkDir = fmt::format("{}{}", toplevelDir, subdir);
             if(Environment::directoryExists(checkDir)) {
                 // check for osu!.exe

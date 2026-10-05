@@ -15,6 +15,8 @@
 #include "Parsing.h"
 #include "Logging.h"
 
+#include <filesystem>
+
 #ifdef MCENGINE_PLATFORM_WINDOWS
 #include "WinDebloatDefs.h"
 
@@ -315,20 +317,54 @@ bool import_from_mcosu(std::string mcosu_path) {
     return true;
 }
 
+namespace {
+// mikosu: the most recently written per-user stable config (osu!.<user>.cfg) in an osu! folder, or empty
+std::string newest_stable_user_cfg(std::string_view osu_folder) {
+    std::string newest;
+    std::filesystem::file_time_type newest_time{};
+    for(const auto &name : Environment::getFilesInFolder(osu_folder)) {
+        if(!name.starts_with("osu!.") || !name.ends_with(".cfg") || name == "osu!.cfg") continue;
+        const std::string path = fmt::format("{}/{}", osu_folder, name);
+        std::error_code ec;
+        const auto time = std::filesystem::last_write_time(File::getFsPath(path), ec);
+        if(ec) continue;
+        if(newest.empty() || time > newest_time) {
+            newest = path;
+            newest_time = time;
+        }
+    }
+    return newest;
+}
+}  // namespace
+
 bool import_from_osu_stable() {
     auto osu_folder = cv::osu_folder.getString();
     if(osu_folder.empty() || !env->directoryExists(osu_folder)) {
         update_osu_folder_from_registry();
         osu_folder = cv::osu_folder.getString();
     }
-
-    const auto username = env->getUsername();
-    if(username.length() == 0) {
-        debugLog("Failed to get username; not going to import settings from osu!stable.");
+    // mikosu: not in the registry (Linux, or Wine without stable installed in that prefix): the usual install
+    // folders. (on first launch this runs before Osu falls back to them for osu_folder, so it never got here)
+    if(osu_folder.empty() || !env->directoryExists(osu_folder)) {
+        osu_folder = Osu::getDefaultFallbackOsuFolder();
+    }
+    if(osu_folder.empty() || !Environment::fileExists(osu_folder + "/osu!.exe")) {
+        debugLog("no osu!stable folder found; not importing settings from it");
         return false;
     }
 
-    std::string cfg_path = fmt::format("{}/osu!.{}.cfg", osu_folder, username);
+    // stable keeps its settings in osu!.<windows user name>.cfg. a copy brought over from another PC, or played
+    // through Wine, carries a different name than ours: then use whichever of those was written last (read only)
+    const auto username = env->getUsername();
+    std::string cfg_path = username.empty() ? std::string{} : fmt::format("{}/osu!.{}.cfg", osu_folder, username);
+    if(cfg_path.empty() || !Environment::fileExists(cfg_path)) {
+        cfg_path = newest_stable_user_cfg(osu_folder);
+    }
+    if(cfg_path.empty()) {
+        debugLog("no osu!.<user>.cfg in {}; not importing settings from osu!stable", osu_folder);
+        return false;
+    }
+
     File file(cfg_path);
     if(!file.canRead()) {
         debugLog("{} doesn't exist/isn't readable", cfg_path);
