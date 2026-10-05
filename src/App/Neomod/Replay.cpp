@@ -396,7 +396,8 @@ void Mods::begin_session() {
     // (these just mirror speed_override for the DT/HT buttons: useCurrentMods() keeps them in line, while having
     // them go back by themselves would run their callbacks, which set speed_override)
     std::erase_if(convars, [](const ConVar *cvar) {
-        return cvar == &cv::mod_doubletime_dummy || cvar == &cv::mod_halftime_dummy;
+        return cvar == &cv::mod_doubletime_dummy || cvar == &cv::mod_halftime_dummy ||
+               cvar == &cv::mod_nightcore_dummy || cvar == &cv::mod_daycore_dummy;
     });
 
     cvars().beginSession(convars);

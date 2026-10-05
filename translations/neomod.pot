@@ -1552,10 +1552,6 @@ msgid "Change hitsound pitch based on accuracy"
 msgstr ""
 
 #: src/App/Neomod/OptionsOverlay.cpp
-msgid "Prefer Nightcore over Double Time"
-msgstr ""
-
-#: src/App/Neomod/OptionsOverlay.cpp
 msgid "Apply speed/pitch mods while browsing"
 msgstr ""
 

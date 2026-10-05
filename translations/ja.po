@@ -1640,10 +1640,6 @@ msgid "Change hitsound pitch based on accuracy"
 msgstr "精度に基づいてヒットサウンドのピッチを変更する"
 
 #: src/App/Neomod/OptionsOverlay.cpp
-msgid "Prefer Nightcore over Double Time"
-msgstr "Double TimeよりNightcoreを優先する"
-
-#: src/App/Neomod/OptionsOverlay.cpp
 msgid "Apply speed/pitch mods while browsing"
 msgstr "ブラウズ中に速度/ピッチモッドを適用する"
 
