@@ -65,6 +65,16 @@ jobs:
         timeout-minutes: 10
         run: python3 tests/sanity/run.py build/dist/bin-x86_64/mikosu -- -opengl
 
+      # the standalone star rating / pp calculator (same sources as the game) against its golden values; the goldens
+      # were recorded on arm64 macOS, so other toolchains compare with a 1e-6 relative tolerance
+      - name: Star rating and pp golden tests
+        timeout-minutes: 15
+        run: |
+          cmake -S tools/diffcalc -B tools/diffcalc/build -DCMAKE_CXX_COMPILER=g++-14 \
+            -Dglm_DIR="$GITHUB_WORKSPACE/build/build/deps/share/glm"
+          cmake --build tools/diffcalc/build --parallel
+          tools/diffcalc/build/diffcalc test --tolerance
+
       - name: Package
         run: cd build/dist && zip -q -r -y -8 "$GITHUB_WORKSPACE/mikosu-linux-x64.zip" bin-x86_64
 
