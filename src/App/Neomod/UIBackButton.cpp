@@ -13,6 +13,12 @@
 #include "SoundEngine.h"
 #include "UI.h"
 #include "Graphics.h"
+#include "Font.h"
+#include "Icons.h"
+#include "SongBrowser.h"
+#include "UniString.h"
+#include "UIDraw.h"
+#include "UITheme.h"
 
 UIBackButton::UIBackButton(float xPos, float yPos, float xSize, float ySize, std::string name)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {
@@ -22,8 +28,51 @@ UIBackButton::UIBackButton(float xPos, float yPos, float xSize, float ySize, std
 
 UIBackButton::~UIBackButton() = default;
 
+bool UIBackButton::redesigned() const {
+    const Skin *skin = osu->getSkin();
+    return !UITheme::classic() && !this->bUseDefaultBack && skin->usesDefault(skin->i_menu_back2);
+}
+
 void UIBackButton::draw() {
     if(!this->bVisible) return;
+
+    if(this->redesigned()) {
+        // the theme's back: a graded block ending in the diagonal of song select's header, a chevron and "back"
+        const auto &theme = UITheme::current();
+        const McRect r{this->getPos(), this->getSize()};
+        const f32 h = r.getHeight();
+        const f32 hover = std::clamp<f32>(this->fAnimation, 0.f, 1.f);
+        const Color white = 0xffffffff;
+        UIDraw::Shape shape{.rect = r, .cut = h * 0.34f};
+        UIDraw::fill(shape, UITheme::mix(theme.back[0], white, hover * 0.18f),
+                     UITheme::mix(UITheme::mix(theme.back[0], theme.back[1], 0.5f), white, hover * 0.18f),
+                     UITheme::mix(theme.back[1], white, hover * 0.18f));
+
+        McFont *icons = osu->getFontIcons();
+        McFont *font = osu->getSongBrowserFont();
+        const std::u32string chevron(1, Icons::CHEVRON_LEFT);
+        const f32 iconScale = (h * 0.2f) / icons->getHeight();
+        const f32 textScale = (h * 0.3f) / font->getHeight();
+        const f32 x = r.getX() + h * 0.34f + hover * h * 0.05f;
+        g->setColor(theme.backInk);
+        g->pushTransform();
+        {
+            g->scale(iconScale, iconScale);
+            g->translate(x, r.getY() + h * 0.5f + icons->getHeight() * iconScale * 0.5f);
+            g->drawString(icons, UniString::to_utf8(chevron));
+        }
+        g->popTransform();
+        g->pushTransform();
+        {
+            g->scale(textScale, textScale);
+            g->translate(x + h * 0.24f, r.getY() + h * 0.5f + font->getHeight() * textScale * 0.36f);
+            g->drawString(font, "back");
+        }
+        g->popTransform();
+
+        this->bFocusStolenDelay = false;
+        return;
+    }
 
     // draw button image
     g->pushTransform();
@@ -83,6 +132,12 @@ void UIBackButton::updateLayout() {
         this->bUseDefaultBack = false;
     }
 
+    if(this->redesigned()) {
+        // as tall as song select's bottom bar
+        const f32 h = SongBrowser::getUIScale() * 101.f;
+        this->setSize(h * 2.45f, h);
+        return;
+    }
     this->setSize(backimg->getSize());
 }
 

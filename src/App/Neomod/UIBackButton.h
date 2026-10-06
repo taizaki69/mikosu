@@ -22,6 +22,8 @@ class UIBackButton final : public CBaseUIButton {
 
    private:
     void onFocusStolen() override;
+    // the theme draws the button unless it's classic or the skin brings its own menu-back
+    [[nodiscard]] bool redesigned() const;
 
     AnimFloat fAnimation;
 
