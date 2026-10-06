@@ -1,18 +1,18 @@
 # mikosu design spec
 
-> **Status: direction chosen 2026-10-04.** Round-2 option **2, "Slanted controls"** (mockups: `mockups/{mainmenu2,songselect2}-controls.jpg`).
-> - **History:** the user rejected all round-1 looks as "way too old style". They then asked for stable's layout with styling borrowed from lazer: slanted shapes, a clean modern font, flat dark panels, calm. From the three round-2 variants they picked the one that slants controls and map panels, keeps lists straight and takes its accent from the map background.
-> - **Tokens:** the ones below are the working set. They're refined screen by screen in Phase 4.
+> **Status: being revised (2026-10-05).** The user wasn't convinced by round 2's flat look and asked for "a modern, almost lazer like revamp ... keep the layout tho, i dont like the lazer layout". Round 3 (below) shows three treatments of that; the tokens further down are round 2's and get replaced by the round-3 pick.
+> - **History:** round 1 rejected as "way too old style"; round 2 picked "Slanted controls" (2026-10-04); round 3 requested 2026-10-05.
+> - **Still binding:** stable's layout and flow; lazer's layout stays out; nothing of ppy's ships (no Torus, no osu! logo or cookie, no osu-resources); Outfit is the UI font.
 
 ## Intent
 
 osu!stable's layout, with a modern, clean look.
 - **Same layout and flow as stable.** Every element sits where a stable player's hands and eyes expect it: song select with the carousel on the right, info top-left, leaderboard on the left, and the bottom bar; main menu with the logo and buttons sliding out of it; mod overlay; options sliding in from the left.
-- **Modern styling, partly borrowed from lazer** (the user's call, 2026-10-04):
-  - slanted parallelogram panels and buttons;
-  - a crisp geometric sans-serif (an openly licensed look-alike, never lazer's Torus);
-  - flat, solid dark panels with bright accents, instead of glass.
-- **Clean and calm.** Generous spacing and few effects, so it's readable mid-session at a glance.
+- **Modern styling, almost lazer's** (the user's calls: borrowed from lazer on 2026-10-04, "almost lazer like" on 2026-10-05):
+  - rounded corners, sheared controls and wedges, dark panels tinted by one hue, soft shadows and glows;
+  - lazer's colour language: star ratings, grades and mods coloured the way lazer colours them;
+  - a crisp geometric sans-serif (Outfit, openly licensed; never lazer's Torus).
+- **Readable at a glance.** Colour carries meaning (difficulty, grade, mod type); effects stay soft so a glance mid-session still works.
 - **The beatmap's artwork is the hero.**
 - **Lazer's *layout* stays out.** That means no top toolbar, no column-and-card mod select, no full-screen settings and no lazer-style results screen. The first brief's "nothing like lazer" rule is narrowed to layout by the user's later instruction.
 
@@ -56,7 +56,7 @@ All three keep stable's layout (mockups: `mockups/{mainmenu,songselect}-{faithfu
   - light rays and particles;
   - neon selection.
 
-### Round 2 (chosen: option 2, 2026-10-04)
+### Round 2 (picked option 2 on 2026-10-04, then superseded by round 3)
 
 All three keep stable's layout and use Outfit, flat dark panels and a calm visualizer. Mockups: `mockups/{mainmenu2,songselect2}-{all,controls,accents}.jpg`; source in `mockups/src/{modern.css,*2.html}`.
 
@@ -67,7 +67,23 @@ All three keep stable's layout and use Outfit, flat dark panels and a calm visua
    - the accent comes from the map's background.
 3. **Slanted accents:** straight panels with slanted edges, underlined tabs and accent stripes.
 
-## Tokens (working set for the chosen direction)
+### Round 3 (shown 2026-10-05, waiting for the pick)
+
+Stable's layout styled almost exactly like today's lazer. Mockups: `mockups/{mainmenu3,songselect3}-{lazer,tinted,upright}.jpg`; source in `mockups/src/{round3.css,round3.js,*3.html}`. The values come from lazer's code (ppy/osu, MIT) at the pinned tag, scaled by 1.40625 (lazer's 1024×768 reference at 1080p):
+- **Shape:** 14 px corner radius everywhere; a 0.2 shear (≈ 11.3°) on controls, wedges and leaderboard rows; the carousel's map panels stay upright and rounded, as in lazer.
+- **Colour:** dark panels tinted by one hue (lazer's `OverlayColourProvider`: backgrounds at 10% saturation and 10–40% lightness, text at 40% saturation, a highlight at full saturation and 70% lightness). Info wedges fade out towards the screen centre.
+- **Star ratings** use lazer's colour spectrum (blue → green → yellow → red → purple → black, yellow text from 6.5★): star pills, difficulty strips and dots on set panels, the CS/AR/OD/HP bars.
+- **Grades and mods** use lazer's colours (S teal, A green, B amber…; difficulty-increase mods red, reduction lime).
+- **Footer:** stable's bottom bar built from lazer's footer pieces: a magenta Back button, tiles with an icon, label and coloured indicator bar (mods lime, random blue, options purple), the selected mods with their multiplier, the user card, the play logo.
+- **Main menu:** stable's buttons beside the logo, each in lazer's colour (play purple, browse lime, options grey, exit pink) with outlined triangles; lazer's visualiser (200 touching bars, the spectrum drawn five times around the logo).
+- **Effects:** soft shadows, a glow in the difficulty's colour on the selected panel (pulsing with the beat), outlined triangles on difficulty panels and menu buttons, a blurred background in song select (rendered once per background, never per frame).
+
+The three treatments:
+1. **Lazer:** lazer's own blue-grey (hue 200) and light-blue highlight.
+2. **Tinted:** the same, with the hue taken from the current map's background (plum for the test art), so every map recolours the panels and the highlight.
+3. **Upright:** the same palette as 1 with no shear anywhere.
+
+## Tokens (round 2's working set, to be replaced by the round-3 pick)
 
 **Shape:**
 - slant: `skewX(-11°)` (≈ 0.2 horizontal shear), with content counter-skewed so text stays upright;
