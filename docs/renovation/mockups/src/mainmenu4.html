@@ -22,14 +22,14 @@
 <script src="icons.js"></script>
 <script src="round4.js"></script>
 <script>
-const v = new URLSearchParams(location.search).get("v") || "stable";
+const v = new URLSearchParams(location.search).get("v") || "dusk";
 document.body.classList.add("v-" + v);
 // the menu shows the background brighter than song select does
-document.querySelector(".dim").style.opacity = { stable: 0.35, moon: 0.8, day: 1 }[v];
+document.querySelector(".dim").style.opacity = { dusk: 0.6, stable: 0.35, moon: 0.8, day: 1 }[v];
 
 document.getElementById("logo").innerHTML = orb(v, "m", "mikosu");
 visualiser(document.getElementById("viz"), 520, 540, 236,
-  { stable: "rgba(255,255,255,0.5)", moon: "rgba(190,230,255,0.45)", day: "rgba(255,150,205,0.5)" }[v], 5);
+  { dusk: "rgba(255,235,250,0.55)", stable: "rgba(255,255,255,0.5)", moon: "rgba(190,230,255,0.45)", day: "rgba(255,150,205,0.5)" }[v], 5);
 
 document.getElementById("user").innerHTML = `<div class="av">T</div><div>
   <b>taizaki</b><small>4,218pp &middot; #48,213 global &middot; 97.84%</small>
@@ -42,6 +42,10 @@ document.getElementById("tip").innerHTML = `${icon("info")}F2 in song select pic
 
 // stable's four buttons, sliding out from behind the logo; the first one is hovered
 const looks = {
+  dusk: [["linear-gradient(90deg, rgba(255,140,200,.78), rgba(60,60,120,.45))", "#ff9fd0"],
+         ["linear-gradient(90deg, rgba(110,180,255,.78), rgba(60,60,120,.45))", "#8fd4ff"],
+         ["linear-gradient(90deg, rgba(190,170,245,.7), rgba(60,60,120,.45))", "#c9b2ff"],
+         ["linear-gradient(90deg, rgba(255,160,140,.78), rgba(60,60,120,.45))", "#ffb09a"]],
   stable: [["linear-gradient(90deg, rgba(255,92,165,.94), rgba(190,110,255,.72))", "#ff6fb4"],
            ["linear-gradient(90deg, rgba(64,150,255,.92), rgba(90,200,255,.66))", "#4fb4ff"],
            ["linear-gradient(90deg, rgba(110,122,170,.86), rgba(150,160,205,.6))", "#a0a8d0"],
@@ -59,7 +63,7 @@ const btns = [["play", "Play", "Solo and multiplayer", "P"], ["download", "Brows
               ["options", "Options", "Graphics, skins, keys", "O"], ["exit", "Exit", "See you next session", "Q"]];
 document.getElementById("buttons").innerHTML = btns.map(([ic, label, sub, key], i) => `
   <div class="mb glass${i === 0 ? " hov" : ""}" style="--layer:${looks[i][0]};--g:${looks[i][1]};--acc:${looks[i][1]}">
-    <div class="sheen"></div><span class="ic" style="${v === "stable" ? "" : `color:${looks[i][1]}`}">${icon(ic)}</span>
+    <div class="sheen"></div><span class="ic" style="${v === "stable" || v === "dusk" ? "" : `color:${looks[i][1]}`}">${icon(ic)}</span>
     <span class="lbl"><b>${label}</b><small>${sub}</small></span><span class="k">${key}</span></div>`).join("");
 </script>
 </body>

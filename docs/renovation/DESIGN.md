@@ -1,6 +1,6 @@
 # mikosu design spec
 
-> **Status: being revised (2026-10-05).** Round 4 (below) is waiting for the user's pick; the tokens further down are round 2's and get replaced by it.
+> **Status: direction chosen 2026-10-05.** Round 4, with a new look **"Dusk"** (between Moon and Day) as the default theme; **Stable, Moon and Day stay selectable** as themes (mockups: `mockups/{mainmenu4,songselect4}-{dusk,stable,moon,day}.jpg`). The tokens further down are round 2's and get rewritten from round 4 as each screen is built.
 > - **History:** round 1 rejected as "way too old style"; round 2 picked "Slanted controls" (2026-10-04), then the user "wasn't very convinced"; round 3 (almost lazer's styling) "didn't really like them"; round 4 asked for "more modern and beautiful, but still same soul as osu stable and with the same layout as stable".
 > - **What the user's own skins say** (Aristia, the active one; WhiteCat; Cinnamoroll x Miku; Hayase Yuuka; Rafis): clean and light, thin elegant lettering, soft frosted panels with thin glowing lines, pastel anime art. Round 4 aims there.
 > - **Still binding:** stable's layout and flow; lazer's layout stays out; nothing of ppy's ships (no Torus, no osu! logo or cookie, no osu-resources); Outfit is the UI font.
@@ -84,18 +84,20 @@ The three treatments:
 2. **Tinted:** the same, with the hue taken from the current map's background (plum for the test art), so every map recolours the panels and the highlight.
 3. **Upright:** the same palette as 1 with no shear anywhere.
 
-### Round 4 (shown 2026-10-05, waiting for the pick)
+### Round 4 (chosen 2026-10-05: Dusk as the default, the others as themes)
 
 Stable's exact composition, made modern. Mockups: `mockups/{mainmenu4,songselect4}-{stable,moon,day}.jpg`; source in `mockups/src/{round4.css,round4.js,*4.html,make_art4.py}`.
 - **Layout, as stable:** song select's full-width header, deeper on the left for the map info (title [difficulty], artist and mapper, length/BPM/objects, circles/sliders/spinners, CS/AR/OD/HP/stars with pp) and stepping up on the right (group and sort, search, stable's filter tabs), the leaderboard tabs under the info; the leaderboard on the left; the carousel on the right with collapsed sets, the open set's difficulties and the selection in the middle, drifting right with distance; the bottom bar with back, mode, mods, random, options (each with its coloured marker, as in stable), the user panel and the logo bottom-right. The main menu: the logo left of centre with the visualiser, four buttons sliding out from behind it (the hovered one slides further), the user card top-left, the music player top-right.
 - **Material:** frosted glass (the background blurred once and cached), 14–20 px corners, 1 px light edges, soft shadows, thin glowing gradient lines on the header and bottom bar edges, glowing selection.
 - **Type:** Outfit, lighter weights for large text (36 px title at 600 with the difficulty at 300), uppercase letter-spaced labels.
 - **Stable's details kept:** ten stars per difficulty with the fraction as a smaller star; grade letters (S gold, A green, B blue) before the difficulty name; "Score … (combo)" in the leaderboard.
-- **Looks:**
+- **Looks** (all four ship as themes, switchable in the options; Dusk is the default):
+  0. **Dusk** (the default, the user's call: "a design between moon and day"): lavender-slate glass over the art, white text with a soft shadow, pastel pink sets and blue difficulties, a white selection, a lavender pearl logo.
   1. **Stable:** stable's own colours, remastered: pink sets, blue difficulties, a white selected panel, candy-glass menu buttons (play pink, browse blue, options lavender, exit coral).
   2. **Moon:** navy glass everywhere, colour only as thin edges and icons, white selection; the calmest.
   3. **Day:** white frosted glass with dark text and pastel pink/blue tints; the brightest.
 - **Logo:** still a placeholder (a glass orb in an approach ring with the hit dot), drawn per look; the real logo is a separate branding decision.
+- **Search (binding, the user's rule):** in song select, typing goes straight into the search, as in stable: no shortcut, no click, no focus step. The search field only shows what's typed ("Just type to search…" when empty). Backspace deletes, Escape clears, arrows and Enter keep driving the carousel. The game already works this way (`SongBrowser::onChar`); the redesign must keep it.
 
 ## Tokens (round 2's working set, to be replaced by the round-4 pick)
 

@@ -106,6 +106,42 @@ body {
   --mm-btn-ink: #1f2b45;
 }
 
+.v-dusk {
+  /* the default: between moon and day; lavender-slate glass over the art, white text, pastel accents */
+  --ink: #ffffff;
+  --ink2: rgba(255, 255, 255, 0.84);
+  --ink3: rgba(240, 236, 255, 0.64);
+  --dim: rgba(40, 36, 90, 0.14);
+  --bar: rgba(46, 50, 98, 0.56);
+  --bar-edge: rgba(255, 255, 255, 0.28);
+  --row: rgba(50, 54, 104, 0.52);
+  --row-me: rgba(112, 66, 140, 0.68);
+  --line: linear-gradient(90deg, #ffa8d8, #c9b2ff 45%, #9fe0ff);
+  --line-glow: rgba(255, 190, 235, 0.85);
+  --pink: #ff9fd0;
+  --blue: #8fd4ff;
+  --set: linear-gradient(90deg, rgba(255, 140, 200, 0.72), rgba(160, 110, 200, 0.55) 55%, rgba(70, 70, 130, 0.38));
+  --diff: linear-gradient(90deg, rgba(110, 180, 255, 0.72), rgba(100, 120, 210, 0.55) 55%, rgba(60, 70, 130, 0.38));
+  --sel: linear-gradient(90deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.9) 55%, rgba(255, 255, 255, 0.68));
+  --panel-ink: #ffffff;
+  --panel-ink2: rgba(255, 255, 255, 0.86);
+  --sel-ink: #232a4a;
+  --sel-ink2: #5a6386;
+  --sel-glow: 0 0 0 2px rgba(255, 255, 255, 0.92), 0 0 30px rgba(255, 180, 230, 0.55), 0 0 70px rgba(150, 200, 255, 0.35);
+  --star-on: #ffffff;
+  --star-off: rgba(255, 255, 255, 0.3);
+  --sel-star-on: #ff7cbc;
+  --sel-star-off: rgba(35, 42, 74, 0.16);
+  --chip: rgba(255, 255, 255, 0.16);
+  --field: rgba(255, 255, 255, 0.14);
+  --back: linear-gradient(100deg, #ff9fd0, #c3a2ff);
+  --back-ink: #ffffff;
+  --mm-btn-ink: #ffffff;
+}
+.v-dusk .info, .v-dusk .p .tx, .v-dusk .row, .v-dusk .mb { text-shadow: 0 1px 2px rgba(30, 20, 70, 0.25); }
+.v-dusk .p.sel .tx { text-shadow: none; }
+.v-dusk .gS, .v-dusk .gA, .v-dusk .gB { text-shadow: none; }
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 1920px; height: 1080px; overflow: hidden; background: #0b0d18; }
 body { font-family: var(--font); color: var(--ink); font-feature-settings: "tnum" 1; position: relative; letter-spacing: 0.01em; }

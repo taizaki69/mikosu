@@ -7,7 +7,7 @@ Every round keeps osu!stable's layout and shows three treatments of it, each as 
 | 1 | `{mainmenu,songselect}-*.jpg` | `faithful`, `refined`, `bold` |
 | 2 | `{mainmenu2,songselect2}-*.jpg` | `all`, `controls`, `accents` (slanted, flat) |
 | 3 | `{mainmenu3,songselect3}-*.jpg` | `lazer`, `tinted`, `upright` (almost lazer's styling) |
-| 4 | `{mainmenu4,songselect4}-*.jpg` | `stable`, `moon`, `day` (stable's soul, modern glass; art from `make_art4.py`) |
+| 4 (chosen) | `{mainmenu4,songselect4}-*.jpg` | `dusk` (the default), `stable`, `moon`, `day` (stable's soul, modern glass; art from `make_art4.py`) |
 
 - Round 1 comparison page: https://claude.ai/artifact/WPKRiAu87RZV2pKhaAQncj
 - The spec that comes out of the decision: `../DESIGN.md`
