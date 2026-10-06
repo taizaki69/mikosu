@@ -1,7 +1,8 @@
 # mikosu design spec
 
-> **Status: being revised (2026-10-05).** The user wasn't convinced by round 2's flat look and asked for "a modern, almost lazer like revamp ... keep the layout tho, i dont like the lazer layout". Round 3 (below) shows three treatments of that; the tokens further down are round 2's and get replaced by the round-3 pick.
-> - **History:** round 1 rejected as "way too old style"; round 2 picked "Slanted controls" (2026-10-04); round 3 requested 2026-10-05.
+> **Status: being revised (2026-10-05).** Round 4 (below) is waiting for the user's pick; the tokens further down are round 2's and get replaced by it.
+> - **History:** round 1 rejected as "way too old style"; round 2 picked "Slanted controls" (2026-10-04), then the user "wasn't very convinced"; round 3 (almost lazer's styling) "didn't really like them"; round 4 asked for "more modern and beautiful, but still same soul as osu stable and with the same layout as stable".
+> - **What the user's own skins say** (Aristia, the active one; WhiteCat; Cinnamoroll x Miku; Hayase Yuuka; Rafis): clean and light, thin elegant lettering, soft frosted panels with thin glowing lines, pastel anime art. Round 4 aims there.
 > - **Still binding:** stable's layout and flow; lazer's layout stays out; nothing of ppy's ships (no Torus, no osu! logo or cookie, no osu-resources); Outfit is the UI font.
 
 ## Intent
@@ -67,7 +68,7 @@ All three keep stable's layout and use Outfit, flat dark panels and a calm visua
    - the accent comes from the map's background.
 3. **Slanted accents:** straight panels with slanted edges, underlined tabs and accent stripes.
 
-### Round 3 (shown 2026-10-05, waiting for the pick)
+### Round 3 (shown 2026-10-05, not liked)
 
 Stable's layout styled almost exactly like today's lazer. Mockups: `mockups/{mainmenu3,songselect3}-{lazer,tinted,upright}.jpg`; source in `mockups/src/{round3.css,round3.js,*3.html}`. The values come from lazer's code (ppy/osu, MIT) at the pinned tag, scaled by 1.40625 (lazer's 1024×768 reference at 1080p):
 - **Shape:** 14 px corner radius everywhere; a 0.2 shear (≈ 11.3°) on controls, wedges and leaderboard rows; the carousel's map panels stay upright and rounded, as in lazer.
@@ -83,7 +84,20 @@ The three treatments:
 2. **Tinted:** the same, with the hue taken from the current map's background (plum for the test art), so every map recolours the panels and the highlight.
 3. **Upright:** the same palette as 1 with no shear anywhere.
 
-## Tokens (round 2's working set, to be replaced by the round-3 pick)
+### Round 4 (shown 2026-10-05, waiting for the pick)
+
+Stable's exact composition, made modern. Mockups: `mockups/{mainmenu4,songselect4}-{stable,moon,day}.jpg`; source in `mockups/src/{round4.css,round4.js,*4.html,make_art4.py}`.
+- **Layout, as stable:** song select's full-width header, deeper on the left for the map info (title [difficulty], artist and mapper, length/BPM/objects, circles/sliders/spinners, CS/AR/OD/HP/stars with pp) and stepping up on the right (group and sort, search, stable's filter tabs), the leaderboard tabs under the info; the leaderboard on the left; the carousel on the right with collapsed sets, the open set's difficulties and the selection in the middle, drifting right with distance; the bottom bar with back, mode, mods, random, options (each with its coloured marker, as in stable), the user panel and the logo bottom-right. The main menu: the logo left of centre with the visualiser, four buttons sliding out from behind it (the hovered one slides further), the user card top-left, the music player top-right.
+- **Material:** frosted glass (the background blurred once and cached), 14–20 px corners, 1 px light edges, soft shadows, thin glowing gradient lines on the header and bottom bar edges, glowing selection.
+- **Type:** Outfit, lighter weights for large text (36 px title at 600 with the difficulty at 300), uppercase letter-spaced labels.
+- **Stable's details kept:** ten stars per difficulty with the fraction as a smaller star; grade letters (S gold, A green, B blue) before the difficulty name; "Score … (combo)" in the leaderboard.
+- **Looks:**
+  1. **Stable:** stable's own colours, remastered: pink sets, blue difficulties, a white selected panel, candy-glass menu buttons (play pink, browse blue, options lavender, exit coral).
+  2. **Moon:** navy glass everywhere, colour only as thin edges and icons, white selection; the calmest.
+  3. **Day:** white frosted glass with dark text and pastel pink/blue tints; the brightest.
+- **Logo:** still a placeholder (a glass orb in an approach ring with the hit dot), drawn per look; the real logo is a separate branding decision.
+
+## Tokens (round 2's working set, to be replaced by the round-4 pick)
 
 **Shape:**
 - slant: `skewX(-11°)` (≈ 0.2 horizontal shear), with content counter-skewed so text stays upright;
