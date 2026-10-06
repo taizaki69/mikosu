@@ -7,6 +7,7 @@ Every round keeps osu!stable's layout and shows three treatments of it, each as 
 | 1 | `{mainmenu,songselect}-*.jpg` | `faithful`, `refined`, `bold` |
 | 2 | `{mainmenu2,songselect2}-*.jpg` | `all`, `controls`, `accents` (slanted, flat) |
 | 3 | `{mainmenu3,songselect3}-*.jpg` | `lazer`, `tinted`, `upright` (almost lazer's styling) |
+| 4 | `{mainmenu4,songselect4}-*.jpg` | `stable`, `moon`, `day` (stable's soul, modern glass; art from `make_art4.py`) |
 
 - Round 1 comparison page: https://claude.ai/artifact/WPKRiAu87RZV2pKhaAQncj
 - The spec that comes out of the decision: `../DESIGN.md`
@@ -18,10 +19,11 @@ The maps, artists, scores and art are invented. The background and thumbnails ar
 ```
 cd docs/renovation/mockups/src
 ./get-fonts.sh            # the OFL fonts (Nunito, Outfit, M PLUS) into fonts/ (git-ignored)
-python3 make_art.py       # background and thumbnails into art/ (git-ignored, deterministic)
+python3 make_art.py       # rounds 1-3: background and thumbnails into art/ (git-ignored, deterministic)
+python3 make_art4.py      # round 4: the sky-and-sea background, its blurred copy and thumbnails
 ../../../../tools/dev/guarded --mem 6G -- ./render.sh     # headless Firefox -> ../<screen>-<variant>.jpg
 ```
 
-One page per screen and round (`mainmenu.html`, `songselect2.html`, `mainmenu3.html`, …). `?v=` picks the treatment. Shared styles are in `mockup.css` (round 1), `modern.css` (round 2) and `round3.css`; icons and helpers in `icons.js` and `round3.js`. `render.sh` renders round 3 by default; its header lists the `SCREENS`/`VARIANTS` for the earlier rounds.
+One page per screen and round (`mainmenu.html`, `songselect2.html`, `mainmenu3.html`, …). `?v=` picks the treatment. Shared styles are in `mockup.css` (round 1), `modern.css` (round 2), `round3.css` and `round4.css`; icons and helpers in `icons.js`, `round3.js` and `round4.js`. `render.sh` renders round 4 by default; its header lists the `SCREENS`/`VARIANTS` for the earlier rounds.
 
 The "today" references are in `../screens/before/`, captured from neomod with `tools/screens/capture_before.py`, using the same generated maps and art.
