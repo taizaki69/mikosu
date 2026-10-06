@@ -749,7 +749,8 @@ void MainMenu::drawLogoRedesigned(const McRect &rect) {
     const f32 ringR = d * 0.5f;
     const f32 discR = ringR * 0.866f;
 
-    const UIDraw::Shape disc = UIDraw::Shape::rounded(McRect{c.x - discR, c.y - discR, discR * 2.f, discR * 2.f}, discR);
+    const UIDraw::Shape disc =
+        UIDraw::Shape::rounded(McRect{c.x - discR, c.y - discR, discR * 2.f, discR * 2.f}, discR);
     UIDraw::glow(disc, d * 0.05f, argb(0.16f, 0.f, 0.f, 0.f));
     UIDraw::glass(disc, theme.bar);
     UIDraw::Shape edge = disc;

@@ -114,7 +114,8 @@ void NowPlaying::SeekBar::draw() {
         if(themed) {
             // the redesign: a rounded track, the played part in the theme's line colours
             const auto &theme = UITheme::current();
-            const UIDraw::Shape bar = UIDraw::Shape::rounded(McRect{rect.getX(), y, width, barHeight}, barHeight * 0.5f);
+            const UIDraw::Shape bar =
+                UIDraw::Shape::rounded(McRect{rect.getX(), y, width, barHeight}, barHeight * 0.5f);
             if(alpha >= 0.9f)
                 UIDraw::fill(bar, theme.line[0], theme.line[1], theme.line[2], 0.5f);
             else
