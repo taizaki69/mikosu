@@ -1357,7 +1357,8 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
 
     this->addSubSection(_("Theme"), "look dusk stable moon day classic design redesign glass");
     {
-        auto *themeElement = this->addButton(_("Look"), themeDisplayName(cv::ui_theme.getString()), false, &cv::ui_theme);
+        auto *themeElement =
+            this->addButton(_("Look"), themeDisplayName(cv::ui_theme.getString()), false, &cv::ui_theme);
         this->themeSelectButton = (CBaseUIButton *)themeElement->baseElems[0].get();
         this->themeLabel = static_cast<CBaseUILabel *>(themeElement->baseElems[1].get());
         this->themeSelectButton->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onThemeSelect>(this));
