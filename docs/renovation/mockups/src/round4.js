@@ -18,6 +18,7 @@ function stars(sr) {
 const ORB = {
   stable: { disc: ["#ffa6d2", "#e86ad0", "#7a63ff"], ring: ["#ff66aa", "#c58cff", "#66ccff"], glow: "#ff6fb4", word: "#ffffff", rim: 0.4 },
   moon: { disc: ["#3a5490", "#1c2a52", "#0e1734"], ring: ["#a8e6ff", "#ffffff", "#a8e6ff"], glow: "#7fd0ff", word: "#f2f6ff", rim: 0.3 },
+  dusk: { disc: ["#ffe6f5", "#b9a8f5", "#6873d6"], ring: ["#ffa8d8", "#c9b2ff", "#9fe0ff"], glow: "#c9a8ff", word: "#ffffff", rim: 0.6 },
   day: { disc: ["#ffffff", "#fff0f7", "#ffd2e8"], ring: ["#ff9fd0", "#c7a8ff", "#86d8ff"], glow: "#ffb0d8", word: "#ff6fb4", rim: 0.9 },
 };
 

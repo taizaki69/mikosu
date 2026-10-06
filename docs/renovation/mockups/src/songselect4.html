@@ -40,16 +40,16 @@
 <script src="icons.js"></script>
 <script src="round4.js"></script>
 <script>
-const v = new URLSearchParams(location.search).get("v") || "stable";
+const v = new URLSearchParams(location.search).get("v") || "dusk";
 document.body.classList.add("v-" + v);
 const css = getComputedStyle(document.body);
 // the header edge line takes the variant's line colours
-const lineStops = { stable: ["#ff66aa", "#c58cff", "#66ccff"], moon: ["#7fd0ff", "#ffffff", "#7fd0ff"], day: ["#ff9fd0", "#c7a8ff", "#86d8ff"] }[v];
+const lineStops = { dusk: ["#ffa8d8", "#c9b2ff", "#9fe0ff"], stable: ["#ff66aa", "#c58cff", "#66ccff"], moon: ["#7fd0ff", "#ffffff", "#7fd0ff"], day: ["#ff9fd0", "#c7a8ff", "#86d8ff"] }[v];
 ["e0", "e1", "e2"].forEach((id, i) => document.getElementById(id).setAttribute("stop-color", lineStops[i]));
 
 document.getElementById("hr1").innerHTML =
   `<span class="lab">Group</span><div class="dd">By artist${icon("down")}</div><span class="lab" style="margin-left:8px">Sort</span><div class="dd">Date added${icon("down")}</div>` +
-  `<div class="search glass">${icon("search")}<span>Search 7,514 maps &middot; try <b>stars&gt;6 ar&lt;9</b></span><span class="k">CTRL+F</span></div>`;
+  `<div class="search glass">${icon("search")}<span>Just type to search 7,514 maps &middot; try <b>stars&gt;6 ar&lt;9</b></span></div>`;
 
 const mods = { HD: "#f5a623", HR: "#ff5b6e", DT: "#8a7dff" };
 const rows = [
@@ -100,7 +100,7 @@ items.forEach((it, i) => {
 });
 
 const fb = (x, ic, label, key, c) => `<div class="fb" style="left:${x}px;--c:${c}">${icon(ic)}<span>${label}${key ? `<em>${key}</em>` : ""}</span></div>`;
-const cols = { stable: ["#ff66aa", "#ff5b6e", "#5fdc7a", "#4fb4ff"], moon: ["#ff8fc4", "#ffb36b", "#8ff0b0", "#7fd0ff"], day: ["#ff7cbc", "#ff8a8a", "#5fd69a", "#4cb8f5"] }[v];
+const cols = { dusk: ["#ff9fd0", "#ff9a9a", "#8ff0b8", "#8fd4ff"], stable: ["#ff66aa", "#ff5b6e", "#5fdc7a", "#4fb4ff"], moon: ["#ff8fc4", "#ffb36b", "#8ff0b0", "#7fd0ff"], day: ["#ff7cbc", "#ff8a8a", "#5fd69a", "#4cb8f5"] }[v];
 document.getElementById("foot").innerHTML += `<div class="back">${icon("back")}back</div>` +
   fb(282, "mode", "Mode", "", cols[0]) + fb(392, "plus", "Mods", "F1", cols[1]) + fb(502, "shuffle", "Random", "F2", cols[2]) + fb(612, "menu", "Options", "F3", cols[3]) +
   `<div class="user"><div class="av">T</div><div><b>taizaki</b><small>4,218pp &middot; #48,213 &middot; 97.84%</small><small style="font-size:13px;opacity:.8">Level 92</small><div class="lv"><i></i></div></div></div>`;
