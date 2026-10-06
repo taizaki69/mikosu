@@ -483,4 +483,8 @@ struct Skin final {
 
     bool is_ready{false};
     bool is_default{false};
+
+    // the image is the default skin's: the default skin is in use, or this skin doesn't bring its own (the redesign
+    // draws its own look in place of such images)
+    [[nodiscard]] bool usesDefault(const BasicSkinImage &img) const { return this->is_default || img.isFromDefault(); }
 };

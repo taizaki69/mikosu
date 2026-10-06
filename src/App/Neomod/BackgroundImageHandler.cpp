@@ -17,6 +17,8 @@
 #include "AsyncPool.h"
 
 #include "Skin.h"
+#include "UIDraw.h"
+#include "UITheme.h"
 
 #include "demoji.h"
 
@@ -252,6 +254,10 @@ void BGImageHandlerImpl::draw(const Image *image, f32 alpha) const {
     if(!image || !image->isReady()) return;
     // harmless const_cast here
     const_cast<BGImageHandlerImpl *>(this)->last_drawn_image = image;
+
+    // the redesign's frosted glass shows this background, blurred (rebuilt only when it changes; during a
+    // cross-fade, the image that's more than half visible wins)
+    if(alpha >= 0.5f && !UITheme::classic()) UIDraw::setBackdrop(image);
 
     f32 scale = Osu::getImageScaleToFillResolution(image, osu->getVirtScreenSize());
     g->pushTransform();

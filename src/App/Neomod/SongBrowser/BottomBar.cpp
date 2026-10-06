@@ -21,6 +21,8 @@
 #include "Font.h"
 #include "SyncMutex.h"
 #include "Graphics.h"
+#include "UIDraw.h"
+#include "UITheme.h"
 
 #include <atomic>
 #include <cassert>
@@ -181,16 +183,26 @@ void draw() {
     const auto* skin = osu->getSkin();
     const vec2 screen_size = osu->getVirtScreenSize();
 
-    g->pushTransform();
-    {
-        const f32 bar_height = get_min_height();
-        const Image* img = skin->i_songselect_bot;
-        g->setColor(0xffffffff);
-        g->scale((f32)screen_size.x / (f32)img->getWidth(), bar_height / (f32)img->getHeight());
-        g->translate(0, screen_size.y - bar_height);
-        g->drawImage(img, AnchorPoint::TOP_LEFT);
+    const f32 bar_height = get_min_height();
+    if(!UITheme::classic() && skin->usesDefault(skin->i_songselect_bot)) {
+        // the redesign: frosted glass with a thin glowing line along the top
+        const auto& theme = UITheme::current();
+        const f32 s = SongBrowser::getUIScale();
+        const f32 top = screen_size.y - bar_height;
+        UIDraw::glass({.rect = McRect{0.f, top, screen_size.x, bar_height}, .softness = 0.f}, theme.bar);
+        const std::array<vec2, 2> line{vec2{0.f, top}, {screen_size.x, top}};
+        UIDraw::glowLine(line, theme.line, 1.5f * s, Color(theme.lineGlow).setA(theme.lineGlow.Af() * 0.35f), 5.f * s);
+    } else {
+        g->pushTransform();
+        {
+            const Image* img = skin->i_songselect_bot;
+            g->setColor(0xffffffff);
+            g->scale((f32)screen_size.x / (f32)img->getWidth(), bar_height / (f32)img->getHeight());
+            g->translate(0, screen_size.y - bar_height);
+            g->drawImage(img, AnchorPoint::TOP_LEFT);
+        }
+        g->popTransform();
     }
-    g->popTransform();
 
     // don't double-draw the back button
     if(!ui->getOptionsOverlay()->isVisible()) {

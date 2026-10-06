@@ -64,6 +64,8 @@
 #include "UI.h"
 #include "UIContextMenu.h"
 #include "UISearchOverlay.h"
+#include "UIDraw.h"
+#include "UITheme.h"
 #include "ScoreButton.h"
 #include "BottomBar.h"
 #include "RoomScreen.h"
@@ -681,21 +683,25 @@ void SongBrowser::draw() {
     // draw beatmap carousel
     this->carousel->draw();
 
-    // draw topbar background
-    g->setColor(0xffffffff);
-    g->pushTransform();
-    {
-        auto screen = osu->getVirtScreenSize();
-        bool is_widescreen = (screen.x / screen.y) > (4.f / 3.f);
+    // draw topbar background: the skin's, or the redesign's frosted header
+    if(!UITheme::classic() && osu->getSkin()->usesDefault(osu->getSkin()->i_songselect_top)) {
+        this->drawHeader();
+    } else {
+        g->setColor(0xffffffff);
+        g->pushTransform();
+        {
+            auto screen = osu->getVirtScreenSize();
+            bool is_widescreen = (screen.x / screen.y) > (4.f / 3.f);
 
-        Image *topbar = osu->getSkin()->i_songselect_top;
-        f32 scale = (f32)osu->getVirtScreenWidth() / (f32)topbar->getWidth();
-        if(!is_widescreen) scale /= 0.75;  // XXX: stupid
+            Image *topbar = osu->getSkin()->i_songselect_top;
+            f32 scale = (f32)osu->getVirtScreenWidth() / (f32)topbar->getWidth();
+            if(!is_widescreen) scale /= 0.75;  // XXX: stupid
 
-        g->scale(scale, scale);
-        g->drawImage(topbar, AnchorPoint::TOP_LEFT);
+            g->scale(scale, scale);
+            g->drawImage(topbar, AnchorPoint::TOP_LEFT);
+        }
+        g->popTransform();
     }
-    g->popTransform();
 
     // draw bottom bar
     BottomBar::draw();
@@ -761,6 +767,26 @@ void SongBrowser::draw() {
         g->fillGradient(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight(), topColor, topColor, bottomColor,
                         bottomColor);
     }
+}
+
+void SongBrowser::drawHeader() {
+    // stable's top bar: deeper on the left for the map info, stepping up diagonally to the right part with group,
+    // sort and the filter tabs; frosted glass with a thin glowing line along the stepped edge
+    const auto &theme = UITheme::current();
+    const f32 w = (f32)osu->getVirtScreenWidth();
+    const f32 deep = this->topbarLeft->getSize().y;
+    const f32 shallow = std::min(this->topbarRight->getSize().y, deep);
+    const f32 stepStart = this->topbarLeft->getSize().x * 0.94f;
+    const f32 stepEnd = std::min(w, stepStart + (deep - shallow) * 2.2f);
+
+    const std::array<vec2, 5> left{vec2{0.f, 0.f}, {stepEnd, 0.f}, {stepEnd, shallow}, {stepStart, deep}, {0.f, deep}};
+    const std::array<vec2, 4> right{vec2{stepEnd, 0.f}, {w, 0.f}, {w, shallow}, {stepEnd, shallow}};
+    UIDraw::glassPolygon(left, theme.bar);
+    UIDraw::glassPolygon(right, theme.bar);
+
+    const f32 s = SongBrowser::getUIScale();
+    const std::array<vec2, 4> edge{vec2{0.f, deep}, {stepStart, deep}, {stepEnd, shallow}, {w, shallow}};
+    UIDraw::glowLine(edge, theme.line, 1.5f * s, Color(theme.lineGlow).setA(theme.lineGlow.Af() * 0.35f), 5.f * s);
 }
 
 void SongBrowser::drawStrainGraphOverlay() {
