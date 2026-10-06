@@ -62,6 +62,7 @@ class MainMenu final : public UIScreen, public MouseListener {
 
     void drawVersionInfo();
     void drawMainButton();
+    void drawLogoRedesigned(const McRect &rect);
     void drawLogoImage(const McRect &mainButtonRect);
     void drawFriend(const McRect &mainButtonRect, float pulse, bool haveTimingpoints);
     std::pair<bool, float> getTimingpointPulseAmount();  // for main menu cube anim

@@ -24,6 +24,7 @@ struct Shape {
     f32 cut{0.f};                                  // diagonal cut at the right end: how much shorter the bottom is
     f32 softness{1.f};                             // about 1 antialiases; more gives a soft shadow or glow
     f32 border{0.f};                               // 0 = filled, else a border this wide inside the edge
+    f32 opacity{1.f};                              // multiplies the whole shape (fades)
 
     static Shape rounded(const McRect &r, f32 radius) { return {.rect = r, .radii = {radius, radius, radius, radius}}; }
 };

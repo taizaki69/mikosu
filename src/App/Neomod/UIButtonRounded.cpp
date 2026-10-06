@@ -32,6 +32,12 @@ UIButtonRounded* UIButtonRounded::setThemedActive(bool active) {
     return this;
 }
 
+UIButtonRounded* UIButtonRounded::setThemedAccent(size_t menuAccentIndex, char32_t glyph) {
+    this->themedAccent = menuAccentIndex;
+    this->themedGlyph = glyph;
+    return this;
+}
+
 void UIButtonRounded::draw() {
     if(this->themed == Themed::NONE || UITheme::classic() || this->font == nullptr) return CBaseUIButton::draw();
     if(!this->isVisible() || !this->isVisibleOnScreen()) return;
@@ -55,6 +61,53 @@ void UIButtonRounded::draw() {
         }
         g->popTransform();
     };
+
+    if(this->themed == Themed::MENU) {
+        // a sharp frosted bar ending in the diagonal of song select's header, a thin line in the accent colour along
+        // the bottom, the icon in the accent colour and the label; fades in with the frame colour's alpha
+        const f32 fade = this->frameColor.Af();
+        if(fade <= 0.f) return;
+        const Color accent = theme.menuAccents[std::min<size_t>(this->themedAccent, theme.menuAccents.size() - 1)];
+        const f32 cut = h * 0.32f;
+        UIDraw::Shape bar{.rect = r, .cut = cut, .opacity = fade};
+        const Color base = theme.bar;
+        const Color lit = hover ? UITheme::mix(base, Color(accent).setA(base.Af()), 0.3f) : base;
+        UIDraw::glass(bar, lit, Color(base).setA(base.Af() * 0.92f), Color(base).setA(base.Af() * 0.8f), 0.75f);
+
+        const f32 lineY = r.getY() + h - 1.f;
+        const std::array<vec2, 2> line{vec2{r.getX(), lineY}, vec2{r.getX() + r.getWidth() - cut, lineY}};
+        const std::array<Color, 3> grad{Color(accent).setA(fade), Color(accent).setA(fade * (hover ? 0.6f : 0.25f)),
+                                        Color(accent).setA(0.f)};
+        UIDraw::glowLine(line, grad, hover ? 3.f : 2.f, Color(accent).setA(fade * (hover ? 0.45f : 0.f)),
+                         hover ? h * 0.12f : 0.f);
+
+        f32 x = r.getX() + h * 0.55f;
+        if(this->themedGlyph != 0) {
+            McFont* icons = osu->getFontIcons();
+            const std::string glyph = UniString::to_utf8(std::u32string(1, this->themedGlyph));
+            const f32 iconScale = (h * 0.3f) / icons->getHeight();
+            g->setColor(Color(accent).setA(fade));
+            g->pushTransform();
+            {
+                g->scale(iconScale, iconScale);
+                g->translate((f32)(i32)x, (f32)(i32)(r.getY() + h * 0.5f + icons->getHeight() * iconScale * 0.42f));
+                g->drawString(icons, glyph);
+            }
+            g->popTransform();
+            x += icons->getStringWidth(glyph) * iconScale + h * 0.32f;
+        }
+        McFont* labelFont = hover ? osu->getTitleFont() : osu->getSongBrowserFont();
+        const f32 labelScale = (h * 0.4f) / labelFont->getHeight();
+        g->setColor(Color(theme.ink).setA(theme.ink.Af() * fade));
+        g->pushTransform();
+        {
+            g->scale(labelScale, labelScale);
+            g->translate((f32)(i32)x, (f32)(i32)(r.getY() + h * 0.5f + labelFont->getHeight() * labelScale * 0.36f));
+            g->drawString(labelFont, text);
+        }
+        g->popTransform();
+        return;
+    }
 
     if(this->themed == Themed::FIELD) {
         const UIDraw::Shape shape = UIDraw::Shape::rounded(r, std::round(h * 0.3f));

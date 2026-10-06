@@ -176,6 +176,8 @@ class Osu final : public App, public MouseListener, public TouchListener {
     [[nodiscard]] inline McFont *getSubTitleFont() const { return this->subTitleFont; }
     [[nodiscard]] inline McFont *getSongBrowserFont() const { return this->songBrowserFont; }
     [[nodiscard]] inline McFont *getSongBrowserFontBold() const { return this->songBrowserFontBold; }
+    // the redesign's placeholder logo wordmark: large, only its letters
+    [[nodiscard]] inline McFont *getLogoFont() const { return this->logoFont; }
     [[nodiscard]] inline McFont *getFontIcons() const { return this->fontIcons; }
     [[nodiscard]] inline const Skin *getSkin() const { return this->skin.get(); }
     [[nodiscard]] inline Skin *getSkinMutable() { return this->skin.get(); }
@@ -354,6 +356,7 @@ class Osu final : public App, public MouseListener, public TouchListener {
     McFont *fontIcons{nullptr};
     McFont *songBrowserFont{nullptr};
     McFont *songBrowserFontBold{nullptr};
+    McFont *logoFont{nullptr};
 
     // replay
 

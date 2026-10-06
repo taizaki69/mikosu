@@ -1,5 +1,7 @@
 // Copyright (c) 2015, PG, All rights reserved.
 #include "MainMenu.h"
+#include "UIDraw.h"
+#include "UITheme.h"
 
 #include "AboutScreen.h"
 #include "AsyncPool.h"
@@ -363,6 +365,21 @@ MainMenu::MainMenu() : UIScreen() {
         auto add_main_menu_button = [this](std::string text, std::string name, SubButtonType type) -> MainButton * {
             auto *button = new MainButton(this, this->vSize.x, 0, 1, 1, std::move(name), std::move(text), type);
             button->setFont(osu->getSubTitleFont());
+            // the redesign's bars: play pink, multiplayer blue, options lavender, exit coral
+            switch(type) {
+                case SubButtonType::Singleplayer:
+                    button->setThemed(UIButtonRounded::Themed::MENU)->setThemedAccent(0, Icons::PLAY);
+                    break;
+                case SubButtonType::Multiplayer:
+                    button->setThemed(UIButtonRounded::Themed::MENU)->setThemedAccent(1, Icons::GLOBE);
+                    break;
+                case SubButtonType::Options:
+                    button->setThemed(UIButtonRounded::Themed::MENU)->setThemedAccent(2, Icons::GEAR);
+                    break;
+                default:
+                    button->setThemed(UIButtonRounded::Themed::MENU)->setThemedAccent(3, Icons::SIGN_OUT);
+                    break;
+            }
             button->setVisible(false);
 
             this->menuElements.push_back(button);
@@ -722,6 +739,47 @@ std::pair<bool, float> MainMenu::getTimingpointPulseAmount() {
     return {true, pulse};
 }
 
+// the placeholder logo (not the osu! cookie), flat and matte: a frosted disc inside a thin approach ring in the theme's
+// line colours, the hit dot on the ring, and the wordmark (docs/renovation/DESIGN.md)
+void MainMenu::drawLogoRedesigned(const McRect &rect) {
+    const auto &theme = UITheme::current();
+    const f32 d = std::min(rect.getWidth(), rect.getHeight());
+    if(d <= 1.f) return;
+    const vec2 c = rect.getCenter();
+    const f32 ringR = d * 0.5f;
+    const f32 discR = ringR * 0.866f;
+
+    const UIDraw::Shape disc = UIDraw::Shape::rounded(McRect{c.x - discR, c.y - discR, discR * 2.f, discR * 2.f}, discR);
+    UIDraw::glow(disc, d * 0.05f, argb(0.16f, 0.f, 0.f, 0.f));
+    UIDraw::glass(disc, theme.bar);
+    UIDraw::Shape edge = disc;
+    edge.border = std::max(1.f, d * 0.003f);
+    UIDraw::fill(edge, argb(theme.logoEdgeAlpha, 1.f, 1.f, 1.f));
+
+    UIDraw::Shape ring = UIDraw::Shape::rounded(McRect{c.x - ringR, c.y - ringR, ringR * 2.f, ringR * 2.f}, ringR);
+    ring.border = std::max(1.5f, d * 0.0062f);
+    UIDraw::fill(ring, theme.logoRing[0], theme.logoRing[1], theme.logoRing[2], 0.5f);
+
+    const vec2 dot = c + vec2{-0.866f, -0.5f} * ringR;
+    const f32 dotR = std::max(3.f, d * 0.014f);
+    const UIDraw::Shape hit = UIDraw::Shape::rounded(McRect{dot.x - dotR, dot.y - dotR, dotR * 2.f, dotR * 2.f}, dotR);
+    UIDraw::glow(hit, dotR * 1.4f, argb(0.45f, 1.f, 1.f, 1.f));
+    UIDraw::fill(hit, 0xffffffff);
+
+    McFont *font = osu->getLogoFont() ? osu->getLogoFont() : osu->getSongBrowserFont();
+    const std::string word{"mikosu"};
+    const f32 scale = (d * 0.175f) / font->getHeight();
+    g->setColor(theme.logoWord);
+    g->pushTransform();
+    {
+        g->scale(scale, scale);
+        g->translate((f32)(i32)(c.x - font->getStringWidth(word) * scale * 0.5f),
+                     (f32)(i32)(c.y + font->getHeight() * scale * 0.36f));
+        g->drawString(font, word);
+    }
+    g->popTransform();
+}
+
 // the cube
 void MainMenu::drawMainButton() {
     const auto [haveTimingpoints, pulse] = this->getTimingpointPulseAmount();
@@ -734,6 +792,13 @@ void MainMenu::drawMainButton() {
 
     const McRect mainButtonRect{this->vCenter.x - size.x / 2.0f - this->centerOffsetAnim,
                                 this->vCenter.y - size.y / 2.0f, size.x, size.y};
+
+    if(!UITheme::classic()) {
+        // the redesign's flat logo in place of the cube (still pulsing with the beat)
+        this->drawLogoRedesigned(mainButtonRect);
+        if(this->friendAnimPercent > 0.0f) this->drawFriend(mainButtonRect, pulse, haveTimingpoints);
+        return;
+    }
 
     // draw main button cube
     bool drawing_full_cube =

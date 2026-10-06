@@ -13,8 +13,10 @@ class UIButtonRounded : public CBaseUIButton {
 
     // the redesign's looks (docs/renovation/DESIGN.md), used outside the classic theme: a frosted field (a chevron if
     // it opens a dropdown) or a text tab with a glowing underline when it's the active one
-    enum class Themed : uint8_t { NONE, FIELD, TAB };
+    enum class Themed : uint8_t { NONE, FIELD, TAB, MENU };
     UIButtonRounded* setThemed(Themed style, bool dropdown = false);
+    // MENU: the main menu's bars, marked with an accent colour and an icon glyph (0: none)
+    UIButtonRounded* setThemedAccent(size_t menuAccentIndex, char32_t glyph);
     UIButtonRounded* setThemedActive(bool active);
 
     void draw() override;
@@ -32,4 +34,6 @@ class UIButtonRounded : public CBaseUIButton {
     Themed themed{Themed::NONE};
     bool themedDropdown{false};
     bool themedActive{false};
+    size_t themedAccent{0};
+    char32_t themedGlyph{0};
 };

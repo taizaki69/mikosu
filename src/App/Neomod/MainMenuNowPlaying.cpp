@@ -1,5 +1,7 @@
 // Copyright (c) 2026, WH, All rights reserved.
 #include "MainMenuNowPlaying.h"
+#include "UIDraw.h"
+#include "UITheme.h"
 
 #include "BeatmapInterface.h"
 #include "DatabaseBeatmap.h"
@@ -89,6 +91,16 @@ class NowPlaying::SeekBar final : public CBaseUIElement {
     const NowPlaying &panel;
 };
 
+namespace {
+// text on the panel: white with a shadow in the classic look, the theme's ink without one in the redesign
+Color inkWithAlpha(f32 alpha) {
+    if(UITheme::classic()) return argb(alpha, 1.f, 1.f, 1.f);
+    const Color ink = UITheme::current().ink;
+    return Color(ink).setA(ink.Af() * alpha);
+}
+Color shadowWithAlpha(f32 alpha) { return UITheme::classic() ? argb(alpha, 0.f, 0.f, 0.f) : argb(0.f, 0.f, 0.f, 0.f); }
+}  // namespace
+
 void NowPlaying::SeekBar::draw() {
     if(!this->isVisible()) return;
 
@@ -97,7 +109,18 @@ void NowPlaying::SeekBar::draw() {
         std::round(std::lerp(COLLAPSED_BAR_HEIGHT, SEEK_BAR_HEIGHT, (f32)this->panel.expandAnim) * scale);
     const McRect &rect = this->getRect();
     const f32 y = rect.getMaxY() - barHeight;
+    const bool themed = !UITheme::classic();
     const auto fill = [&](f32 width, f32 alpha) {
+        if(themed) {
+            // the redesign: a rounded track, the played part in the theme's line colours
+            const auto &theme = UITheme::current();
+            const UIDraw::Shape bar = UIDraw::Shape::rounded(McRect{rect.getX(), y, width, barHeight}, barHeight * 0.5f);
+            if(alpha >= 0.9f)
+                UIDraw::fill(bar, theme.line[0], theme.line[1], theme.line[2], 0.5f);
+            else
+                UIDraw::fill(bar, Color(theme.ink).setA(alpha * 0.8f));
+            return;
+        }
         g->setColor(argb(alpha, 1.f, 1.f, 1.f));
         g->fillRectf(rect.getX(), y, width, barHeight);
     };
@@ -281,16 +304,27 @@ void NowPlaying::draw() {
     const f32 scale = Osu::getUIScale();
     const McRect &rect = this->getRect();
 
-    // like the online beatmaps screen's preview panel
-    g->setColor(rgb(15, 15, 15).setA(0.85f));
-    g->fillRect(rect);
-    g->setColor(rgb(80, 80, 80));
-    g->drawRectf(Graphics::RectOptions{.x = rect.getX() + scale / 2.f,
-                                       .y = rect.getY() + scale / 2.f,
-                                       .width = rect.getWidth() - scale,
-                                       .height = rect.getHeight() - scale,
-                                       .lineThickness = scale,
-                                       .withColor = false});
+    if(!UITheme::classic()) {
+        // the redesign: a frosted card
+        const auto &theme = UITheme::current();
+        const UIDraw::Shape card = UIDraw::Shape::rounded(rect, std::round(8.f * scale));
+        UIDraw::glow(card, 10.f * scale, argb(0.14f, 0.f, 0.f, 0.f));
+        UIDraw::glass(card, theme.bar);
+        UIDraw::Shape edge = card;
+        edge.border = 1.f;
+        UIDraw::fill(edge, theme.barEdge);
+    } else {
+        // like the online beatmaps screen's preview panel
+        g->setColor(rgb(15, 15, 15).setA(0.85f));
+        g->fillRect(rect);
+        g->setColor(rgb(80, 80, 80));
+        g->drawRectf(Graphics::RectOptions{.x = rect.getX() + scale / 2.f,
+                                           .y = rect.getY() + scale / 2.f,
+                                           .width = rect.getWidth() - scale,
+                                           .height = rect.getHeight() - scale,
+                                           .lineThickness = scale,
+                                           .withColor = false});
+    }
 
     // whatever isn't unrolled yet stays hidden
     g->pushClipRect(rect);
@@ -324,8 +358,8 @@ void NowPlaying::drawTimes() {
             g->scale(TIME_TEXT_SCALE, TIME_TEXT_SCALE);
             g->translate(std::round(x), baseline);
             g->drawString(this->font, text,
-                          TextFX{.col_text = argb(0.7f, 1.f, 1.f, 1.f),
-                                 .col_shadow = argb(0.4f, 0.f, 0.f, 0.f),
+                          TextFX{.col_text = inkWithAlpha(0.7f),
+                                 .col_shadow = shadowWithAlpha(0.4f),
                                  .offs_px = std::round((f32)this->font->getDPI() / 96.0f),
                                  .shadow_softness_px = 1.f});
         }
@@ -356,8 +390,8 @@ void NowPlaying::drawTitle() {
         g->scale(stateScale, stateScale);
         g->translate(left, baseline);
         g->drawString(this->iconFont, stateGlyph,
-                      TextFX{.col_text = argb(0.7f, 1.f, 1.f, 1.f),
-                             .col_shadow = argb(0.6f, 0.f, 0.f, 0.f),
+                      TextFX{.col_text = inkWithAlpha(0.7f),
+                             .col_shadow = shadowWithAlpha(0.6f),
                              .offs_px = std::round((f32)this->iconFont->getDPI() / 96.0f),
                              .shadow_softness_px = 1.f});
     }
@@ -371,8 +405,8 @@ void NowPlaying::drawTitle() {
         {
             g->translate(x, baseline);
             g->drawString(this->font, this->title,
-                          TextFX{.col_text = argb(alpha, 1.f, 1.f, 1.f),
-                                 .col_shadow = argb(0.6f * alpha, 0.f, 0.f, 0.f),
+                          TextFX{.col_text = inkWithAlpha(alpha),
+                                 .col_shadow = shadowWithAlpha(0.6f * alpha),
                                  .offs_px = std::round((f32)this->font->getDPI() / 96.0f),
                                  .shadow_softness_px = 1.f});
         }

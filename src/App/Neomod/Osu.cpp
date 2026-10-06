@@ -353,6 +353,10 @@ Osu::Osu()
         resourceManager->loadFont("outfit@700", "FONT_OSU_SONGBROWSER_BOLD", 30, true, newDPI);
 
     this->fontIcons = resourceManager->loadFont("forkawesome", "FONT_OSU_ICONS", Icons::icons, 26, true, newDPI);
+    {
+        static constexpr std::array<char32_t, 6> logoGlyphs{U'm', U'i', U'k', U'o', U's', U'u'};
+        this->logoFont = resourceManager->loadFont("outfit@400", "FONT_OSU_LOGO", logoGlyphs, 72, true, newDPI);
+    }
 
     this->fonts.push_back(defaultFont);
     this->fonts.push_back(this->titleFont);
@@ -360,6 +364,7 @@ Osu::Osu()
     this->fonts.push_back(this->songBrowserFont);
     this->fonts.push_back(this->songBrowserFontBold);
     this->fonts.push_back(this->fontIcons);
+    this->fonts.push_back(this->logoFont);
 
     float averageIconHeight = 0.0f;
     for(char32_t icon : Icons::icons) {

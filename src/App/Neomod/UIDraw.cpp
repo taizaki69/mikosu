@@ -73,7 +73,7 @@ void setParams(const McRect &quad, const Shape &s, bool textured, UVWindow uv, f
     shapeShader->setUniform4f("radii", s.radii[0], s.radii[1], s.radii[2], s.radii[3]);
     shapeShader->setUniform4f("extra", s.cut, textured ? 1.f : 0.f, 0.f, 0.f);
     shapeShader->setUniform4f("uvmap", uv.u0, uv.v0, uv.du, uv.dv);
-    shapeShader->setUniform4f("col", 1.f, 1.f, 1.f, alpha);
+    shapeShader->setUniform4f("col", 1.f, 1.f, 1.f, alpha * s.opacity);
 }
 
 // the shader treats everything as inside: for polygons and plain quads, which bring their own geometry
@@ -239,7 +239,7 @@ void image(const Shape &s, const Image *img, Color tint) {
 
     shapeShader->enable();
     setParams(q, s, true, uv, tint.Af());
-    shapeShader->setUniform4f("col", tint.Rf(), tint.Gf(), tint.Bf(), tint.Af());
+    shapeShader->setUniform4f("col", tint.Rf(), tint.Gf(), tint.Bf(), tint.Af() * s.opacity);
     img->bind();
     const Color none = argb(0.f, 1.f, 1.f, 1.f);  // no colour over the image
     drawStrip(q, none, none, none, 0.5f);
