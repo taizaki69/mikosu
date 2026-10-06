@@ -8,8 +8,9 @@ profile="$(mktemp -d)"
 trap 'rm -rf "$profile"' EXIT
 # round 1: SCREENS="mainmenu songselect" VARIANTS="faithful refined bold"
 # round 2: SCREENS="mainmenu2 songselect2" VARIANTS="all controls accents"
-for screen in ${SCREENS:-mainmenu2 songselect2}; do
-  for v in ${VARIANTS:-all controls accents}; do
+# round 3: SCREENS="mainmenu3 songselect3" VARIANTS="lazer tinted upright"
+for screen in ${SCREENS:-mainmenu3 songselect3}; do
+  for v in ${VARIANTS:-lazer tinted upright}; do
     out="$here/../$screen-$v.png"
     rm -f "$out"
     firefox --headless --no-remote --profile "$profile" --window-size=1920,1080 \
