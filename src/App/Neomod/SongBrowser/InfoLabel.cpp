@@ -79,7 +79,7 @@ void InfoLabel::drawRedesigned() {
     const auto *pf = osu->getMapInterface();
     const auto *map = pf->getBeatmap();
 
-    McFont *semibold = osu->getTitleFont();       // outfit 600, large: crisp when scaled down
+    McFont *semibold = osu->getTitleFont();  // outfit 600, large: crisp when scaled down
     McFont *semiboldSmall = osu->getSubTitleFont();
     McFont *regular = osu->getSongBrowserFont();  // outfit 400
 

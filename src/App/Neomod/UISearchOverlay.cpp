@@ -56,12 +56,14 @@ void UISearchOverlay::drawRedesigned() {
         else if(this->iNumFoundResults == 0)
             sub = _("No matches found. Hit ESC to reset.");
     }
-    if(!this->sHardcodedSearchString.empty()) sub = sub.empty() ? this->sHardcodedSearchString : sub + "  \u00b7  " + this->sHardcodedSearchString;
+    if(!this->sHardcodedSearchString.empty())
+        sub = sub.empty() ? this->sHardcodedSearchString : sub + "  \u00b7  " + this->sHardcodedSearchString;
 
     const f32 mainW = font->getStringWidth(main);
     const f32 subW = sub.empty() ? 0.f : font->getStringWidth(sub) * 0.8f + pad * 0.6f;
     const f32 width = std::min(this->getSize().x, pad * 2.f + iconW + pad * 0.5f + mainW + subW);
-    const McRect pill{this->getPos().x + this->getSize().x - width - (f32)this->iOffsetRight, this->getPos().y, width, h};
+    const McRect pill{this->getPos().x + this->getSize().x - width - (f32)this->iOffsetRight, this->getPos().y, width,
+                      h};
 
     const UIDraw::Shape shape = UIDraw::Shape::rounded(pill, h * 0.5f);
     UIDraw::glass(shape, theme.bar);

@@ -130,7 +130,8 @@ class ScoresStillLoadingElement final : public CBaseUILabel {
             // the redesign: a frosted rounded row like the leaderboard's
             const auto &theme = UITheme::current();
             const f32 h = this->getSize().y;
-            const UIDraw::Shape row = UIDraw::Shape::rounded(McRect{this->getPos(), this->getSize()}, std::round(h * 0.2f));
+            const UIDraw::Shape row =
+                UIDraw::Shape::rounded(McRect{this->getPos(), this->getSize()}, std::round(h * 0.2f));
             UIDraw::glass(row, theme.row);
             UIDraw::Shape edge = row;
             edge.border = 1.f;
@@ -197,7 +198,8 @@ class NoRecordsSetElement final : public CBaseUILabel {
             // the redesign: a frosted rounded row like the leaderboard's
             const auto &theme = UITheme::current();
             const f32 h = this->getSize().y;
-            const UIDraw::Shape row = UIDraw::Shape::rounded(McRect{this->getPos(), this->getSize()}, std::round(h * 0.2f));
+            const UIDraw::Shape row =
+                UIDraw::Shape::rounded(McRect{this->getPos(), this->getSize()}, std::round(h * 0.2f));
             UIDraw::glass(row, theme.row);
             UIDraw::Shape edge = row;
             edge.border = 1.f;
@@ -3143,8 +3145,9 @@ void SongBrowser::onGroupChange(std::string_view /*text*/, int id) {
     static_cast<UIButtonRounded *>(this->groupByCollectionBtn)->setThemedActive(group_id == GroupType::COLLECTIONS);
     static_cast<UIButtonRounded *>(this->groupByArtistBtn)->setThemedActive(group_id == GroupType::ARTIST);
     static_cast<UIButtonRounded *>(this->groupByDifficultyBtn)->setThemedActive(group_id == GroupType::DIFFICULTY);
-    static_cast<UIButtonRounded *>(this->groupByNothingBtn)->setThemedActive(group_id != GroupType::COLLECTIONS && group_id != GroupType::ARTIST &&
-                                             group_id != GroupType::DIFFICULTY);
+    static_cast<UIButtonRounded *>(this->groupByNothingBtn)
+        ->setThemedActive(group_id != GroupType::COLLECTIONS && group_id != GroupType::ARTIST &&
+                          group_id != GroupType::DIFFICULTY);
 
     switch(group_id) {
         case GroupType::ARTIST:

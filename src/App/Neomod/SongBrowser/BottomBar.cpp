@@ -267,8 +267,10 @@ void draw_redesigned_buttons() {
         const f32 cx = r.getX() + r.getWidth() * 0.5f;
 
         if(hover > 0.f) {
-            UIDraw::fill(UIDraw::Shape::rounded(McRect{r.getX() + h * 0.06f, top + h * 0.1f, r.getWidth() - h * 0.12f, h * 0.8f}, h * 0.08f),
-                         Color(theme.chip).setA(theme.chip.Af() * hover * 1.6f));
+            UIDraw::fill(
+                UIDraw::Shape::rounded(McRect{r.getX() + h * 0.06f, top + h * 0.1f, r.getWidth() - h * 0.12f, h * 0.8f},
+                                       h * 0.08f),
+                Color(theme.chip).setA(theme.chip.Af() * hover * 1.6f));
         }
 
         // stable's coloured marker, hanging from the bar's top line
@@ -283,8 +285,7 @@ void draw_redesigned_buttons() {
         g->pushTransform();
         {
             g->scale(iconScale, iconScale);
-            g->translate(cx - icons->getStringWidth(glyph) * iconScale * 0.5f,
-                         top + h * 0.47f - hover * h * 0.03f);
+            g->translate(cx - icons->getStringWidth(glyph) * iconScale * 0.5f, top + h * 0.47f - hover * h * 0.03f);
             g->drawString(icons, glyph);
         }
         g->popTransform();
@@ -345,7 +346,6 @@ void draw_skin_buttons() {
                         mos_scale, AnchorPoint::CENTER);
         g->setBlendMode(DrawBlendMode::ALPHA);
     }
-
 }
 
 void draw_background_tasks() {

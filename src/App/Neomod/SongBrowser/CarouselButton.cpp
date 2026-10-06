@@ -137,7 +137,7 @@ void CarouselButton::drawMenuButtonBackground() {
                                                       : theme.set;
         if(theme.panelEdgeAccents) {
             // colour only as a thin edge on the left
-            const Color accent = this->bSelected ? Color(0xffffffff)
+            const Color accent = this->bSelected           ? Color(0xffffffff)
                                  : kind == PanelKind::DIFF ? theme.accentDiff
                                                            : theme.accentSet;
             UIDraw::fill({.rect = McRect{pos.x, pos.y, radius * 2.f, size.y}, .radii = {radius, 0.f, 0.f, radius}},

@@ -105,7 +105,7 @@ void SongDifficultyButton::draw() {
             std::max(0.5f, std::clamp<float>(stars - numFullStars, 0.0f, 1.0f));  // at least 0.5x
 
         const bool redesigned = CarouselButton::redesigned();
-        const auto &theme = UITheme::current();
+        const auto& theme = UITheme::current();
         g->setColor(!redesigned ? this->textColour(this->bSelected)
                                 : (this->bSelected ? theme.selStarOn : theme.starOn));
 
