@@ -36,8 +36,6 @@ void CollectionButton::draw() {
     if(!this->bVisible) return;
     CarouselButton::draw();
 
-    const auto *skin = osu->getSkin();
-
     // scaling
     const vec2 pos = this->getActualPos();
     const vec2 size = this->getActualSize();
@@ -47,7 +45,7 @@ void CollectionButton::draw() {
     titleString.append(fmt::format(" ({} map{})", this->numVisibleChildren, this->numVisibleChildren == 1 ? "" : "s"));
     int textXOffset = size.x * 0.02f;
     float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
-    g->setColor(this->bSelected ? skin->c_song_select_active_text : skin->c_song_select_inactive_text);
+    g->setColor(this->textColour(this->bSelected));
     g->pushTransform();
     {
         g->scale(titleScale, titleScale);

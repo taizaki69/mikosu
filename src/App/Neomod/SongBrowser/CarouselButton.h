@@ -82,6 +82,14 @@ class CarouselButton : public CBaseUIButton {
     [[nodiscard]] inline const std::vector<SongButton *> &getChildren() const { return this->children; }
 
     [[nodiscard]] virtual const DatabaseBeatmap *getDatabaseBeatmap() const { return nullptr; }
+
+    // the redesign (docs/renovation/DESIGN.md) draws the panels itself, unless the theme is classic or the skin brings
+    // its own menu-button-background
+    enum class PanelKind : uint8_t { SET, DIFF, GROUP };
+    [[nodiscard]] static bool redesigned();
+    [[nodiscard]] virtual PanelKind panelKind() const { return PanelKind::SET; }
+    // text on this panel: the skin's song select colours, or the theme's (secondary: artist lines, numbers)
+    [[nodiscard]] Color textColour(bool selectedStyle, bool secondary = false) const;
     [[nodiscard]] virtual Color getActiveBackgroundColor() const;
     [[nodiscard]] virtual Color getInactiveBackgroundColor() const;
 

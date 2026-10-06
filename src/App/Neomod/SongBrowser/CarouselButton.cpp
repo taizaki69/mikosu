@@ -23,6 +23,8 @@
 #include "UI.h"
 #include "UIContextMenu.h"
 #include "ContainerRanges.h"
+#include "UIDraw.h"
+#include "UITheme.h"
 
 using namespace neomod::sbr;
 
@@ -97,7 +99,58 @@ void CarouselButton::draw() {
     }
 }
 
+bool CarouselButton::redesigned() {
+    const Skin *skin = osu->getSkin();
+    return !UITheme::classic() && skin->usesDefault(skin->i_menu_button_bg);
+}
+
+Color CarouselButton::textColour(bool selectedStyle, bool secondary) const {
+    if(!redesigned()) {
+        const Skin *skin = osu->getSkin();
+        return selectedStyle ? skin->c_song_select_active_text : skin->c_song_select_inactive_text;
+    }
+    const auto &theme = UITheme::current();
+    if(selectedStyle) return secondary ? theme.selInk2 : theme.selInk;
+    return secondary ? theme.panelInk2 : theme.panelInk;
+}
+
 void CarouselButton::drawMenuButtonBackground() {
+    if(redesigned()) {
+        // stable's colours by kind (sets, the open set's difficulties, the selection) as frosted panels with rounded
+        // left corners that run off the right edge of the screen
+        const auto &theme = UITheme::current();
+        const vec2 pos = this->getActualPos();
+        const vec2 size = this->getActualSize();
+        const f32 radius = std::round(size.y * 0.16f);
+        const f32 right = (f32)osu->getVirtScreenWidth() + radius;
+        const PanelKind kind = this->panelKind();
+
+        UIDraw::Shape panel{.rect = McRect{pos.x, pos.y, right - pos.x, size.y}, .radii = {radius, 0.f, 0.f, radius}};
+        if(this->bSelected)
+            UIDraw::glow(panel, size.y * 0.18f, theme.selGlow);
+        else
+            UIDraw::glow(panel, size.y * 0.08f, argb(0.16f, 0.f, 0.f, 0.f));
+
+        const auto &grad = this->bSelected            ? theme.sel
+                           : kind == PanelKind::DIFF  ? theme.diff
+                           : kind == PanelKind::GROUP ? std::array{theme.bar, theme.bar, theme.bar}
+                                                      : theme.set;
+        if(theme.panelEdgeAccents) {
+            // colour only as a thin edge on the left
+            const Color accent = this->bSelected ? Color(0xffffffff)
+                                 : kind == PanelKind::DIFF ? theme.accentDiff
+                                                           : theme.accentSet;
+            UIDraw::fill({.rect = McRect{pos.x, pos.y, radius * 2.f, size.y}, .radii = {radius, 0.f, 0.f, radius}},
+                         accent);
+            panel.rect = McRect{pos.x + std::max(2.f, size.y * 0.04f), pos.y, right - pos.x, size.y};
+        }
+        UIDraw::glass(panel, grad[0], grad[1], grad[2]);
+        UIDraw::Shape edge = panel;
+        edge.border = 1.f;
+        UIDraw::fill(edge, theme.panelEdge);
+        return;
+    }
+
     g->setColor(this->bSelected ? this->getActiveBackgroundColor() : this->getInactiveBackgroundColor());
     g->pushTransform();
     {

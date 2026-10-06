@@ -5,6 +5,8 @@
 #include "SString.h"
 #include "ScoreButton.h"
 #include "SongBrowser.h"
+#include "UIDraw.h"
+#include "UITheme.h"
 #include "SongDifficultyButton.h"
 #include "BeatmapCarousel.h"
 
@@ -147,6 +149,16 @@ void SongButton::drawBeatmapBackgroundThumbnail(const Image *image) {
     const vec2 size = this->getActualSize();
 
     const f32 thumbnailYRatio = g_songbrowser->thumbnailYRatio;
+
+    if(CarouselButton::redesigned()) {
+        // rounded on the left, like the panel
+        const f32 radius = std::round(size.y * 0.16f);
+        const f32 inset = UITheme::current().panelEdgeAccents ? std::max(2.f, size.y * 0.04f) : 0.f;
+        UIDraw::image({.rect = McRect{pos.x + inset, pos.y, size.y * thumbnailYRatio, size.y},
+                       .radii = {radius, 0.f, 0.f, radius}},
+                      image, argb(alpha, 1.f, 1.f, 1.f));
+        return;
+    }
     const f32 beatmapBackgroundScale =
         Osu::getImageScaleToFillResolution(image, vec2(size.y * thumbnailYRatio, size.y)) * 1.05f;
 
@@ -199,8 +211,7 @@ void SongButton::drawTitle(float deselectedAlpha, bool forceSelectedStyle) {
     const vec2 size = this->getActualSize();
 
     const float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
-    g->setColor((this->bSelected || forceSelectedStyle) ? osu->getSkin()->c_song_select_active_text
-                                                        : osu->getSkin()->c_song_select_inactive_text);
+    g->setColor(this->textColour(this->bSelected || forceSelectedStyle));
     if(!(this->bSelected || forceSelectedStyle)) g->setAlpha(deselectedAlpha);
 
     const std::string_view title{this->databaseBeatmap ? this->databaseBeatmap->getTitle() : ""sv};
@@ -222,8 +233,7 @@ void SongButton::drawSubTitle(float deselectedAlpha, bool forceSelectedStyle) {
 
     const float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
     const float subTitleScale = (size.y * this->fSubTitleScale) / this->font->getHeight();
-    g->setColor((this->bSelected || forceSelectedStyle) ? osu->getSkin()->c_song_select_active_text
-                                                        : osu->getSkin()->c_song_select_inactive_text);
+    g->setColor(this->textColour(this->bSelected || forceSelectedStyle, true));
     if(!(this->bSelected || forceSelectedStyle)) g->setAlpha(deselectedAlpha);
 
     const std::string_view artist{this->databaseBeatmap ? this->databaseBeatmap->getArtist() : ""sv};

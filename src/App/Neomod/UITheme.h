@@ -30,6 +30,8 @@ struct Tokens {
     std::array<Color, 3> set, diff, sel;
     Color panelInk, panelInk2, selInk, selInk2;
     Color selGlow;
+    Color panelEdge;                   // hairline around panels
+    Color accentSet, accentDiff;       // pink and blue: stable's set and difficulty colours as accents
     bool panelEdgeAccents;  // moon: colour as a thin left edge instead of a fill
 
     // stars: lit and dim, on normal panels and on the selected one

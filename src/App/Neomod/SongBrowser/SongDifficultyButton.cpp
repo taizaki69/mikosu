@@ -6,6 +6,7 @@
 #include "BeatmapCarousel.h"
 #include "Font.h"
 #include "SongBrowser.h"
+#include "UITheme.h"
 // #include "Logging.h"
 // ---
 
@@ -80,7 +81,7 @@ void SongDifficultyButton::draw() {
     const float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
     const float subTitleScale = (size.y * this->fSubTitleScale) / this->font->getHeight();
     const float diffScale = (size.y * this->fDiffScale) / fontBold->getHeight();
-    g->setColor(this->bSelected ? skin->c_song_select_active_text : skin->c_song_select_inactive_text);
+    g->setColor(this->textColour(this->bSelected));
     g->pushTransform();
     {
         g->scale(diffScale, diffScale);
@@ -103,7 +104,10 @@ void SongDifficultyButton::draw() {
         const float partialStarScale =
             std::max(0.5f, std::clamp<float>(stars - numFullStars, 0.0f, 1.0f));  // at least 0.5x
 
-        g->setColor(this->bSelected ? skin->c_song_select_active_text : skin->c_song_select_inactive_text);
+        const bool redesigned = CarouselButton::redesigned();
+        const auto &theme = UITheme::current();
+        g->setColor(!redesigned ? this->textColour(this->bSelected)
+                                : (this->bSelected ? theme.selStarOn : theme.starOn));
 
         // full stars
         for(int i = 0; i < numFullStars; i++) {
@@ -130,10 +134,10 @@ void SongDifficultyButton::draw() {
         g->popTransform();
 
         // fill leftover space up to 10 stars total (background stars)
-        g->setColor(0x1effffff);
+        g->setColor(redesigned ? (this->bSelected ? theme.selStarOff : theme.starOff) : Color(0x1effffff));
         const float backgroundStarScale = 0.6f;
 
-        g->setBlendMode(DrawBlendMode::ADDITIVE);
+        if(!redesigned) g->setBlendMode(DrawBlendMode::ADDITIVE);
         {
             for(int i = (numFullStars + 1); i < 10; i++) {
                 g->pushTransform();
