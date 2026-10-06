@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mikosu song select mockup, round 3</title>
+<link rel="stylesheet" href="round3.css">
+</head>
+<body>
+<div class="bg blur"></div>
+<div class="dim"></div>
+
+<div class="carousel" id="carousel"></div>
+
+<section class="tw sh wedge"><div class="un">
+  <span class="status">RANKED</span>
+  <div class="ttl">Lanternfall</div>
+  <div class="art">Aurora Drift</div>
+  <div class="stats" id="stats"></div>
+</div></section>
+
+<section class="dw sh wedge"><div class="un">
+  <div class="top" id="dtop"></div>
+  <div class="bottom" id="dbottom"></div>
+</div></section>
+
+<section class="fw sh wedge flip"><div class="un">
+  <div class="search" id="search"></div>
+  <div class="dds" id="dds"></div>
+</div></section>
+
+<section class="lb">
+  <div class="tabs" id="tabs"></div>
+  <div class="rows" id="rows"></div>
+  <div class="more">Your best: #1 of 38 local scores</div>
+</section>
+
+<footer class="foot"></footer>
+<div id="footer"></div>
+<div class="logo playlogo" id="playlogo"></div>
+
+<script src="icons.js"></script>
+<script src="round3.js"></script>
+<script>
+const v = new URLSearchParams(location.search).get("v") || "lazer";
+document.body.classList.add("v-" + v);
+
+document.getElementById("stats").innerHTML =
+  `<span class="bgd">${icon("playcount")}23</span><span>${icon("clock")}3:42</span><span>${icon("bpm")}174</span>` +
+  `<span>${icon("circle")}702</span><span>${icon("slider")}578</span><span>${icon("heart")}1,204</span>`;
+
+const SR = 7.38, base = 6.71, c = starColour(SR);
+document.getElementById("dtop").innerHTML =
+  `${starPill(SR, "l")}<span class="dn">Kaze's Extra</span><span class="by">mapped by <b>kazehana</b> &middot; with ${modPill("HD")} ${modPill("HR")}</span>`;
+const attr = (lab, val, w, up) => `<div class="attr" style="--c:${c}"><div class="lab">${lab}<b class="${up ? "up" : ""}">${val}</b></div><div class="bar"><i style="--w:${w}%"></i></div></div>`;
+document.getElementById("dbottom").innerHTML =
+  attr("CS", "5.5", 55, 1) + attr("AR", "10", 100, 1) + attr("OD", "10", 100, 1) + attr("HP", "7", 70, 1) +
+  `<div class="ppc"><span><small>95%</small><b>312</b></span><span><small>98%</small><b>351</b></span><span><small>99%</small><b>368</b></span><span><small>SS</small><b>392pp</b></span></div>`;
+
+document.getElementById("search").innerHTML =
+  `${icon("search")}<span>Search 7,514 maps &middot; try <b>stars&gt;6 ar&lt;9</b></span><span class="kbd">Ctrl+F</span>`;
+const dd = (label, val, ic) => `<div class="dd sh"><div class="un">${ic ? icon(ic) : ""}<small>${label}</small>${val}${icon("down")}</div></div>`;
+document.getElementById("dds").innerHTML = dd("Group", "Artist", "group") + dd("Sort", "Date added", "sort") +
+  `<div class="range"><span style="color:${starColour(0.5)}">&#9733; 0</span><div class="track"><span class="knob" style="left:0%"></span><span class="knob" style="left:100%"></span></div><span>&#9733; 10+</span></div>`;
+
+const tab = (ic, label, on) => `<div class="tab sh${on ? " on" : ""}"><div class="un">${icon(ic)}${label}</div></div>`;
+document.getElementById("tabs").innerHTML = tab("user", "Local", 1) + tab("globe", "Country") + tab("trophy", "Global") + tab("users", "Friends");
+
+const rows = [
+  { g: "S", who: "taizaki", mods: ["HD", "HR"], score: "12,948,210", acc: "98.92%", combo: "1,284x", fc: true, pp: "387", when: "2 days ago", av: ["#66ccff", "#8c66ff"], me: true },
+  { g: "A", who: "mochi_m", mods: ["HD"], score: "11,203,554", acc: "97.40%", combo: "1,102x", pp: "340", when: "1 week ago", av: ["#ff8068", "#ff4e6f"] },
+  { g: "A", who: "ren_k", mods: [], score: "9,876,002", acc: "96.88%", combo: "803x", pp: "301", when: "3 weeks ago", av: ["#4fffd5", "#4290fb"] },
+  { g: "A", who: "solstice", mods: ["HR"], score: "8,442,190", acc: "96.10%", combo: "722x", pp: "288", when: "1 month ago", av: ["#f6f05c", "#ff8068"] },
+  { g: "B", who: "Velvet", mods: [], score: "6,120,775", acc: "93.05%", combo: "514x", pp: "214", when: "2 months ago", av: ["#c645b8", "#6563de"] },
+  { g: "B", who: "kitsu", mods: ["DT"], score: "5,980,340", acc: "92.77%", combo: "466x", pp: "251", when: "5 months ago", av: ["#7cff4f", "#4fc0ff"] },
+];
+document.getElementById("rows").innerHTML = rows.map((r, i) => `
+  <div class="row sh${r.me ? " me" : ""}" style="--rk:${RANKS[r.g][0]}"><div class="un">
+    <div class="pos">#${i + 1}</div>
+    <div class="main">
+      <div class="av" style="background:linear-gradient(140deg, ${r.av[0]}, ${r.av[1]})">${r.who[0].toUpperCase()}</div>
+      <div class="who"><b>${r.who}${r.mods.map(modPill).join("")}</b><small>${r.when}</small></div>
+      <div class="stat"><small>Accuracy</small><b>${r.acc}</b></div>
+      <div class="stat"><small>Combo</small><b class="${r.fc ? "fc" : ""}">${r.combo}</b></div>
+      <div class="stat"><small>PP</small><b>${r.pp}</b></div>
+    </div>
+    <div class="score">${r.score}</div>
+    <div class="grade">${rankLetter(r.g)}</div>
+  </div></div>`).join("");
+
+// carousel: the selected difficulty sits near the middle; panels further away drift right, as in stable
+const items = [
+  { k: "set", t: "Paper Planes in June", a: "Kaori Nanase // Shibuki", art: "teal", diffs: [1.8, 2.9, 4.1, 5.2], status: "RANKED" },
+  { k: "set", t: "夜明けの灯", a: "星野ミオ // rinne", art: "violet", diffs: [2.2, 3.5, 4.8, 6.1, 7.4], status: "RANKED" },
+  { k: "set", t: "Lanternfall", a: "Aurora Drift // kazehana", art: "rose", open: true, diffs: [1.92, 2.84, 4.07, 5.41, 6.71], status: "RANKED" },
+  { k: "diff", d: "Normal", sr: 2.84, rank: "S", by: "kazehana" },
+  { k: "diff", d: "Hard", sr: 4.07, rank: "A", by: "kazehana" },
+  { k: "diff", d: "Insane", sr: 5.41, rank: "A", by: "Shiro" },
+  { k: "diff", d: "Kaze's Extra", sr: 6.71, rank: "S", by: "kazehana", sel: true },
+  { k: "set", t: "Velvet Static", a: "Lumen Kid // ponytail", art: "ember", diffs: [3.1, 4.4, 5.6], status: "LOVED" },
+  { k: "set", t: "Glass Harbor", a: "Mareen // Shiro", art: "ocean", diffs: [1.5, 2.6, 3.9, 4.9, 5.9, 6.4], status: "RANKED" },
+  { k: "set", t: "Moss & Mirrors", a: "The Quiet Engine // Oak", art: "moss", diffs: [2.4, 3.8, 5.0], status: "RANKED" },
+  { k: "set", t: "Starlit Overpass", a: "Hikari // Mio", art: "violet", diffs: [3.3, 4.6, 5.7, 6.9], status: "RANKED" },
+];
+const STATUS = { RANKED: "#b3ff66", LOVED: "#ff66ab" };
+const carousel = document.getElementById("carousel");
+const centre = 410;
+const H = (it) => (it.k === "diff" ? 62 : 100);
+const selIndex = items.findIndex((it) => it.sel);
+let yPos = centre - H(items[selIndex]) / 2;
+for (let i = selIndex - 1; i >= 0; i--) yPos -= H(items[i]) + 8;
+const stars = (sr) => Array.from({ length: 10 }, (_, i) => STAR_SVG.replace('class="st"', `class="${i < Math.round(sr) ? "" : "off"}"`)).join("");
+items.forEach((it, i) => {
+  const h = H(it), mid = yPos + h / 2, dist = Math.abs(mid - centre);
+  const off = it.sel ? 0 : it.k === "diff" ? 34 : it.open ? 14 : 104;
+  const drift = off + Math.min(140, dist * dist * 0.00045);
+  const el = document.createElement("div");
+  el.className = `p ${it.k}${it.sel ? " sel" : ""}${it.open ? " open" : ""}`;
+  el.style.top = yPos + "px";
+  el.style.right = (-16 - drift) + "px";
+  if (it.k === "set") {
+    el.innerHTML = `<div class="fill"></div><div class="artbg" style="background-image:url(art/thumb-${it.art}.png)"></div><div class="shade"></div>
+      ${it.open ? `<div class="chev">${icon("chev")}</div>` : ""}
+      <div class="txt"><div class="t">${it.t}</div><div class="a">${it.a}</div>
+      <div class="meta"><span class="status" style="background:${STATUS[it.status]}">${it.status}</span>
+      <span class="dots">${it.diffs.map((s) => `<i style="--c:${starColour(s)}"></i>`).join("")}</span></div></div>`;
+  } else {
+    const col = starColour(it.sr);
+    el.style.setProperty("--c", col);
+    el.innerHTML = `<div class="strip"><i></i></div><div class="body"><div class="fill"></div><div class="tint"></div>
+      ${triangles(10 + i, 850, h, { colour: col, opacity: 0.32, size: 70, stroke: 1.4 })}
+      ${it.sel ? '<div class="pulse"></div>' : ""}
+      <div class="txt"><span class="rl">${rankLetter(it.rank)}</span><div class="col">
+        <div class="n">${it.d}<small>mapped by ${it.by}</small></div>
+        <div class="srow">${starPill(it.sr, "s")}<span class="stars" style="--c:${col}">${stars(it.sr)}</span></div></div></div></div>`;
+  }
+  carousel.appendChild(el);
+  yPos += h + 8;
+});
+
+// footer: stable's bottom bar (back, mode, mods, random, options, user, play logo) in lazer's footer style
+const ft = (x, ic, label, ac, key, on) => `<div class="ft sh${on ? " on" : ""}" style="left:${x}px;--ac:${ac}"><div class="un">
+  <div class="ic">${icon(ic)}</div><div class="lab">${label}${key ? `<span class="kbd">${key}</span>` : ""}</div><div class="bar"></div></div></div>`;
+document.getElementById("footer").innerHTML =
+  `<div class="back sh"><div class="un">${icon("back")}Back</div></div>` +
+  ft(262, "mode", "osu!", "#ffd966") + ft(420, "exchange", "Mods", "#b2ff66", "F1") +
+  `<div class="modsel sh" style="left:580px"><div class="un">${modPill("HD")}${modPill("HR")}<span class="mult">1.12x</span></div></div>` +
+  ft(778, "random", "Random", "#66ccff", "F2") + ft(936, "options", "Options", "#8c66ff", "F3") +
+  `<div class="ucard" style="left:1124px"><div class="av">T</div><div><b>taizaki</b><small>#48,213 &middot; 4,218pp &middot; 97.84%</small><div class="lvl"><i></i></div></div></div>`;
+
+document.getElementById("playlogo").innerHTML = flatLogo("p");
+document.querySelector("#playlogo svg").style.color = "var(--hl)";
+</script>
+</body>
+</html>
