@@ -1,5 +1,8 @@
 // Copyright (c) 2017, PG, All rights reserved.
 #include "UISearchOverlay.h"
+#include "Icons.h"
+#include "UIDraw.h"
+#include "UITheme.h"
 
 #include <utility>
 
@@ -28,7 +31,83 @@ UISearchOverlay::UISearchOverlay(float xPos, float yPos, float xSize, float ySiz
     this->bSearching = false;
 }
 
+void UISearchOverlay::drawRedesigned() {
+    // a frosted pill at the top right: what's been typed (typing anywhere in song select searches, as in stable),
+    // or the hint when nothing is; the result count and any fixed filter follow in a softer colour
+    const auto &theme = UITheme::current();
+    McFont *font = this->font;
+    McFont *icons = osu->getFontIcons();
+    const f32 h = font->getHeight() * 1.9f;
+    const f32 textH = font->getHeight();
+    const f32 pad = h * 0.45f;
+
+    const bool typed = UniString::num_codepoints(this->sSearchString) > 0;
+    const std::string searchIcon = UniString::to_utf8(std::u32string(1, Icons::SEARCH));
+    const f32 iconScale = (textH * 0.85f) / icons->getHeight();
+    const f32 iconW = icons->getStringWidth(searchIcon) * iconScale;
+
+    std::string main = typed ? this->sSearchString : std::string{_("Type to search!")};
+    std::string sub;
+    if(typed && this->bDrawNumResults) {
+        if(this->bSearching)
+            sub = _("Searching, please wait ...");
+        else if(this->iNumFoundResults > 0)
+            sub = fmt::format("{:d} match{:s} found!", this->iNumFoundResults, this->iNumFoundResults == 1 ? "" : "es");
+        else if(this->iNumFoundResults == 0)
+            sub = _("No matches found. Hit ESC to reset.");
+    }
+    if(!this->sHardcodedSearchString.empty()) sub = sub.empty() ? this->sHardcodedSearchString : sub + "  \u00b7  " + this->sHardcodedSearchString;
+
+    const f32 mainW = font->getStringWidth(main);
+    const f32 subW = sub.empty() ? 0.f : font->getStringWidth(sub) * 0.8f + pad * 0.6f;
+    const f32 width = std::min(this->getSize().x, pad * 2.f + iconW + pad * 0.5f + mainW + subW);
+    const McRect pill{this->getPos().x + this->getSize().x - width - (f32)this->iOffsetRight, this->getPos().y, width, h};
+
+    const UIDraw::Shape shape = UIDraw::Shape::rounded(pill, h * 0.5f);
+    UIDraw::glass(shape, theme.bar);
+    UIDraw::Shape edge = shape;
+    edge.border = 1.f;
+    UIDraw::fill(edge, typed ? Color(theme.lineGlow).setA(0.8f) : theme.barEdge);
+
+    const f32 baseline = pill.getY() + h * 0.5f + textH * 0.36f;
+    f32 x = pill.getX() + pad;
+    g->pushClipRect(pill);
+    g->setColor(theme.ink2);
+    g->pushTransform();
+    {
+        g->scale(iconScale, iconScale);
+        g->translate((f32)(i32)x, (f32)(i32)(pill.getY() + h * 0.5f + icons->getHeight() * iconScale * 0.4f));
+        g->drawString(icons, searchIcon);
+    }
+    g->popTransform();
+    x += iconW + pad * 0.5f;
+    g->setColor(typed ? theme.ink : theme.ink3);
+    g->pushTransform();
+    {
+        g->translate((f32)(i32)x, (f32)(i32)baseline);
+        g->drawString(font, main);
+    }
+    g->popTransform();
+    if(!sub.empty()) {
+        x += mainW + pad * 0.6f;
+        g->setColor(theme.ink3);
+        g->pushTransform();
+        {
+            g->scale(0.8f, 0.8f);
+            g->translate((f32)(i32)x, (f32)(i32)baseline);
+            g->drawString(font, sub);
+        }
+        g->popTransform();
+    }
+    g->popClipRect();
+}
+
 void UISearchOverlay::draw() {
+    if(!UITheme::classic()) {
+        this->drawRedesigned();
+        return;
+    }
+
     // draw search text and background
     const float searchTextScale = 1.0f;
     McFont *searchTextFont = this->font;

@@ -24,6 +24,7 @@ class UISearchOverlay final : public CBaseUIElement {
     void setSearching(bool searching) { this->bSearching = searching; }
 
    private:
+    void drawRedesigned();  // the redesign's search pill (docs/renovation/DESIGN.md)
     McFont *font;
 
     int iOffsetRight;

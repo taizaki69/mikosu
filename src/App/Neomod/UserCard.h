@@ -22,6 +22,10 @@ class UserCard final : public CBaseUIButton {
     void setID(i32 new_id);
 
    private:
+    // the redesign's card (docs/renovation/DESIGN.md), outside the classic theme
+    void drawRedesigned();
+    void drawPPDelta();
+
     std::unique_ptr<UIAvatar> avatar{nullptr};
 
     i32 user_id = 0;

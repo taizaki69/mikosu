@@ -1,5 +1,7 @@
 // Copyright (c) 2018, PG, All rights reserved.
 #include "UserCard.h"
+#include "UIDraw.h"
+#include "UITheme.h"
 
 #include "AnimationHandler.h"
 #include "Bancho.h"
@@ -37,8 +39,89 @@ UserCard::UserCard(i32 user_id) : CBaseUIButton() {
 
 UserCard::~UserCard() = default;
 
+void UserCard::drawRedesigned() {
+    const auto &theme = UITheme::current();
+    const McRect r{this->getPos(), this->getSize()};
+    const f32 h = r.getHeight();
+    const f32 radius = std::round(h * 0.16f);
+
+    // avatar: the online one if there is one, else the initial on a pastel gradient
+    const McRect avatarRect{r.getX(), r.getY(), h, h};
+    if(this->avatar) {
+        this->avatar->setPos(avatarRect.getPos());
+        this->avatar->setSize(h, h);
+        this->avatar->draw_avatar(1.f);
+    } else {
+        const UIDraw::Shape tile = UIDraw::Shape::rounded(avatarRect, radius);
+        UIDraw::fill(tile, theme.line[2], theme.line[1], theme.line[0], 0.5f);
+        UIDraw::Shape edge = tile;
+        edge.border = 1.f;
+        UIDraw::fill(edge, argb(0.5f, 1.f, 1.f, 1.f));
+        const std::string_view name = this->getText();
+        std::string initial = name.empty() ? std::string{"?"} : std::string{name.substr(0, 1)};
+        if(initial[0] >= 'a' && initial[0] <= 'z') initial[0] = (char)(initial[0] - 'a' + 'A');
+        McFont *font = osu->getTitleFont();
+        const f32 scale = (h * 0.44f) / font->getHeight();
+        g->setColor(0xffffffff);
+        g->pushTransform();
+        {
+            g->scale(scale, scale);
+            g->translate((f32)(i32)(avatarRect.getCenter().x - font->getStringWidth(initial) * scale * 0.5f),
+                         (f32)(i32)(avatarRect.getCenter().y + font->getHeight() * scale * 0.36f));
+            g->drawString(font, initial);
+        }
+        g->popTransform();
+    }
+
+    const f32 x = r.getX() + h * 1.22f;
+    auto text = [&](McFont *font, std::string_view str, f32 baseline, f32 height, Color colour) {
+        const f32 scale = height / font->getHeight();
+        g->setColor(colour);
+        g->pushTransform();
+        {
+            g->scale(scale, scale);
+            g->translate((f32)(i32)x, (f32)(i32)baseline);
+            g->drawString(font, str);
+        }
+        g->popTransform();
+    };
+    g->pushClipRect(r);
+    text(osu->getTitleFont(), this->getText(), r.getY() + h * 0.33f, h * 0.3f, theme.ink);
+    if(cv::scores_enabled.getBool()) {
+        std::string stats;
+        if(cv::user_draw_pp.getBool()) stats = fmt::format("{}pp", (int)std::round(this->fPP));
+        if(cv::user_draw_accuracy.getBool())
+            stats += fmt::format("{}{:.2f}%", stats.empty() ? "" : " \u00b7 ", this->fAcc * 100.0f);
+        text(osu->getSongBrowserFont(), stats, r.getY() + h * 0.62f, h * 0.2f, theme.ink2);
+        if(cv::user_draw_level.getBool())
+            text(osu->getSongBrowserFont(), fmt::format("Lv {}", this->iLevel), r.getY() + h * 0.88f, h * 0.17f,
+                 theme.ink3);
+    }
+    g->popClipRect();
+
+    // level bar: rounded, filled with the theme's line colours
+    if(cv::scores_enabled.getBool() && cv::user_draw_level_bar.getBool()) {
+        const f32 barH = std::max(3.f, h * 0.06f);
+        const f32 barX = x + h * 0.62f, barW = std::max(10.f, r.getX() + r.getWidth() - barX);
+        const McRect bar{barX, r.getY() + h * 0.82f, barW, barH};
+        UIDraw::fill(UIDraw::Shape::rounded(bar, barH * 0.5f), theme.chip);
+        const f32 done = std::clamp<f32>(this->fPercentToNextLevel, 0.0f, 1.0f);
+        if(done > 0.f) {
+            UIDraw::fill(UIDraw::Shape::rounded(McRect{barX, bar.getY(), barW * done, barH}, barH * 0.5f), theme.line[0],
+                         theme.line[1], theme.line[2], 0.5f);
+        }
+    }
+
+    if(cv::scores_enabled.getBool()) this->drawPPDelta();
+}
+
 void UserCard::draw() {
     if(!this->bVisible) return;
+
+    if(!UITheme::classic()) {
+        this->drawRedesigned();
+        return;
+    }
 
     int yCounter = 0;
     const float iconHeight = this->getSize().y;
@@ -161,7 +244,13 @@ void UserCard::draw() {
                         barWidth * std::clamp<float>(this->fPercentToNextLevel, 0.0f, 1.0f), barHeight);
         }
 
-        // draw pp increase/decrease delta
+        this->drawPPDelta();
+    }
+}
+
+void UserCard::drawPPDelta() {
+    McFont *performanceFont = osu->getSubTitleFont();
+    // pp increase/decrease after a play
         McFont *deltaFont = performanceFont;
         const float deltaScale = 0.4f;
         if(this->fPPDeltaAnim > 0.0f) {
@@ -203,7 +292,6 @@ void UserCard::draw() {
             }
             g->popTransform();
         }
-    }
 }
 
 void UserCard::tick() {

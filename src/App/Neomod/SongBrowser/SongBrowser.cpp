@@ -125,8 +125,25 @@ class ScoresStillLoadingElement final : public CBaseUILabel {
         : CBaseUILabel(0, 0, 0, 0, "", std::move(text)),
           sIconString(UniString::to_utf8(std::u32string_view{&Icons::GLOBE, 1})) {}
 
+    void draw() override {
+        if(!UITheme::classic() && this->isVisible()) {
+            // the redesign: a frosted rounded row like the leaderboard's
+            const auto &theme = UITheme::current();
+            const f32 h = this->getSize().y;
+            const UIDraw::Shape row = UIDraw::Shape::rounded(McRect{this->getPos(), this->getSize()}, std::round(h * 0.2f));
+            UIDraw::glass(row, theme.row);
+            UIDraw::Shape edge = row;
+            edge.border = 1.f;
+            UIDraw::fill(edge, theme.barEdge);
+            this->drawText();
+            return;
+        }
+        CBaseUILabel::draw();
+    }
+
    protected:
     void drawText() override {
+        const bool themed = !UITheme::classic();
         // draw icon
         const float iconScale = 0.6f;
         McFont *iconFont = osu->getFontIcons();
@@ -141,7 +158,7 @@ class ScoresStillLoadingElement final : public CBaseUILabel {
             g->scale(scale, scale);
             g->translate((f32)(i32)(this->getPos().x + paddingLeft),
                          (f32)(i32)(this->getPos().y + this->getSize().y / 2 + iconFont->getHeight() * scale / 2));
-            g->setColor(0xffffffff);
+            g->setColor(themed ? UITheme::current().accentSet : Color(0xffffffff));
             g->drawString(iconFont, this->sIconString);
         }
         g->popTransform();
@@ -159,7 +176,7 @@ class ScoresStillLoadingElement final : public CBaseUILabel {
             g->translate((f32)(i32)(this->getPos().x + iconWidth + (this->getSize().x - iconWidth) / 2 -
                                     stringWidth * scale / 2),
                          (f32)(i32)(this->getPos().y + this->getSize().y / 2 + textFont->getHeight() * scale / 2));
-            g->setColor(0xff02c3e5);
+            g->setColor(themed ? UITheme::current().ink2 : Color(0xff02c3e5));
             g->drawString(textFont, this->sText);
         }
         g->popTransform();
@@ -175,8 +192,25 @@ class NoRecordsSetElement final : public CBaseUILabel {
         : CBaseUILabel(0, 0, 0, 0, "", std::move(text)),
           sIconString(UniString::to_utf8(std::u32string_view{&Icons::TROPHY, 1})) {}
 
+    void draw() override {
+        if(!UITheme::classic() && this->isVisible()) {
+            // the redesign: a frosted rounded row like the leaderboard's
+            const auto &theme = UITheme::current();
+            const f32 h = this->getSize().y;
+            const UIDraw::Shape row = UIDraw::Shape::rounded(McRect{this->getPos(), this->getSize()}, std::round(h * 0.2f));
+            UIDraw::glass(row, theme.row);
+            UIDraw::Shape edge = row;
+            edge.border = 1.f;
+            UIDraw::fill(edge, theme.barEdge);
+            this->drawText();
+            return;
+        }
+        CBaseUILabel::draw();
+    }
+
    protected:
     void drawText() override {
+        const bool themed = !UITheme::classic();
         // draw icon
         const float iconScale = 0.6f;
         McFont *iconFont = osu->getFontIcons();
@@ -191,7 +225,7 @@ class NoRecordsSetElement final : public CBaseUILabel {
             g->scale(scale, scale);
             g->translate((f32)(i32)(this->getPos().x + paddingLeft),
                          (f32)(i32)(this->getPos().y + this->getSize().y / 2 + iconFont->getHeight() * scale / 2));
-            g->setColor(0xffffffff);
+            g->setColor(themed ? UITheme::current().accentSet : Color(0xffffffff));
             g->drawString(iconFont, this->sIconString);
         }
         g->popTransform();
@@ -209,7 +243,7 @@ class NoRecordsSetElement final : public CBaseUILabel {
             g->translate((f32)(i32)(this->getPos().x + iconWidth + (this->getSize().x - iconWidth) / 2 -
                                     stringWidth * scale / 2),
                          (f32)(i32)(this->getPos().y + this->getSize().y / 2 + textFont->getHeight() * scale / 2));
-            g->setColor(0xff02c3e5);
+            g->setColor(themed ? UITheme::current().ink2 : Color(0xff02c3e5));
             g->drawString(textFont, this->sText);
         }
         g->popTransform();
@@ -718,11 +752,11 @@ void SongBrowser::draw() {
     // draw top bar (the group and sort labels follow the theme)
     if(!UITheme::classic()) {
         const Color label = UITheme::current().ink3;
-        this->groupLabel->setTextColor(label)->setDrawTextShadow(false);
-        this->sortLabel->setTextColor(label)->setDrawTextShadow(false);
+        this->groupLabel->setTextColor(label)->setDrawTextShadow(false)->setScale(0.5f);
+        this->sortLabel->setTextColor(label)->setDrawTextShadow(false)->setScale(0.5f);
     } else {
-        this->groupLabel->setTextColor(rgba(200, 200, 255, 255))->setDrawTextShadow(true);
-        this->sortLabel->setTextColor(rgba(225, 255, 225, 255))->setDrawTextShadow(true);
+        this->groupLabel->setTextColor(rgba(200, 200, 255, 255))->setDrawTextShadow(true)->setScale(0.75f);
+        this->sortLabel->setTextColor(rgba(225, 255, 225, 255))->setDrawTextShadow(true)->setScale(0.75f);
     }
     this->topbarLeft->draw();
     if(cv::debug_osu.getBool()) this->topbarLeft->draw_debug();

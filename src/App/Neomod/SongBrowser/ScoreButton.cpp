@@ -1,5 +1,7 @@
 // Copyright (c) 2018, PG, All rights reserved.
 #include "ScoreButton.h"
+#include "UIDraw.h"
+#include "UITheme.h"
 
 #include "OptionsOverlay.h"
 #include "SongBrowser.h"
@@ -66,8 +68,27 @@ ScoreButton::~ScoreButton() = default;
 void ScoreButton::draw() {
     if(!this->bVisible) return;
 
+    // the redesign (outside the classic theme, unless the skin brings menu-button-background): frosted rows, the
+    // theme's text colours, no heavy shadows
+    const bool themed = this->style == STYLE::SONG_BROWSER && !UITheme::classic() &&
+                        osu->getSkin()->usesDefault(osu->getSkin()->i_menu_button_bg);
+    const auto &theme = UITheme::current();
+    const Color inkMain = themed ? theme.ink : Color(0xffffffff);
+    const Color inkSub = themed ? theme.ink2 : Color(0xffffffff);
+    const Color shadowCol = themed ? Color(0x00000000) : Color(0xff000000).setA(0.75f);
+
     // background
-    if(this->style == STYLE::SONG_BROWSER) {
+    if(themed) {
+        const f32 h = this->getSize().y;
+        const UIDraw::Shape row = UIDraw::Shape::rounded(
+            McRect{this->getPos().x + 2.f, this->getPos().y + h * 0.04f, this->getSize().x - 4.f, h * 0.92f},
+            std::round(h * 0.2f));
+        UIDraw::glow(row, h * 0.1f, argb(0.12f, 0.f, 0.f, 0.f));
+        UIDraw::glass(row, theme.row);
+        UIDraw::Shape edge = row;
+        edge.border = 1.f;
+        UIDraw::fill(edge, theme.barEdge);
+    } else if(this->style == STYLE::SONG_BROWSER) {
         // XXX: Make it flash with song BPM
         g->setColor(Color(0xff000000).setA(0.59f * (0.5f + 0.5f * this->fIndexNumberAnim)));
 
@@ -112,11 +133,13 @@ void ScoreButton::draw() {
                            indexNumberFont->getStringWidth(indexNumberString) * scale / 2.0f),
                      (int)(yPos + this->getSize().y / 2.0f + indexNumberFont->getHeight() * scale / 2.0f));
         g->translate(0.5f, 0.5f);
-        g->setColor(Color(0xff000000).setA(1.0f - (1.0f - this->fIndexNumberAnim)));
+        g->setColor(themed ? Color(0x00000000) : Color(0xff000000).setA(1.0f - (1.0f - this->fIndexNumberAnim)));
 
         g->drawString(indexNumberFont, indexNumberString);
         g->translate(-0.5f, -0.5f);
-        g->setColor(Color(0xffffffff).setA(1.0f - (1.0f - this->fIndexNumberAnim) * (1.0f - this->fIndexNumberAnim)));
+        g->setColor(Color(themed ? theme.ink3 : Color(0xffffffff))
+                        .setA((themed ? theme.ink3.Af() : 1.f) *
+                              (1.0f - (1.0f - this->fIndexNumberAnim) * (1.0f - this->fIndexNumberAnim))));
 
         g->drawString(indexNumberFont, indexNumberString);
     }
@@ -160,11 +183,11 @@ void ScoreButton::draw() {
             (int)(this->getPos().x + this->getSize().x * indexNumberWidthPercent + gradeWidth + gradePaddingRight),
             (int)(yPos + height / 2.0f + usernameFont->getHeight() * scale / 2.0f + paddingTop));
         g->translate(0.75f, 0.75f);
-        g->setColor(Color(0xff000000).setA(0.75f));
+        g->setColor(shadowCol);
 
         g->drawString(usernameFont, string);
         g->translate(-0.75f, -0.75f);
-        g->setColor(this->is_friend ? 0xffD424B0 : 0xffffffff);
+        g->setColor(this->is_friend ? Color(0xffD424B0) : inkMain);
         g->drawString(usernameFont, string);
     }
     g->popTransform();
@@ -184,10 +207,12 @@ void ScoreButton::draw() {
         // TODO: these variable names like "sScoreScorePPWeightedWeight" are so ridiculous
         constexpr Color topRanksColor = 0xffdeff87;
         constexpr Color topRanksScorePPWeightedWeightColor = 0xffbbbbbb;
-        constexpr Color songBrowserColor = 0xffffffff;
+        const Color songBrowserColor = inkSub;
 
         // TODO: use outlines here, shadows look crunchy at lower resolutions
-        TextFX shadow{.col_text = (this->style == STYLE::TOP_RANKS ? topRanksColor : songBrowserColor), .offs_px = 1.f};
+        TextFX shadow{.col_text = (this->style == STYLE::TOP_RANKS ? topRanksColor : songBrowserColor),
+                      .col_shadow = themed ? Color(0x00000000) : Color(0xff000000),
+                      .offs_px = 1.f};
 
         const std::string &mainString = [&]() {
             // top ranks: draw pp + weight % and weighted pp
@@ -254,11 +279,11 @@ void ScoreButton::draw() {
                            rightSidePaddingRight),
                      (int)(yPos + height * 0.5f + modFont->getHeight() * scale / 2.0f + paddingTop));
         g->translate(0.75f, 0.75f);
-        g->setColor(Color(0xff000000).setA(0.75f));
+        g->setColor(shadowCol);
 
         g->drawString(modFont, this->sScoreMods);
         g->translate(-0.75f, -0.75f);
-        g->setColor(0xffffffff);
+        g->setColor(inkMain);
         g->drawString(modFont, this->sScoreMods);
     }
     g->popTransform();
@@ -281,11 +306,11 @@ void ScoreButton::draw() {
                            rightSidePaddingRight),
                      (int)(yPos + height * 1.5f + accFont->getHeight() * scale / 2.0f + paddingTop));
         g->translate(0.75f, 0.75f);
-        g->setColor(Color(0xff000000).setA(0.75f));
+        g->setColor(shadowCol);
 
         g->drawString(accFont, scoreAccuracy);
         g->translate(-0.75f, -0.75f);
-        g->setColor((this->style == STYLE::TOP_RANKS ? 0xffffcc22 : 0xffffffff));
+        g->setColor((this->style == STYLE::TOP_RANKS ? Color(0xffffcc22) : inkMain));
         g->drawString(accFont, scoreAccuracy);
     }
     g->popTransform();
@@ -306,11 +331,11 @@ void ScoreButton::draw() {
                                customFont->getStringWidth(this->sCustom) * scale - rightSidePaddingRight),
                          (int)(yPos + height * 2.325f + customFont->getHeight() * scale / 2.0f + paddingTop));
             g->translate(0.75f, 0.75f);
-            g->setColor(Color(0xff000000).setA(0.75f));
+            g->setColor(shadowCol);
 
             g->drawString(customFont, this->sCustom);
             g->translate(-0.75f, -0.75f);
-            g->setColor(0xffffffff);
+            g->setColor(inkMain);
             g->drawString(customFont, this->sCustom);
         }
         g->popTransform();
@@ -332,7 +357,7 @@ void ScoreButton::draw() {
                                weightFont->getStringWidth(this->sScoreWeight) * scale - rightSidePaddingRight),
                          (int)(yPos + height * 2.5f + weightFont->getHeight() * scale / 2.0f - paddingBottom));
             g->translate(0.75f, 0.75f);
-            g->setColor(Color(0xff000000).setA(0.75f));
+            g->setColor(shadowCol);
 
             g->drawString(weightFont, this->sScoreWeight);
             g->translate(-0.75f, -0.75f);
@@ -359,7 +384,7 @@ void ScoreButton::draw() {
             g->translate((int)(this->getPos().x + this->getSize().x + iconPaddingLeft),
                          (int)(yPos + this->getSize().y / 2 + iconHeight / 2));
             g->translate(1, 1);
-            g->setColor(Color(0xff000000).setA(0.75f));
+            g->setColor(shadowCol);
 
             g->drawString(iconFont, recentScoreIconString);
             g->translate(-1, -1);
@@ -385,7 +410,7 @@ void ScoreButton::draw() {
 
                 g->drawString(timeFont, this->sScoreTime);
                 g->translate(-0.75f, -0.75f);
-                g->setColor(0xffffffff);
+                g->setColor(inkMain);
                 g->drawString(timeFont, this->sScoreTime);
             }
             g->popTransform();

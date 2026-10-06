@@ -83,9 +83,9 @@ void InfoLabel::drawRedesigned() {
     McFont *semiboldSmall = osu->getSubTitleFont();
     McFont *regular = osu->getSongBrowserFont();  // outfit 400
 
-    const f32 x0 = this->getPos().x;
     const f32 h = this->getSize().y;
-    const f32 width = this->getSize().x;
+    const f32 x0 = this->getPos().x + h * 0.08f;
+    const f32 width = this->getSize().x - h * 0.08f;
 
     // title [difficulty], shrunk to fit
     f32 titleH = h * 0.235f;
@@ -94,13 +94,13 @@ void InfoLabel::drawRedesigned() {
         const f32 w = semibold->getStringWidth(this->sTitle) * (titleH / semibold->getHeight()) +
                       regular->getStringWidth(diff) * (titleH / regular->getHeight());
         if(w > width) titleH *= width / w;
-        Line line{x0, this->getPos().y + h * 0.235f, titleH};
+        Line line{x0, this->getPos().y + h * 0.27f, titleH};
         line.add(semibold, this->sTitle, theme.ink);
         line.add(regular, diff, theme.ink2);
     }
 
     // artist · mapped by mapper
-    f32 y = this->getPos().y + h * 0.235f + h * 0.17f;
+    f32 y = this->getPos().y + h * 0.27f + h * 0.16f;
     {
         Line line{x0, y, h * 0.118f};
         line.add(semiboldSmall, this->sArtist, theme.ink);
