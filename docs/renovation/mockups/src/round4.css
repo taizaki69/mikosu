@@ -20,17 +20,17 @@ body {
   --ink2: rgba(255, 255, 255, 0.8);
   --ink3: rgba(255, 255, 255, 0.58);
   --dim: rgba(10, 14, 30, 0.22);
-  --bar: rgba(16, 20, 40, 0.58);
+  --bar: rgba(16, 20, 40, 0.8);
   --bar-edge: rgba(255, 255, 255, 0.14);
-  --row: rgba(16, 20, 40, 0.56);
+  --row: rgba(16, 20, 40, 0.78);
   --row-me: rgba(120, 30, 80, 0.62);
   --line: linear-gradient(90deg, #ff66aa, #c58cff 45%, #66ccff);
   --line-glow: rgba(255, 140, 210, 0.75);
   --pink: #ff66aa;
   --blue: #4fb4ff;
-  --set: linear-gradient(90deg, rgba(255, 92, 165, 0.95), rgba(246, 82, 156, 0.72) 55%, rgba(246, 82, 156, 0.38));
-  --diff: linear-gradient(90deg, rgba(58, 156, 255, 0.95), rgba(52, 138, 240, 0.72) 55%, rgba(52, 138, 240, 0.38));
-  --sel: linear-gradient(90deg, rgba(255, 255, 255, 0.99), rgba(255, 255, 255, 0.93) 55%, rgba(255, 255, 255, 0.72));
+  --set: linear-gradient(90deg, rgba(255, 92, 165, 0.97), rgba(246, 82, 156, 0.88) 55%, rgba(246, 82, 156, 0.7));
+  --diff: linear-gradient(90deg, rgba(58, 156, 255, 0.97), rgba(52, 138, 240, 0.88) 55%, rgba(52, 138, 240, 0.7));
+  --sel: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.97) 55%, rgba(255, 255, 255, 0.88));
   --panel-ink: #ffffff;
   --panel-ink2: rgba(255, 255, 255, 0.84);
   --sel-ink: #1c2236;
@@ -51,17 +51,17 @@ body {
   --ink2: rgba(226, 236, 255, 0.78);
   --ink3: rgba(205, 220, 250, 0.55);
   --dim: rgba(6, 10, 28, 0.42);
-  --bar: rgba(14, 22, 44, 0.66);
+  --bar: rgba(14, 22, 44, 0.86);
   --bar-edge: rgba(170, 215, 255, 0.16);
-  --row: rgba(16, 26, 50, 0.6);
+  --row: rgba(16, 26, 50, 0.82);
   --row-me: rgba(30, 60, 110, 0.78);
   --line: linear-gradient(90deg, rgba(160, 225, 255, 0.2), #a8e6ff 30%, #ffffff 60%, rgba(160, 225, 255, 0.2));
   --line-glow: rgba(140, 215, 255, 0.85);
   --pink: #ff8fc4;
   --blue: #7fd0ff;
-  --set: linear-gradient(90deg, rgba(20, 30, 58, 0.9), rgba(20, 30, 58, 0.66) 60%, rgba(20, 30, 58, 0.36));
-  --diff: linear-gradient(90deg, rgba(30, 50, 90, 0.92), rgba(30, 50, 90, 0.68) 60%, rgba(30, 50, 90, 0.38));
-  --sel: linear-gradient(90deg, rgba(236, 245, 255, 0.98), rgba(236, 245, 255, 0.9) 55%, rgba(236, 245, 255, 0.66));
+  --set: linear-gradient(90deg, rgba(20, 30, 58, 0.96), rgba(20, 30, 58, 0.88) 60%, rgba(20, 30, 58, 0.72));
+  --diff: linear-gradient(90deg, rgba(30, 50, 90, 0.96), rgba(30, 50, 90, 0.88) 60%, rgba(30, 50, 90, 0.72));
+  --sel: linear-gradient(90deg, rgba(236, 245, 255, 1), rgba(236, 245, 255, 0.96) 55%, rgba(236, 245, 255, 0.86));
   --sel-ink: #13203c;
   --sel-ink2: #4c5f86;
   --sel-glow: 0 0 0 1.5px rgba(200, 235, 255, 0.95), 0 0 30px rgba(140, 215, 255, 0.55);
@@ -79,16 +79,16 @@ body {
   --ink2: rgba(31, 43, 69, 0.78);
   --ink3: rgba(31, 43, 69, 0.55);
   --dim: rgba(255, 255, 255, 0.06);
-  --bar: rgba(255, 255, 255, 0.58);
+  --bar: rgba(255, 255, 255, 0.82);
   --bar-edge: rgba(255, 255, 255, 0.75);
-  --row: rgba(255, 255, 255, 0.55);
+  --row: rgba(255, 255, 255, 0.8);
   --row-me: rgba(255, 214, 234, 0.82);
   --line: linear-gradient(90deg, #ff9fd0, #c7a8ff 45%, #86d8ff);
   --line-glow: rgba(255, 170, 220, 0.9);
   --pink: #ff7cbc;
   --blue: #4cb8f5;
-  --set: linear-gradient(90deg, rgba(255, 196, 226, 0.95), rgba(255, 226, 241, 0.8) 55%, rgba(255, 255, 255, 0.5));
-  --diff: linear-gradient(90deg, rgba(178, 222, 255, 0.95), rgba(218, 240, 255, 0.82) 55%, rgba(255, 255, 255, 0.5));
+  --set: linear-gradient(90deg, rgba(255, 196, 226, 0.98), rgba(255, 226, 241, 0.92) 55%, rgba(255, 255, 255, 0.8));
+  --diff: linear-gradient(90deg, rgba(178, 222, 255, 0.98), rgba(218, 240, 255, 0.92) 55%, rgba(255, 255, 255, 0.8));
   --sel: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.95) 55%, rgba(255, 255, 255, 0.8));
   --panel-ink: #1f2b45;
   --panel-ink2: rgba(31, 43, 69, 0.72);
@@ -100,7 +100,7 @@ body {
   --sel-star-on: #ff7cbc;
   --sel-star-off: rgba(31, 43, 69, 0.16);
   --chip: rgba(31, 43, 69, 0.08);
-  --field: rgba(255, 255, 255, 0.6);
+  --field: rgba(255, 255, 255, 0.75);
   --back: linear-gradient(100deg, #ff8cc6, #ff6fb4);
   --back-ink: #ffffff;
   --mm-btn-ink: #1f2b45;
@@ -112,17 +112,17 @@ body {
   --ink2: rgba(255, 255, 255, 0.84);
   --ink3: rgba(240, 236, 255, 0.64);
   --dim: rgba(40, 36, 90, 0.14);
-  --bar: rgba(46, 50, 98, 0.56);
+  --bar: rgba(46, 50, 98, 0.8);
   --bar-edge: rgba(255, 255, 255, 0.28);
-  --row: rgba(50, 54, 104, 0.52);
-  --row-me: rgba(112, 66, 140, 0.68);
+  --row: rgba(50, 54, 104, 0.78);
+  --row-me: rgba(112, 66, 140, 0.86);
   --line: linear-gradient(90deg, #ffa8d8, #c9b2ff 45%, #9fe0ff);
   --line-glow: rgba(255, 190, 235, 0.85);
   --pink: #ff9fd0;
   --blue: #8fd4ff;
-  --set: linear-gradient(90deg, rgba(255, 140, 200, 0.72), rgba(160, 110, 200, 0.55) 55%, rgba(70, 70, 130, 0.38));
-  --diff: linear-gradient(90deg, rgba(110, 180, 255, 0.72), rgba(100, 120, 210, 0.55) 55%, rgba(60, 70, 130, 0.38));
-  --sel: linear-gradient(90deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.9) 55%, rgba(255, 255, 255, 0.68));
+  --set: linear-gradient(90deg, rgba(240, 130, 192, 0.92), rgba(150, 104, 192, 0.86) 55%, rgba(70, 70, 130, 0.76));
+  --diff: linear-gradient(90deg, rgba(100, 168, 245, 0.92), rgba(92, 112, 200, 0.86) 55%, rgba(60, 70, 130, 0.76));
+  --sel: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.97) 55%, rgba(255, 255, 255, 0.88));
   --panel-ink: #ffffff;
   --panel-ink2: rgba(255, 255, 255, 0.86);
   --sel-ink: #232a4a;
@@ -133,7 +133,7 @@ body {
   --sel-star-on: #ff7cbc;
   --sel-star-off: rgba(35, 42, 74, 0.16);
   --chip: rgba(255, 255, 255, 0.16);
-  --field: rgba(255, 255, 255, 0.14);
+  --field: rgba(255, 255, 255, 0.16);
   --back: linear-gradient(100deg, #ff9fd0, #c3a2ff);
   --back-ink: #ffffff;
   --mm-btn-ink: #ffffff;
@@ -297,7 +297,7 @@ canvas.viz { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px;
    right, a thin glowing line along the bottom in the button's colour; no rounded boxes, no shine */
 .mb { width: 650px; height: 96px; display: flex; align-items: center; gap: 22px; padding: 0 64px 0 112px; position: relative; color: var(--ink);
       clip-path: polygon(0 0, 100% 0, calc(100% - 30px) 100%, 0 100%);
-      --layer: linear-gradient(90deg, var(--bar), color-mix(in srgb, var(--bar) 70%, transparent) 75%, color-mix(in srgb, var(--bar) 35%, transparent)); }
+      --layer: linear-gradient(90deg, var(--bar), color-mix(in srgb, var(--bar) 92%, transparent) 75%, color-mix(in srgb, var(--bar) 80%, transparent)); }
 .mb::after { content: ""; position: absolute; left: 0; right: 30px; bottom: 0; height: 2px; background: linear-gradient(90deg, var(--acc), color-mix(in srgb, var(--acc) 0%, transparent) 70%); }
 .mb::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.28), transparent 80%); }
 .mb .ic { font-size: 30px; color: var(--acc); }
@@ -305,7 +305,7 @@ canvas.viz { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px;
 .mb .lbl b { font-size: 34px; font-weight: 400; letter-spacing: 0.02em; line-height: 1.05; }
 .mb .lbl small { font-size: 12px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink3); }
 .mb .k { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--ink3); border: 1px solid var(--bar-edge); border-radius: 3px; width: 24px; height: 24px; display: grid; place-items: center; }
-.mb.hov { margin-left: 28px; --layer: linear-gradient(90deg, color-mix(in srgb, var(--acc) 30%, var(--bar)), color-mix(in srgb, var(--bar) 70%, transparent) 75%, color-mix(in srgb, var(--bar) 35%, transparent)); }
+.mb.hov { margin-left: 28px; --layer: linear-gradient(90deg, color-mix(in srgb, var(--acc) 30%, var(--bar)), color-mix(in srgb, var(--bar) 92%, transparent) 75%, color-mix(in srgb, var(--bar) 80%, transparent)); }
 .mb.hov::after { right: 30px; height: 3px; background: linear-gradient(90deg, var(--acc), color-mix(in srgb, var(--acc) 60%, transparent) 60%, transparent); box-shadow: 0 0 12px var(--acc); }
 .mb.hov .lbl b { font-weight: 500; }
 .mm-foot { position: absolute; left: 34px; bottom: 26px; font-size: 14px; color: var(--ink3); display: flex; gap: 22px; }
