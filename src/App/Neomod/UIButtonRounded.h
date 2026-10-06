@@ -11,6 +11,14 @@ class UIButtonRounded : public CBaseUIButton {
     UIButtonRounded* setCornerRadius(int radius);
     [[nodiscard]] inline int getCornerRadius() const { return this->cornerRadius; }
 
+    // the redesign's looks (docs/renovation/DESIGN.md), used outside the classic theme: a frosted field (a chevron if
+    // it opens a dropdown) or a text tab with a glowing underline when it's the active one
+    enum class Themed : uint8_t { NONE, FIELD, TAB };
+    UIButtonRounded* setThemed(Themed style, bool dropdown = false);
+    UIButtonRounded* setThemedActive(bool active);
+
+    void draw() override;
+
    protected:
     void drawBackground() override;
     void drawFrame() override;
@@ -21,4 +29,7 @@ class UIButtonRounded : public CBaseUIButton {
 
    private:
     int cornerRadius{6};
+    Themed themed{Themed::NONE};
+    bool themedDropdown{false};
+    bool themedActive{false};
 };

@@ -413,15 +413,18 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
     this->filterScoresDropdown = new UIButtonRounded(0, 0, 0, 0, "", _("Local"), 5);
     this->filterScoresDropdown->setClickCallback(SA::MakeDelegate<&SongBrowser::onFilterScoresClicked>(this));
     this->filterScoresDropdown->setDrawShadow(true)->setDrawBackground(false);
+    static_cast<UIButtonRounded *>(this->filterScoresDropdown)->setThemed(UIButtonRounded::Themed::FIELD, true);
     this->topbarLeft->addBaseUIElement(this->filterScoresDropdown);
 
     this->sortScoresDropdown = new UIButtonRounded(0, 0, 0, 0, "", _("By score"), 5);
     this->sortScoresDropdown->setDrawShadow(true)->setDrawBackground(false);
+    static_cast<UIButtonRounded *>(this->sortScoresDropdown)->setThemed(UIButtonRounded::Themed::FIELD, true);
     this->sortScoresDropdown->setClickCallback(SA::MakeDelegate<&SongBrowser::onSortScoresClicked>(this));
     this->topbarLeft->addBaseUIElement(this->sortScoresDropdown);
 
     this->webButton = new UIButtonRounded(0, 0, 0, 0, "", _("Web"), 5);
     this->webButton->setDrawShadow(true)->setDrawBackground(false);
+    static_cast<UIButtonRounded *>(this->webButton)->setThemed(UIButtonRounded::Themed::FIELD);
     this->webButton->setClickCallback(SA::MakeDelegate<&SongBrowser::onWebClicked>(this));
     this->topbarLeft->addBaseUIElement(this->webButton);
 
@@ -442,6 +445,7 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
 
         this->groupButton = new UIButtonRounded(0, 0, 0, 0, "", _("No Grouping"), 5);
         this->groupButton->setDrawShadow(true)->setDrawBackground(false);
+        static_cast<UIButtonRounded *>(this->groupButton)->setThemed(UIButtonRounded::Themed::FIELD, true);
         this->groupButton->setClickCallback(SA::MakeDelegate<&SongBrowser::onGroupClicked>(this));
         this->groupButton->setDrawsOnTop(true);
         this->topbarRight->addBaseUIElement(this->groupButton);
@@ -460,6 +464,7 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
 
         this->sortButton = new UIButtonRounded(0, 0, 0, 0, "", _("By Date Added"), 5);
         this->sortButton->setDrawShadow(true)->setDrawBackground(false);
+        static_cast<UIButtonRounded *>(this->sortButton)->setThemed(UIButtonRounded::Themed::FIELD, true);
         this->sortButton->setClickCallback(SA::MakeDelegate<&SongBrowser::onSortClicked>(this));
         this->sortButton->setDrawsOnTop(true);
         this->topbarRight->addBaseUIElement(this->sortButton);
@@ -467,24 +472,28 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
         // "hardcoded" grouping tabs
         this->groupByCollectionBtn = new UIButtonRounded(0, 0, 0, 0, "", _("Collections"), 5);
         this->groupByCollectionBtn->setDrawShadow(true)->setDrawBackground(false);
+        static_cast<UIButtonRounded *>(this->groupByCollectionBtn)->setThemed(UIButtonRounded::Themed::TAB);
         this->groupByCollectionBtn->setHandleRightMouse(true);
         this->groupByCollectionBtn->setClickCallback(SA::MakeDelegate<&SongBrowser::onQuickGroupClicked>(this));
         this->groupByCollectionBtn->setDrawsOnTop(true);
         this->topbarRight->addBaseUIElement(this->groupByCollectionBtn);
         this->groupByArtistBtn = new UIButtonRounded(0, 0, 0, 0, "", _("By Artist"), 5);
         this->groupByArtistBtn->setDrawShadow(true)->setDrawBackground(false);
+        static_cast<UIButtonRounded *>(this->groupByArtistBtn)->setThemed(UIButtonRounded::Themed::TAB);
         this->groupByArtistBtn->setHandleRightMouse(true);
         this->groupByArtistBtn->setClickCallback(SA::MakeDelegate<&SongBrowser::onQuickGroupClicked>(this));
         this->groupByArtistBtn->setDrawsOnTop(true);
         this->topbarRight->addBaseUIElement(this->groupByArtistBtn);
         this->groupByDifficultyBtn = new UIButtonRounded(0, 0, 0, 0, "", _("By Difficulty"), 5);
         this->groupByDifficultyBtn->setDrawShadow(true)->setDrawBackground(false);
+        static_cast<UIButtonRounded *>(this->groupByDifficultyBtn)->setThemed(UIButtonRounded::Themed::TAB);
         this->groupByDifficultyBtn->setHandleRightMouse(true);
         this->groupByDifficultyBtn->setClickCallback(SA::MakeDelegate<&SongBrowser::onQuickGroupClicked>(this));
         this->groupByDifficultyBtn->setDrawsOnTop(true);
         this->topbarRight->addBaseUIElement(this->groupByDifficultyBtn);
         this->groupByNothingBtn = new UIButtonRounded(0, 0, 0, 0, "", _("No Grouping"), 5);
         this->groupByNothingBtn->setDrawShadow(true)->setDrawBackground(false);
+        static_cast<UIButtonRounded *>(this->groupByNothingBtn)->setThemed(UIButtonRounded::Themed::TAB);
         this->groupByNothingBtn->setHandleRightMouse(true);
         this->groupByNothingBtn->setClickCallback(SA::MakeDelegate<&SongBrowser::onQuickGroupClicked>(this));
         this->groupByNothingBtn->setDrawsOnTop(true);
@@ -706,7 +715,15 @@ void SongBrowser::draw() {
     // draw bottom bar
     BottomBar::draw();
 
-    // draw top bar
+    // draw top bar (the group and sort labels follow the theme)
+    if(!UITheme::classic()) {
+        const Color label = UITheme::current().ink3;
+        this->groupLabel->setTextColor(label)->setDrawTextShadow(false);
+        this->sortLabel->setTextColor(label)->setDrawTextShadow(false);
+    } else {
+        this->groupLabel->setTextColor(rgba(200, 200, 255, 255))->setDrawTextShadow(true);
+        this->sortLabel->setTextColor(rgba(225, 255, 225, 255))->setDrawTextShadow(true);
+    }
     this->topbarLeft->draw();
     if(cv::debug_osu.getBool()) this->topbarLeft->draw_debug();
     this->topbarRight->draw();
@@ -3088,6 +3105,12 @@ void SongBrowser::onGroupChange(std::string_view /*text*/, int id) {
     this->groupByArtistBtn->setTextBrightColor(defaultColor);
     this->groupByDifficultyBtn->setTextBrightColor(defaultColor);
     this->groupByNothingBtn->setTextBrightColor(defaultColor);
+
+    static_cast<UIButtonRounded *>(this->groupByCollectionBtn)->setThemedActive(group_id == GroupType::COLLECTIONS);
+    static_cast<UIButtonRounded *>(this->groupByArtistBtn)->setThemedActive(group_id == GroupType::ARTIST);
+    static_cast<UIButtonRounded *>(this->groupByDifficultyBtn)->setThemedActive(group_id == GroupType::DIFFICULTY);
+    static_cast<UIButtonRounded *>(this->groupByNothingBtn)->setThemedActive(group_id != GroupType::COLLECTIONS && group_id != GroupType::ARTIST &&
+                                             group_id != GroupType::DIFFICULTY);
 
     switch(group_id) {
         case GroupType::ARTIST:

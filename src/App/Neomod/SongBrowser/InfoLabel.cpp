@@ -1,5 +1,6 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "InfoLabel.h"
+#include "UITheme.h"
 
 #include <algorithm>
 #include <utility>
@@ -52,7 +53,127 @@ InfoLabel::InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, std::string name)
     this->iBeatmapSetId = -1;
 }
 
+namespace {
+// draws text pieces left to right on one baseline, each in its own font and colour
+struct Line {
+    f32 x, baseline, height;
+    void add(McFont *font, std::string_view text, Color colour) {
+        if(text.empty()) return;
+        const f32 scale = this->height / font->getHeight();
+        g->setColor(colour);
+        g->pushTransform();
+        {
+            g->scale(scale, scale);
+            g->translate((f32)(i32)this->x, (f32)(i32)this->baseline);
+            g->drawString(font, text);
+        }
+        g->popTransform();
+        this->x += font->getStringWidth(text) * scale;
+    }
+    void gap(f32 px) { this->x += px; }
+};
+}  // namespace
+
+void InfoLabel::drawRedesigned() {
+    const auto &theme = UITheme::current();
+    const auto *pf = osu->getMapInterface();
+    const auto *map = pf->getBeatmap();
+
+    McFont *semibold = osu->getTitleFont();       // outfit 600, large: crisp when scaled down
+    McFont *semiboldSmall = osu->getSubTitleFont();
+    McFont *regular = osu->getSongBrowserFont();  // outfit 400
+
+    const f32 x0 = this->getPos().x;
+    const f32 h = this->getSize().y;
+    const f32 width = this->getSize().x;
+
+    // title [difficulty], shrunk to fit
+    f32 titleH = h * 0.235f;
+    {
+        const std::string diff = fmt::format(" [{:s}]", this->sDiff);
+        const f32 w = semibold->getStringWidth(this->sTitle) * (titleH / semibold->getHeight()) +
+                      regular->getStringWidth(diff) * (titleH / regular->getHeight());
+        if(w > width) titleH *= width / w;
+        Line line{x0, this->getPos().y + h * 0.235f, titleH};
+        line.add(semibold, this->sTitle, theme.ink);
+        line.add(regular, diff, theme.ink2);
+    }
+
+    // artist · mapped by mapper
+    f32 y = this->getPos().y + h * 0.235f + h * 0.17f;
+    {
+        Line line{x0, y, h * 0.118f};
+        line.add(semiboldSmall, this->sArtist, theme.ink);
+        line.add(regular, " \u00b7 ", theme.ink3);
+        line.add(regular, tformat("Mapped by {:s}", this->sMapper), theme.ink2);
+    }
+    if(!map) return;
+
+    const f32 rowH = h * 0.1f;
+    const f32 pairGap = rowH * 1.25f;
+    auto pair = [&](Line &line, std::string_view label, const std::string &value, Color valueColour) {
+        line.add(regular, label, theme.ink3);
+        line.gap(rowH * 0.3f);
+        line.add(semiboldSmall, value, valueColour);
+        line.gap(pairGap);
+    };
+
+    const f32 speed = pf->getSpeedMultiplier();
+    const Color speedColour = speed > 1.f ? Color(0xffff8a8a) : speed < 1.f ? Color(0xff9fd8ff) : theme.ink;
+
+    // length, bpm, objects
+    y += h * 0.155f;
+    {
+        Line line{x0, y, rowH};
+        const u32 fullSeconds = (u32)((map->getLengthMS() * (1.0 / speed)) / 1000.0);
+        pair(line, _("Length"), fmt::format("{:d}:{:02d}", fullSeconds / 60, fullSeconds % 60), speedColour);
+        const i32 minBPM = (i32)(map->getMinBPM() * speed), maxBPM = (i32)(map->getMaxBPM() * speed);
+        pair(line, _("BPM"),
+             minBPM == maxBPM ? fmt::format("{}", maxBPM)
+                              : fmt::format("{}-{} ({})", minBPM, maxBPM, (i32)(map->getMostCommonBPM() * speed)),
+             speedColour);
+        pair(line, _("Objects"), fmt::format("{}", map->getNumObjects()), theme.ink);
+    }
+
+    // circles, sliders, spinners
+    y += h * 0.15f;
+    {
+        Line line{x0, y, rowH};
+        pair(line, _("Circles"), fmt::format("{}", map->getNumCircles()), theme.ink);
+        pair(line, _("Sliders"), fmt::format("{}", map->getNumSliders()), theme.ink);
+        pair(line, _("Spinners"), fmt::format("{}", map->getNumSpinners()), theme.ink);
+    }
+
+    // CS AR OD HP, stars, pp
+    y += h * 0.15f;
+    {
+        Line line{x0, y, rowH};
+        const Color modColour = osu->getModEZ() ? Color(0xff9fd8ff) : osu->getModHR() ? Color(0xffff8a8a) : theme.ink;
+        pair(line, "CS", fmt::format("{:.3g}", pf->getCS()), modColour);
+        pair(line, "AR", fmt::format("{:.3g}", pf->getApproachRateForSpeedMultiplier()), modColour);
+        pair(line, "OD", fmt::format("{:.3g}", pf->getOverallDifficultyForSpeedMultiplier()), modColour);
+        pair(line, "HP", fmt::format("{:.3g}", pf->getHP()), modColour);
+        const auto &pp = pf->getWholeMapPPInfo();
+        const f32 stars = pp.pp != -1.0 ? (f32)pp.total_stars : map->getStarsNomod();
+        pair(line, _("Stars"), fmt::format("{:.2f}", stars), theme.ink);
+        if(pp.pp != -1.0 && std::isfinite(pp.pp)) {
+            pair(line, "SS", fmt::format("{}pp", (i32)std::round(pp.pp)), theme.accentSet);
+        }
+    }
+
+    if(this->iLocalOffset != 0 || this->iOnlineOffset != 0) {
+        y += h * 0.15f;
+        Line line{x0, y, rowH * 0.9f};
+        line.add(regular, this->buildOffsetInfoString(), theme.ink3);
+    }
+}
+
 void InfoLabel::draw() {
+    if(!UITheme::classic()) {
+        this->drawRedesigned();
+        return;
+    }
+
     // debug bounding box
     if(cv::debug_osu.getBool()) {
         g->setColor(0xffff0000);

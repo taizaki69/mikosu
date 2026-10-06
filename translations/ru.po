@@ -3687,3 +3687,31 @@ msgstr ""
 #: src/Engine/Sound/SoundEngine.cpp
 msgid "No sound"
 msgstr "Нет звука"
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "Length"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "BPM"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "Objects"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "Circles"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "Sliders"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "Spinners"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "Stars"
+msgstr ""
