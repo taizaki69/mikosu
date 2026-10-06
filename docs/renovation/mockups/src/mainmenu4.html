@@ -27,7 +27,36 @@ document.body.classList.add("v-" + v);
 // the menu shows the background brighter than song select does
 document.querySelector(".dim").style.opacity = { dusk: 0.6, stable: 0.35, moon: 0.8, day: 1 }[v];
 
-document.getElementById("logo").innerHTML = orb(v, "m", "mikosu");
+document.getElementById("logo").innerHTML = logo(v, "m", "mikosu");
+visualiser(document.getElementById("viz"), 520, 540, 236,
+  { dusk: "rgba(255,235,250,0.55)", stable: "rgba(255,255,255,0.5)", moon: "rgba(190,230,255,0.45)", day: "rgba(255,150,205,0.5)" }[v], 5);
+
+document.getElementById("user").innerHTML = `<div class="av">T</div><div>
+  <b>taizaki</b><small>4,218pp &middot; #48,213 global &middot; 97.84%</small>
+  <div class="lvr">Lv 92<div class="lv"><i></i></div></div></div>`;
+const cb = (ic, on) => `<span class="cb${on ? " on" : ""}">${icon(ic)}</span>`;
+document.getElementById("np").innerHTML = `<div class="song">${icon("music")}Lanternfall<small>Aurora Drift</small></div>
+  <div class="ctl">${cb("prev")}${cb("pause", 1)}${cb("stop")}${cb("next")}${cb("info")}
+    <div class="prog">1:24<div class="bar"><i></i></div>3:42</div></div>`;
+document.getElementById("tip").innerHTML = `${icon("info")}F2 in song select picks a random map &middot; Shift+F2 goes back`;
+
+// stable's four buttons, sliding out from behind the logo; the first one is hovered
+const acc = { dusk: ["#ff9fd0", "#8fd4ff", "#c9b2ff", "#ffb09a"], stable: ["#ff66aa", "#4fb4ff", "#a0a8d0", "#ff7a86"],
+              moon: ["#ff8fc4", "#7fd0ff", "#c9d4f0", "#ffa08a"], day: ["#ff7cbc", "#4cb8f5", "#9aa6c8", "#ff8a7a"] }[v];
+const btns = [["play", "Play", "Solo and multiplayer", "P"], ["download", "Browse maps", "From the mirrors, read-only", "B"],
+              ["options", "Options", "Graphics, skins, keys", "O"], ["exit", "Exit", "See you next session", "Q"]];
+document.getElementById("buttons").innerHTML = btns.map(([ic, label, sub, key], i) => `
+  <div class="mb glass${i === 0 ? " hov" : ""}" style="--acc:${acc[i]}">
+    <span class="ic">${icon(ic)}</span><span class="lbl"><b>${label}</b><small>${sub}</small></span><span class="k">${key}</span></div>`).join("");
+</script>
+<script src="round4.js"></script>
+<script>
+const v = new URLSearchParams(location.search).get("v") || "dusk";
+document.body.classList.add("v-" + v);
+// the menu shows the background brighter than song select does
+document.querySelector(".dim").style.opacity = { dusk: 0.6, stable: 0.35, moon: 0.8, day: 1 }[v];
+
+document.getElementById("logo").innerHTML = logo(v, "m", "mikosu");
 visualiser(document.getElementById("viz"), 520, 540, 236,
   { dusk: "rgba(255,235,250,0.55)", stable: "rgba(255,255,255,0.5)", moon: "rgba(190,230,255,0.45)", day: "rgba(255,150,205,0.5)" }[v], 5);
 

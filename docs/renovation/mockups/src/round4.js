@@ -15,33 +15,22 @@ function stars(sr) {
   return `<span class="stars">${out}</span>`;
 }
 
-const ORB = {
-  stable: { disc: ["#ffa6d2", "#e86ad0", "#7a63ff"], ring: ["#ff66aa", "#c58cff", "#66ccff"], glow: "#ff6fb4", word: "#ffffff", rim: 0.4 },
-  moon: { disc: ["#3a5490", "#1c2a52", "#0e1734"], ring: ["#a8e6ff", "#ffffff", "#a8e6ff"], glow: "#7fd0ff", word: "#f2f6ff", rim: 0.3 },
-  dusk: { disc: ["#ffe6f5", "#b9a8f5", "#6873d6"], ring: ["#ffa8d8", "#c9b2ff", "#9fe0ff"], glow: "#c9a8ff", word: "#ffffff", rim: 0.6 },
-  day: { disc: ["#ffffff", "#fff0f7", "#ffd2e8"], ring: ["#ff9fd0", "#c7a8ff", "#86d8ff"], glow: "#ffb0d8", word: "#ff6fb4", rim: 0.9 },
+// the placeholder logo (not the osu! cookie), flat and matte: a frosted disc (drawn by the page as glass), a thin
+// approach ring in the theme's line colours, the hit dot on the ring, and the wordmark; no gloss, no 3D
+const LOGO = {
+  dusk: { ring: ["#ffa8d8", "#c9b2ff", "#9fe0ff"], word: "#ffffff", edge: 0.55 },
+  stable: { ring: ["#ff66aa", "#c58cff", "#66ccff"], word: "#ffffff", edge: 0.45 },
+  moon: { ring: ["#a8e6ff", "#ffffff", "#a8e6ff"], word: "#f2f6ff", edge: 0.4 },
+  day: { ring: ["#ff9fd0", "#c7a8ff", "#86d8ff"], word: "#2a3555", edge: 0.9 },
 };
-
-// placeholder logo (not the osu! cookie): a glass orb inside an approach ring, with the hit dot on the ring
-function orb(v, id, word) {
-  const c = ORB[v];
-  return `<svg viewBox="-110 -110 220 220">
-  <defs>
-    <radialGradient id="d${id}" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="${c.disc[0]}"/><stop offset=".55" stop-color="${c.disc[1]}"/><stop offset="1" stop-color="${c.disc[2]}"/></radialGradient>
-    <linearGradient id="r${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c.ring[0]}"/><stop offset=".5" stop-color="${c.ring[1]}"/><stop offset="1" stop-color="${c.ring[2]}"/></linearGradient>
-    <radialGradient id="g${id}"><stop offset=".62" stop-color="${c.glow}" stop-opacity=".55"/><stop offset="1" stop-color="${c.glow}" stop-opacity="0"/></radialGradient>
-    <linearGradient id="s${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".62"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
-    <filter id="f${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
-  </defs>
-  <circle r="110" fill="url(#g${id})"/>
-  <circle r="97" fill="none" stroke="url(#r${id})" stroke-width="3.5" opacity=".95"/>
-  <circle r="97" fill="none" stroke="url(#r${id})" stroke-width="7" opacity=".35" filter="url(#f${id})"/>
-  <circle r="83" fill="url(#d${id})"/>
-  <circle r="82.2" fill="none" stroke="#fff" stroke-opacity="${c.rim}" stroke-width="1.6"/>
-  <ellipse cx="-14" cy="-44" rx="54" ry="27" fill="url(#s${id})"/>
-  <circle cx="-84" cy="-48.5" r="11" fill="#fff" opacity=".45" filter="url(#f${id})"/>
-  <circle cx="-84" cy="-48.5" r="6.5" fill="#fff"/>
-  ${word ? `<text x="0" y="13" text-anchor="middle" font-family="Outfit" font-weight="600" font-size="40" letter-spacing="-.5" fill="${c.word}">${word}</text>` : ""}
+function logo(v, id, word) {
+  const c = LOGO[v];
+  return `<div class="disc glass"></div><svg viewBox="-110 -110 220 220">
+  <defs><linearGradient id="r${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c.ring[0]}"/><stop offset=".5" stop-color="${c.ring[1]}"/><stop offset="1" stop-color="${c.ring[2]}"/></linearGradient></defs>
+  <circle r="97" fill="none" stroke="url(#r${id})" stroke-width="2.4"/>
+  <circle r="84" fill="none" stroke="#fff" stroke-opacity="${c.edge}" stroke-width="1.2"/>
+  <circle cx="-84" cy="-48.5" r="5.5" fill="#fff"/>
+  ${word ? `<text x="0" y="11" text-anchor="middle" font-family="Outfit" font-weight="400" font-size="34" letter-spacing="1.5" fill="${c.word}">${word}</text>` : ""}
 </svg>`;
 }
 

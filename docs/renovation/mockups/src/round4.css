@@ -262,9 +262,10 @@ svg.i { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width:
 .user .lv { width: 250px; height: 4px; border-radius: 2px; background: var(--chip); margin-top: 5px; overflow: hidden; }
 .user .lv i { display: block; width: 63%; height: 100%; background: var(--line); box-shadow: 0 0 8px var(--line-glow); }
 
-/* the logo (placeholder, not the osu! cookie): a glass orb with an approach ring and a hit dot */
+/* the logo (placeholder, not the osu! cookie): flat and matte, a frosted disc inside a thin approach ring */
 .logo { position: absolute; z-index: 4; }
-.logo svg { width: 100%; height: 100%; overflow: visible; }
+.logo svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.logo .disc { position: absolute; left: 11.8%; top: 11.8%; width: 76.4%; height: 76.4%; border-radius: 50%; box-shadow: 0 10px 34px rgba(0, 0, 0, 0.16); }
 
 /* ============================== MAIN MENU ============================== */
 
@@ -291,15 +292,17 @@ canvas.viz { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px;
 .npcard .bar { flex: 1; height: 4px; border-radius: 2px; background: var(--chip); overflow: hidden; }
 .npcard .bar i { display: block; width: 38%; height: 100%; background: var(--line); box-shadow: 0 0 8px var(--line-glow); }
 
-.mm-buttons { position: absolute; left: 760px; top: 304px; display: flex; flex-direction: column; gap: 14px; z-index: 1; }
-.mb { width: 640px; height: 104px; border-radius: 20px; display: flex; align-items: center; gap: 26px; padding: 0 34px 0 104px; position: relative; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); color: var(--mm-btn-ink); }
-.mb .ic { font-size: 36px; }
-.mb .lbl { display: flex; flex-direction: column; gap: 2px; }
-.mb .lbl b { font-size: 36px; font-weight: 500; letter-spacing: 0.01em; line-height: 1.05; }
-.mb .lbl small { font-size: 15px; font-weight: 400; opacity: 0.75; }
-.mb .k { margin-left: auto; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; border: 1px solid currentColor; opacity: 0.6; border-radius: 6px; padding: 1px 7px; }
-.mb .sheen { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 50%); pointer-events: none; }
-.mb.hov { margin-left: 26px; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 0 36px var(--g), 0 10px 30px rgba(0, 0, 0, 0.2); }
+.mm-buttons { position: absolute; left: 690px; top: 312px; display: flex; flex-direction: column; gap: 12px; z-index: 1; }
+/* stable's buttons, as matte glass rows like song select's: a coloured marker and icon, no shine */
+.mb { width: 640px; height: 102px; border-radius: 18px; display: flex; align-items: center; gap: 22px; padding: 0 30px 0 112px; position: relative; border: 1px solid var(--bar-edge); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); color: var(--ink); --layer: linear-gradient(var(--bar), var(--bar)); }
+.v-day .mb { box-shadow: 0 8px 24px rgba(40, 70, 120, 0.1); }
+.mb::before { content: ""; position: absolute; left: 92px; top: 30px; bottom: 30px; width: 4px; border-radius: 2px; background: var(--acc); box-shadow: 0 0 10px var(--acc); }
+.mb .ic { font-size: 32px; color: var(--acc); margin-left: 6px; }
+.mb .lbl { display: flex; flex-direction: column; gap: 3px; }
+.mb .lbl b { font-size: 34px; font-weight: 500; letter-spacing: 0.01em; line-height: 1.05; }
+.mb .lbl small { font-size: 15px; font-weight: 400; color: var(--ink3); }
+.mb .k { margin-left: auto; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--ink3); border: 1px solid var(--bar-edge); border-radius: 6px; padding: 1px 7px; }
+.mb.hov { margin-left: 28px; border-color: color-mix(in srgb, var(--acc) 70%, white); box-shadow: 0 0 0 1px color-mix(in srgb, var(--acc) 70%, white), 0 0 26px color-mix(in srgb, var(--acc) 40%, transparent), 0 8px 24px rgba(0, 0, 0, 0.12); --layer: linear-gradient(90deg, color-mix(in srgb, var(--acc) 26%, var(--bar)), var(--bar) 70%); }
 .mm-foot { position: absolute; left: 34px; bottom: 26px; font-size: 14px; color: var(--ink3); display: flex; gap: 22px; }
 .v-day .mm-foot { color: rgba(31, 43, 69, 0.6); }
 .tip { position: absolute; right: 28px; bottom: 20px; height: 42px; display: flex; align-items: center; gap: 10px; padding: 0 18px; border-radius: 21px; font-size: 15px; color: var(--ink2); }

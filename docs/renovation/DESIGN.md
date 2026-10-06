@@ -93,10 +93,11 @@ Stable's exact composition, made modern. Mockups: `mockups/{mainmenu4,songselect
 - **Stable's details kept:** ten stars per difficulty with the fraction as a smaller star; grade letters (S gold, A green, B blue) before the difficulty name; "Score … (combo)" in the leaderboard.
 - **Looks** (all four ship as themes, switchable in the options; Dusk is the default):
   0. **Dusk** (the default, the user's call: "a design between moon and day"): lavender-slate glass over the art, white text with a soft shadow, pastel pink sets and blue difficulties, a white selection, a lavender pearl logo.
-  1. **Stable:** stable's own colours, remastered: pink sets, blue difficulties, a white selected panel, candy-glass menu buttons (play pink, browse blue, options lavender, exit coral).
+  1. **Stable:** stable's own colours, remastered: pink sets, blue difficulties, a white selected panel, menu buttons marked pink (play), blue (browse), lavender (options), coral (exit).
   2. **Moon:** navy glass everywhere, colour only as thin edges and icons, white selection; the calmest.
   3. **Day:** white frosted glass with dark text and pastel pink/blue tints; the brightest.
-- **Logo:** still a placeholder (a glass orb in an approach ring with the hit dot), drawn per look; the real logo is a separate branding decision.
+- **Logo:** still a placeholder, now flat and matte: a frosted disc inside a thin approach ring in the theme's line colours, the hit dot, and the wordmark at a light weight. The real logo is a separate branding decision.
+- **Not Frutiger Aero** (the user, on the glossy first version of the main menu: "way too frutiger aero for my liking"): no glossy highlights, no shine on buttons, no orbs or bubbles. Glass stays matte and frosted, like song select (which the user liked), and colour lives in thin markers, lines and icons.
 - **Search (binding, the user's rule):** in song select, typing goes straight into the search, as in stable: no shortcut, no click, no focus step. The search field only shows what's typed ("Just type to search…" when empty). Backspace deletes, Escape clears, arrows and Enter keep driving the carousel. The game already works this way (`SongBrowser::onChar`); the redesign must keep it.
 
 ## Tokens (round 2's working set, to be replaced by the round-4 pick)
