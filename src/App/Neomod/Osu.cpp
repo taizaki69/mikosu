@@ -261,6 +261,7 @@ Osu::Osu()
     this->setupAudio();
 
     cv::skin.setCallback(SA::MakeDelegate<&Osu::onSkinChange>(this));
+    cv::ui_theme.setCallback(SA::MakeDelegate<&Osu::onThemeChange>(this));
     // no callback for skin_fallback: it's read on-demand by onSkinChange.
     // to apply a new fallback, change skin or use skin_reload.
     cv::skin_reload.setCallback(SA::MakeDelegate<&Osu::onSkinReload>(this));
@@ -515,6 +516,7 @@ Osu::~Osu() {
         cv::windowed_resolution.removeAllCallbacks();
         cv::animation_speed_override.removeAllCallbacks();
         cv::ui_scale.removeAllCallbacks();
+        cv::ui_theme.removeAllCallbacks();
         cv::ui_scale_to_dpi.removeAllCallbacks();
         cv::letterboxing.removeAllCallbacks();
         cv::letterboxing_offset_x.removeAllCallbacks();
@@ -1933,6 +1935,11 @@ static std::string resolve_skin_path(std::string_view skinName) {
         fmt::format("{}/{}/{}/", cv::osu_folder.getString(), cv::osu_folder_sub_skins.getString(), skinName)};
     File::normalizeSlashes(ppyFolder, '\\', '/');
     return ppyFolder;
+}
+
+void Osu::onThemeChange(std::string_view /*newValue*/) {
+    // sizes that depend on the theme (back button, bottom bar) are set in the layout pass
+    this->last_res_change_req_src |= R_MISC_MANUAL;
 }
 
 void Osu::onSkinChange(std::string_view newSkinName) {

@@ -9,7 +9,7 @@ original artwork, never user content) and saves <out>/<screen>@<WxH>[-ui2x].png:
 usage:
   capture.py --game build/dist/bin-x86_64/mikosu --out /tmp/shots
              [--res 1280x720,1920x1080,2560x1440,3440x1440] [--ui2x 2560x1440] [--screens mainmenu,songselect]
-             [--fps 60] [--renderer gl|sdlgpu]
+             [--fps 60] [--renderer gl|sdlgpu] [--set 'ui_theme moon']
 
 --fps caps the frame rate (headless_fps_max; 0 = uncapped) so captures stay light on a PC that's busy with
 something else. The artwork comes from docs/renovation/mockups/src/art (python3 make_art.py there creates it).
@@ -97,11 +97,11 @@ def make_library(work):
     (d / f"Paper Lanterns - {QUICK_TITLE} (kazehana) [Normal].osu").write_text(quick_map())
 
 
-def script(w, h, screens, fps, ui2x):
+def script(w, h, screens, fps, ui2x, settings=()):
     """the stdin script for one launch: every wanted screen in a fixed order, each step setting up the next"""
     want = set(screens)
     # no fps counter or build stamp in the corner: they aren't part of the design being checked
-    s = [f"headless_fps_max {fps}", "mod_autoplay 0", "draw_fps 0", "draw_runtime_info 0"]
+    s = [f"headless_fps_max {fps}", "mod_autoplay 0", "draw_fps 0", "draw_runtime_info 0", *settings]
     if ui2x:
         s.append("ui_scale 2")
     s.append("@wait_secs 3")
@@ -149,6 +149,8 @@ def main():
     ap.add_argument("--screens", default=",".join(ALL_SCREENS))
     ap.add_argument("--fps", type=int, default=60, help="frame cap while capturing (0 = uncapped)")
     ap.add_argument("--renderer", choices=["gl", "sdlgpu"], default="gl")
+    ap.add_argument("--set", action="append", default=[], metavar="COMMAND",
+                    help="a console command run before capturing, e.g. 'ui_theme moon' (repeatable)")
     args = ap.parse_args()
     if not ART.is_dir():
         sys.exit(f"{ART} is missing: run python3 make_art.py in {ART.parent} first")
@@ -175,7 +177,7 @@ def main():
             if guard.exists():
                 cmd = [str(guard), "--mem", "6G", "--tasks", "512", "--"] + cmd
             env = dict(os.environ, SDL_VIDEO_OFFSCREEN_DISPLAY_SIZE=res)
-            proc = subprocess.run(cmd, cwd=args.game.resolve().parent, env=env, input=script(w, h, screens, args.fps, ui2x),
+            proc = subprocess.run(cmd, cwd=args.game.resolve().parent, env=env, input=script(w, h, screens, args.fps, ui2x, args.set),
                                   text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=300)
             suffix = f"@{res}" + ("-ui2x" if ui2x else "")
             got = 0

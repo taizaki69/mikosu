@@ -248,6 +248,7 @@ class Osu final : public App, public MouseListener, public TouchListener {
 
     void onSkinReload();
     void onSkinChange(std::string_view newValue);
+    void onThemeChange(std::string_view newValue);
     void updateAnimationSpeed();
 
     void onSpeedChange(float speed);

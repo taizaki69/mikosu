@@ -3717,3 +3717,15 @@ msgstr ""
 #: src/App/Neomod/SongBrowser/InfoLabel.cpp
 msgid "Stars"
 msgstr ""
+
+#: src/App/Neomod/OptionsOverlay.cpp
+msgid "Theme"
+msgstr ""
+
+#: src/App/Neomod/OptionsOverlay.cpp
+msgid "Look"
+msgstr ""
+
+#: src/App/Neomod/OptionsOverlay.cpp
+msgid "Classic (neomod's)"
+msgstr ""
