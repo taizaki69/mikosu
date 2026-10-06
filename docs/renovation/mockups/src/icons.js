@@ -35,6 +35,11 @@ const ICONS = {
   gamepad: '<rect x="3" y="7" width="18" height="11" rx="5"/><path d="M8 10.5v4M6 12.5h4"/><circle cx="15.5" cy="11.5" r="1" fill="currentColor"/><circle cx="17.5" cy="13.5" r="1" fill="currentColor"/>',
   download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
   stop: '<rect x="7" y="7" width="10" height="10" rx="1.5" fill="currentColor"/>',
+  shuffle: '<path d="M4 7h3.5c4.5 0 4.5 10 9 10H20M4 17h3.5c1.6 0 2.6-1.3 3.4-3M13.1 10c.8-1.7 1.8-3 3.4-3H20M17 4l3 3-3 3M17 14l3 3-3 3"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  menu: '<path d="M5 7h14M5 12h14M5 17h14"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  dot: '<circle cx="12" cy="12" r="4" fill="currentColor"/>',
   music: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
 };
 function icon(name) {

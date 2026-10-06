@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mikosu song select mockup, round 4</title>
+<link rel="stylesheet" href="round4.css">
+</head>
+<body>
+<div class="bg"></div>
+<div class="dim"></div>
+<div class="car" id="car"></div>
+
+<div class="hdr glass"></div>
+<svg class="edge" viewBox="0 0 1920 230">
+  <defs>
+    <linearGradient id="eg" x1="0" x2="1"><stop offset="0" id="e0"/><stop offset=".45" id="e1"/><stop offset="1" id="e2"/></linearGradient>
+    <filter id="eglow" x="-5%" y="-200%" width="110%" height="500%"><feGaussianBlur stdDeviation="4"/></filter>
+  </defs>
+  <polyline points="0,215 660,215 830,127 1920,127" fill="none" stroke="url(#eg)" stroke-width="6" opacity=".55" filter="url(#eglow)"/>
+  <polyline points="0,215 660,215 830,127 1920,127" fill="none" stroke="url(#eg)" stroke-width="2"/>
+</svg>
+
+<section class="info">
+  <div class="t1"><span class="rs"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Lanternfall <span class="dn">[Kaze's Extra]</span></div>
+  <div class="t2"><b>Aurora Drift</b> &middot; mapped by <b>kazehana</b></div>
+  <div class="st"><span>Length<b>3:42</b></span><span>BPM<b>174</b></span><span>Objects<b>1,284</b></span></div>
+  <div class="st"><span>Circles<b>702</b></span><span>Sliders<b>578</b></span><span>Spinners<b>4</b></span></div>
+  <div class="st"><span>CS<b>5.5</b></span><span>AR<b>10</b></span><span>OD<b>10</b></span><span>HP<b>7</b></span><span>Stars<b>7.38</b><span class="mods"><span class="mod">HD</span><span class="mod">HR</span></span></span><span class="pp">SS<b>392pp</b></span></div>
+</section>
+<div class="lbtabs"><span class="lbtab on">Local</span><span class="lbtab">Country</span><span class="lbtab">Friends</span><span class="lbtab">Global</span></div>
+
+<div class="hr1" id="hr1"></div>
+<div class="ftabs"><span class="ftab">Collections</span><span class="ftab">Recently played</span><span class="ftab on">By artist</span><span class="ftab">By difficulty</span><span class="ftab">No grouping</span></div>
+
+<section class="lb" id="lb"></section>
+
+<footer class="foot" id="foot"><div class="glass"></div><div class="top"></div></footer>
+<div class="logo" id="logo" style="right:22px;bottom:14px;width:196px;height:196px"></div>
+
+<script src="icons.js"></script>
+<script src="round4.js"></script>
+<script>
+const v = new URLSearchParams(location.search).get("v") || "stable";
+document.body.classList.add("v-" + v);
+const css = getComputedStyle(document.body);
+// the header edge line takes the variant's line colours
+const lineStops = { stable: ["#ff66aa", "#c58cff", "#66ccff"], moon: ["#7fd0ff", "#ffffff", "#7fd0ff"], day: ["#ff9fd0", "#c7a8ff", "#86d8ff"] }[v];
+["e0", "e1", "e2"].forEach((id, i) => document.getElementById(id).setAttribute("stop-color", lineStops[i]));
+
+document.getElementById("hr1").innerHTML =
+  `<span class="lab">Group</span><div class="dd">By artist${icon("down")}</div><span class="lab" style="margin-left:8px">Sort</span><div class="dd">Date added${icon("down")}</div>` +
+  `<div class="search glass">${icon("search")}<span>Search 7,514 maps &middot; try <b>stars&gt;6 ar&lt;9</b></span><span class="k">CTRL+F</span></div>`;
+
+const mods = { HD: "#f5a623", HR: "#ff5b6e", DT: "#8a7dff" };
+const rows = [
+  { g: "S", who: "taizaki", m: ["HD", "HR"], score: "12,948,210", combo: "1,284x", acc: "98.92%", pp: "387pp", me: 1 },
+  { g: "A", who: "mochi_m", m: ["HD"], score: "11,203,554", combo: "1,102x", acc: "97.40%", pp: "340pp" },
+  { g: "A", who: "ren_k", m: [], score: "9,876,002", combo: "803x", acc: "96.88%", pp: "301pp" },
+  { g: "A", who: "solstice", m: ["HR"], score: "8,442,190", combo: "722x", acc: "96.10%", pp: "288pp" },
+  { g: "B", who: "Velvet", m: [], score: "6,120,775", combo: "514x", acc: "93.05%", pp: "214pp" },
+  { g: "B", who: "kitsu", m: ["DT"], score: "5,980,340", combo: "466x", acc: "92.77%", pp: "251pp" },
+  { g: "B", who: "hoshino", m: [], score: "5,412,808", combo: "402x", acc: "91.80%", pp: "196pp" },
+  { g: "B", who: "amane", m: ["HD"], score: "4,980,113", combo: "377x", acc: "91.02%", pp: "188pp" },
+];
+document.getElementById("lb").innerHTML = rows.map((r, i) => `
+  <div class="row glass${r.me ? " me" : ""}">
+    <span class="pos">${i + 1}</span><span class="g g${r.g}">${r.g}</span>
+    <div class="who"><b>${r.who}<span class="mods">${r.m.map((m) => `<span class="mod" style="--m:${mods[m]}">${m}</span>`).join("")}</span></b>
+      <small>Score <em>${r.score}</em> (${r.combo})</small></div>
+    <div class="rt"><b>${r.acc}</b><small>${r.pp}</small></div>
+  </div>`).join("");
+
+// carousel: stable's colours and arrangement: collapsed sets, the open set's difficulties, the selection in the middle
+const items = [
+  { k: "set", t: "夜明けの灯", a: "星野ミオ // rinne", art: "thumb4-dusk" },
+  { k: "diff", t: "Lanternfall", a: "Aurora Drift // kazehana", d: "Easy", sr: 1.92, g: "S", art: "bg-sky" },
+  { k: "diff", t: "Lanternfall", a: "Aurora Drift // kazehana", d: "Normal", sr: 2.84, g: "S", art: "bg-sky" },
+  { k: "diff", t: "Lanternfall", a: "Aurora Drift // kazehana", d: "Hard", sr: 4.07, g: "A", art: "bg-sky" },
+  { k: "diff", t: "Lanternfall", a: "Aurora Drift // kazehana", d: "Insane", sr: 5.41, g: "A", art: "bg-sky" },
+  { k: "diff", t: "Lanternfall", a: "Aurora Drift // kazehana", d: "Kaze's Extra", sr: 6.71, g: "S", art: "bg-sky", sel: true },
+  { k: "set", t: "Velvet Static", a: "Lumen Kid // ponytail", art: "thumb4-sakura" },
+  { k: "set", t: "Glass Harbor", a: "Mareen // Shiro", art: "thumb4-mint" },
+  { k: "set", t: "Moss & Mirrors", a: "The Quiet Engine // Oak", art: "thumb4-storm" },
+  { k: "set", t: "Starlit Overpass", a: "Hikari // Mio", art: "thumb4-night" },
+];
+const car = document.getElementById("car");
+const step = 116, sel = items.findIndex((it) => it.sel), centreY = 540;
+items.forEach((it, i) => {
+  const top = centreY - 54 + (i - sel) * step;
+  const dist = Math.abs(top + 54 - centreY);
+  const x = 1010 + (it.sel ? 0 : it.k === "diff" ? 64 : 104) + dist * dist * 0.00042;
+  const el = document.createElement("div");
+  el.className = `p glass ${it.k}${it.sel ? " sel" : ""}`;
+  el.style.cssText = `left:${x}px;top:${top}px`;
+  const g = it.g ? `<span class="g g${it.g}">${it.g}</span>` : "";
+  el.innerHTML = `<div class="th" style="background-image:url(art/${it.art}.png)"></div>
+    <div class="tx"><div class="t">${it.t}</div><div class="a">${it.a}</div>
+    ${it.k === "diff" ? `<div class="d">${g}${it.d}${stars(it.sr)}<span class="sr">${it.sr.toFixed(2)}</span></div>` : ""}</div>`;
+  car.appendChild(el);
+});
+
+const fb = (x, ic, label, key, c) => `<div class="fb" style="left:${x}px;--c:${c}">${icon(ic)}<span>${label}${key ? `<em>${key}</em>` : ""}</span></div>`;
+const cols = { stable: ["#ff66aa", "#ff5b6e", "#5fdc7a", "#4fb4ff"], moon: ["#ff8fc4", "#ffb36b", "#8ff0b0", "#7fd0ff"], day: ["#ff7cbc", "#ff8a8a", "#5fd69a", "#4cb8f5"] }[v];
+document.getElementById("foot").innerHTML += `<div class="back">${icon("back")}back</div>` +
+  fb(282, "mode", "Mode", "", cols[0]) + fb(392, "plus", "Mods", "F1", cols[1]) + fb(502, "shuffle", "Random", "F2", cols[2]) + fb(612, "menu", "Options", "F3", cols[3]) +
+  `<div class="user"><div class="av">T</div><div><b>taizaki</b><small>4,218pp &middot; #48,213 &middot; 97.84%</small><small style="font-size:13px;opacity:.8">Level 92</small><div class="lv"><i></i></div></div></div>`;
+
+document.getElementById("logo").innerHTML = orb(v, "p");
+</script>
+</body>
+</html>
