@@ -272,10 +272,10 @@ svg.i { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width:
 .mm-shade { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 80% at 30% 50%, transparent, rgba(8, 12, 30, 0.28)); }
 .v-day .mm-shade { background: radial-gradient(ellipse 70% 80% at 30% 50%, transparent, rgba(255, 255, 255, 0.12)); }
 canvas.viz { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
-.card { position: absolute; border-radius: 20px; border: 1px solid var(--bar-edge); box-shadow: 0 8px 26px rgba(0, 0, 0, 0.16); }
+.card { position: absolute; border-radius: 10px; border: 1px solid var(--bar-edge); box-shadow: 0 8px 26px rgba(0, 0, 0, 0.16); }
 .v-day .card { box-shadow: 0 8px 26px rgba(40, 70, 120, 0.12); }
 .ucard { left: 28px; top: 26px; width: 470px; height: 116px; display: flex; align-items: center; gap: 18px; padding: 0 22px; }
-.ucard .av { width: 80px; height: 80px; border-radius: 16px; background: linear-gradient(140deg, #8fd8ff, #b58cff 55%, #ff8cc8); display: grid; place-items: center; font-size: 34px; font-weight: 600; color: #fff; flex: none; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5); }
+.ucard .av { width: 80px; height: 80px; border-radius: 8px; background: linear-gradient(140deg, #8fd8ff, #b58cff 55%, #ff8cc8); display: grid; place-items: center; font-size: 34px; font-weight: 600; color: #fff; flex: none; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5); }
 .ucard b { font-size: 24px; font-weight: 600; display: block; }
 .ucard small { font-size: 15px; color: var(--ink2); display: block; margin-top: 2px; }
 .ucard .lvr { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--ink3); }
@@ -286,26 +286,31 @@ canvas.viz { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px;
 .npcard .song .i { color: var(--pink); }
 .npcard .song small { color: var(--ink3); font-size: 15px; font-weight: 400; }
 .npcard .ctl { display: flex; align-items: center; gap: 4px; }
-.npcard .cb { width: 38px; height: 34px; display: grid; place-items: center; border-radius: 10px; font-size: 17px; color: var(--ink2); }
+.npcard .cb { width: 38px; height: 34px; display: grid; place-items: center; border-radius: 4px; font-size: 17px; color: var(--ink2); }
 .npcard .cb.on { background: var(--chip); color: var(--ink); }
 .npcard .prog { flex: 1; margin-left: 12px; display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; color: var(--ink3); }
 .npcard .bar { flex: 1; height: 4px; border-radius: 2px; background: var(--chip); overflow: hidden; }
 .npcard .bar i { display: block; width: 38%; height: 100%; background: var(--line); box-shadow: 0 0 8px var(--line-glow); }
 
-.mm-buttons { position: absolute; left: 690px; top: 312px; display: flex; flex-direction: column; gap: 12px; z-index: 1; }
-/* stable's buttons, as matte glass rows like song select's: a coloured marker and icon, no shine */
-.mb { width: 640px; height: 102px; border-radius: 18px; display: flex; align-items: center; gap: 22px; padding: 0 30px 0 112px; position: relative; border: 1px solid var(--bar-edge); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); color: var(--ink); --layer: linear-gradient(var(--bar), var(--bar)); }
-.v-day .mb { box-shadow: 0 8px 24px rgba(40, 70, 120, 0.1); }
-.mb::before { content: ""; position: absolute; left: 92px; top: 30px; bottom: 30px; width: 4px; border-radius: 2px; background: var(--acc); box-shadow: 0 0 10px var(--acc); }
-.mb .ic { font-size: 32px; color: var(--acc); margin-left: 6px; }
-.mb .lbl { display: flex; flex-direction: column; gap: 3px; }
-.mb .lbl b { font-size: 34px; font-weight: 500; letter-spacing: 0.01em; line-height: 1.05; }
-.mb .lbl small { font-size: 15px; font-weight: 400; color: var(--ink3); }
-.mb .k { margin-left: auto; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: var(--ink3); border: 1px solid var(--bar-edge); border-radius: 6px; padding: 1px 7px; }
-.mb.hov { margin-left: 28px; border-color: color-mix(in srgb, var(--acc) 70%, white); box-shadow: 0 0 0 1px color-mix(in srgb, var(--acc) 70%, white), 0 0 26px color-mix(in srgb, var(--acc) 40%, transparent), 0 8px 24px rgba(0, 0, 0, 0.12); --layer: linear-gradient(90deg, color-mix(in srgb, var(--acc) 26%, var(--bar)), var(--bar) 70%); }
+.mm-buttons { position: absolute; left: 690px; top: 318px; display: flex; flex-direction: column; gap: 14px; z-index: 1; }
+/* stable's buttons: sharp frosted bars with a diagonal cut at the end (song select's diagonal), fading out to the
+   right, a thin glowing line along the bottom in the button's colour; no rounded boxes, no shine */
+.mb { width: 650px; height: 96px; display: flex; align-items: center; gap: 22px; padding: 0 64px 0 112px; position: relative; color: var(--ink);
+      clip-path: polygon(0 0, 100% 0, calc(100% - 30px) 100%, 0 100%);
+      --layer: linear-gradient(90deg, var(--bar), color-mix(in srgb, var(--bar) 70%, transparent) 75%, color-mix(in srgb, var(--bar) 35%, transparent)); }
+.mb::after { content: ""; position: absolute; left: 0; right: 30px; bottom: 0; height: 2px; background: linear-gradient(90deg, var(--acc), color-mix(in srgb, var(--acc) 0%, transparent) 70%); }
+.mb::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.28), transparent 80%); }
+.mb .ic { font-size: 30px; color: var(--acc); }
+.mb .lbl { display: flex; flex-direction: column; gap: 4px; }
+.mb .lbl b { font-size: 34px; font-weight: 400; letter-spacing: 0.02em; line-height: 1.05; }
+.mb .lbl small { font-size: 12px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink3); }
+.mb .k { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--ink3); border: 1px solid var(--bar-edge); border-radius: 3px; width: 24px; height: 24px; display: grid; place-items: center; }
+.mb.hov { margin-left: 28px; --layer: linear-gradient(90deg, color-mix(in srgb, var(--acc) 30%, var(--bar)), color-mix(in srgb, var(--bar) 70%, transparent) 75%, color-mix(in srgb, var(--bar) 35%, transparent)); }
+.mb.hov::after { right: 30px; height: 3px; background: linear-gradient(90deg, var(--acc), color-mix(in srgb, var(--acc) 60%, transparent) 60%, transparent); box-shadow: 0 0 12px var(--acc); }
+.mb.hov .lbl b { font-weight: 500; }
 .mm-foot { position: absolute; left: 34px; bottom: 26px; font-size: 14px; color: var(--ink3); display: flex; gap: 22px; }
 .v-day .mm-foot { color: rgba(31, 43, 69, 0.6); }
-.tip { position: absolute; right: 28px; bottom: 20px; height: 42px; display: flex; align-items: center; gap: 10px; padding: 0 18px; border-radius: 21px; font-size: 15px; color: var(--ink2); }
+.tip { position: absolute; right: 28px; bottom: 20px; height: 42px; display: flex; align-items: center; gap: 10px; padding: 0 18px; border-radius: 8px; font-size: 15px; color: var(--ink2); }
 .tip .i { color: var(--pink); }
 
 /* daylight: deeper grade colours on white glass */
