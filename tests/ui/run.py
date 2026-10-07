@@ -228,6 +228,14 @@ def run_one(name, binary, bindir, datadir, record):
         path, *lines = spec.split("|")
         (datadir / path.strip()).parent.mkdir(parents=True, exist_ok=True)
         (datadir / path.strip()).write_text("\n".join(lines) + "\n")
+    # boot into the empty fixture folder: without an osu_folder, mikosu's first-run detection would find the
+    # machine's own osu!stable library (~/.local/share/osu-stable and friends) and load it before the script's
+    # 'osu_folder' line runs, making the boot and its timing depend on the machine
+    cfg = datadir / "cfg" / "osu.cfg"
+    cfg.parent.mkdir(parents=True, exist_ok=True)
+    cfg_text = cfg.read_text() if cfg.exists() else ""
+    if not any(line.startswith("osu_folder ") for line in cfg_text.splitlines()):
+        cfg.write_text(cfg_text + ("" if cfg_text.endswith("\n") or not cfg_text else "\n") + "osu_folder uitest_osu_folder\n")
     shot = datadir / "screenshots" / f"uitest_{name}.png"
     shot.unlink(missing_ok=True)
     fixture_dirs = []
