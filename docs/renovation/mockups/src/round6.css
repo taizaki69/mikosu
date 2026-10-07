@@ -131,14 +131,15 @@ svg.tri { position: absolute; left: 0; top: 0; pointer-events: none; }
 .car { position: absolute; left: 0; right: 0; top: 0; bottom: 0; overflow: hidden; pointer-events: none; z-index: 0; }
 .cw { position: absolute; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.3)); }
 .cw.sel { filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3)) drop-shadow(0 0 16px rgba(255, 102, 170, 0.5)); }
-.card { position: relative; width: 1000px; height: 100px; overflow: hidden; background: var(--art) center / cover; clip-path: polygon(21px 0, 100% 0, 100% 100%, 0 100%); }
-.card .tint { position: absolute; inset: 0; background: linear-gradient(90deg, rgb(var(--c)) 0, rgb(var(--c)) 34%, rgba(var(--c), 0.82) 50%, rgba(var(--c), 0.42) 72%, rgba(var(--c), 0.22) 100%); }
+/* the cards stay rounded (the user: "not the song cards they already looked good, maybe make them more smooth") */
+.card { position: relative; width: 1000px; height: 100px; overflow: hidden; background: var(--art) center / cover; border-radius: 24px 0 0 24px; }
+.card .tint { position: absolute; inset: 0; background: linear-gradient(90deg, rgb(var(--c)) 0, rgb(var(--c)) 30%, rgba(var(--c), 0.9) 42%, rgba(var(--c), 0.68) 55%, rgba(var(--c), 0.45) 70%, rgba(var(--c), 0.3) 85%, rgba(var(--c), 0.24) 100%); }
 .card.set { --c: 204, 68, 146; --mark: #ff8cc6; }
 .card.diff { --c: 40, 104, 212; }
 .card.sel { --c: 255, 255, 255;
             --ink: var(--sel-ink); --ink-2: var(--sel-ink-2); --ink-3: var(--sel-ink-2); color: var(--ink); }
 .v-light .card.sel { --c: 30, 24, 58; }
-.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; transform: skewX(-12deg); transform-origin: bottom left; background: var(--mark); z-index: 2; }
+.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--mark); z-index: 2; }
 .card .tx { position: absolute; left: 34px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; z-index: 1; }
 .card .t { font-size: 26px; font-weight: 600; white-space: nowrap; line-height: 1.1; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); }
 .card:not(.sel) .a { color: rgba(255, 255, 255, 0.8); }
