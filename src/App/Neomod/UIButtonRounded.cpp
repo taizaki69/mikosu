@@ -5,6 +5,8 @@
 #include "Icons.h"
 #include "Osu.h"
 #include "UIDraw.h"
+#include "UIType.h"
+#include "Engine.h"
 #include "UITheme.h"
 #include "UniString.h"
 
@@ -35,7 +37,34 @@ UIButtonRounded* UIButtonRounded::setThemedActive(bool active) {
 UIButtonRounded* UIButtonRounded::setThemedAccent(size_t menuAccentIndex, char32_t glyph) {
     this->themedAccent = menuAccentIndex;
     this->themedGlyph = glyph;
+    this->triangleSeed = (u32)menuAccentIndex * 7919u + 17u;
     return this;
+}
+
+UIButtonRounded* UIButtonRounded::setThemedInset(f32 hiddenLeft) {
+    this->themedInset = hiddenLeft;
+    return this;
+}
+
+void UIButtonRounded::onMouseInside() {
+    CBaseUIButton::onMouseInside();
+    if(this->themed == Themed::MENU) this->hoverAnim.set(1.f, 0.18f, anim::QuadOut);
+}
+
+void UIButtonRounded::onMouseOutside() {
+    CBaseUIButton::onMouseOutside();
+    if(this->themed == Themed::MENU) this->hoverAnim.set(0.f, 0.25f, anim::QuadOut);
+}
+
+namespace {
+UIType::Style themedTextStyle(UIButtonRounded::Themed t) {
+    return t == UIButtonRounded::Themed::TAB ? UIType::Style::SMALL_STRONG : UIType::Style::SMALL;
+}
+}  // namespace
+
+f32 UIButtonRounded::getThemedWidth() const {
+    const f32 text = UIType::width(themedTextStyle(this->themed), this->getText());
+    return text + (this->themedDropdown ? UIType::px(6.f + 15.f) : 0.f);
 }
 
 void UIButtonRounded::draw() {
@@ -47,107 +76,62 @@ void UIButtonRounded::draw() {
     const f32 h = r.getHeight();
     const bool hover = this->bEnabled && this->isMouseInside();
     const std::string_view text = this->getText();
-    const f32 scale = (h * 0.46f) / this->font->getHeight();
-    const f32 textW = this->font->getStringWidth(text) * scale;
-    const f32 baseline = r.getY() + h * 0.5f + this->font->getHeight() * scale * 0.36f;
-
-    auto drawText = [&](f32 x, Color colour) {
-        g->setColor(colour);
-        g->pushTransform();
-        {
-            g->scale(scale, scale);
-            g->translate((f32)(i32)x, (f32)(i32)baseline);
-            g->drawString(this->font, text);
-        }
-        g->popTransform();
-    };
 
     if(this->themed == Themed::MENU) {
-        // a sharp frosted bar ending in the diagonal of song select's header, a thin line in the accent colour along
-        // the bottom, the icon in the accent colour and the label; fades in with the frame colour's alpha
+        // stable's bars: slanted at both ends, violet, turning pink and sliding out while hovered; the left end hides
+        // behind the logo. Fades in with the frame colour's alpha (the menu opening).
         const f32 fade = this->frameColor.Af();
         if(fade <= 0.f) return;
-        const Color accent = theme.menuAccents[std::min<size_t>(this->themedAccent, theme.menuAccents.size() - 1)];
-        const f32 cut = h * 0.32f;
-        UIDraw::Shape bar{.rect = r, .cut = cut, .opacity = fade};
-        const Color base = theme.bar;
-        const Color lit = hover ? UITheme::mix(base, Color(accent).setA(base.Af()), 0.3f) : base;
-        UIDraw::glass(bar, lit, Color(base).setA(base.Af() * 0.92f), Color(base).setA(base.Af() * 0.8f), 0.75f);
+        const f32 lit = this->hoverAnim;
+        const f32 push = lit * h * 0.38f;
+        const McRect bar{r.getX() + push, r.getY(), r.getWidth(), h};
+        const UIDraw::Shape shape{.rect = bar, .cut = UIDraw::slant(h), .cutLeft = UIDraw::slant(h), .opacity = fade};
+        if(lit > 0.f) UIDraw::glow(shape, h * 0.3f, UITheme::fade(theme.selGlow, lit * fade));
+        UIDraw::glow(shape, h * 0.12f, argb(0.25f * fade, 0.05f, 0.02f, 0.2f));
+        UIDraw::fill(shape, UITheme::mix(theme.menuBar[0], theme.menuOn[0], lit),
+                     UITheme::mix(theme.menuBar[1], theme.menuOn[1], lit),
+                     UITheme::mix(theme.menuBar[2], theme.menuOn[2], lit), 0.6f);
+        UIDraw::triangles(shape, this->triangleSeed, 7, h * 0.85f, std::max(1.f, h * 0.018f),
+                          argb((0.09f + 0.09f * lit) * fade, 1.f, 1.f, 1.f), (f32)engine->getTime());
 
-        const f32 lineY = r.getY() + h - 1.f;
-        const std::array<vec2, 2> line{vec2{r.getX(), lineY}, vec2{r.getX() + r.getWidth() - cut, lineY}};
-        const std::array<Color, 3> grad{Color(accent).setA(fade), Color(accent).setA(fade * (hover ? 0.6f : 0.25f)),
-                                        Color(accent).setA(0.f)};
-        UIDraw::glowLine(line, grad, hover ? 3.f : 2.f, Color(accent).setA(fade * (hover ? 0.45f : 0.f)),
-                         hover ? h * 0.12f : 0.f);
-
-        f32 x = r.getX() + h * 0.55f;
+        const Color ink = argb(fade, 1.f, 1.f, 1.f);
+        f32 x = bar.getX() + this->themedInset;
+        const f32 mid = bar.getY() + h * 0.5f;
         if(this->themedGlyph != 0) {
-            McFont* icons = osu->getFontIcons();
-            const std::string glyph = UniString::to_utf8(std::u32string(1, this->themedGlyph));
-            const f32 iconScale = (h * 0.3f) / icons->getHeight();
-            g->setColor(Color(accent).setA(fade));
-            g->pushTransform();
-            {
-                g->scale(iconScale, iconScale);
-                g->translate((f32)(i32)x, (f32)(i32)(r.getY() + h * 0.5f + icons->getHeight() * iconScale * 0.42f));
-                g->drawString(icons, glyph);
-            }
-            g->popTransform();
-            x += icons->getStringWidth(glyph) * iconScale + h * 0.32f;
+            const f32 size = UIType::px(34.f);
+            UIType::icon(UIType::Style::ICON_34, this->themedGlyph, {x + size * 0.5f, mid}, ink);
+            x += size + UIType::px(22.f);
         }
-        McFont* labelFont = hover ? osu->getTitleFont() : osu->getSongBrowserFont();
-        const f32 labelScale = (h * 0.4f) / labelFont->getHeight();
-        g->setColor(Color(theme.ink).setA(theme.ink.Af() * fade));
-        g->pushTransform();
-        {
-            g->scale(labelScale, labelScale);
-            g->translate((f32)(i32)x, (f32)(i32)(r.getY() + h * 0.5f + labelFont->getHeight() * labelScale * 0.36f));
-            g->drawString(labelFont, text);
-        }
-        g->popTransform();
+        UIType::drawCentredY(UIType::Style::MENU, text, x, mid, ink);
         return;
     }
 
-    if(this->themed == Themed::FIELD) {
-        const UIDraw::Shape shape = UIDraw::Shape::rounded(r, std::round(h * 0.3f));
-        UIDraw::fill(shape, hover ? UITheme::mix(theme.field, Color(theme.ink).setA(theme.field.Af() * 1.8f), 0.5f)
-                                  : theme.field);
-        UIDraw::Shape border = shape;
-        border.border = 1.f;
-        UIDraw::fill(border, theme.barEdge);
-
-        const f32 pad = h * 0.42f;
+    const UIType::Style style = themedTextStyle(this->themed);
+    const f32 mid = r.getY() + h * 0.5f;
+    if(this->themed == Themed::TAB) {
+        // a tab: the active one bright with osu!'s pink underline along the bottom of the button
+        const Color ink = this->themedActive ? theme.ink : hover ? theme.ink2 : theme.ink3;
+        UIType::drawCentredY(style, text, r.getX(), mid, ink);
+        const f32 textW = UIType::width(style, text);
         if(this->themedDropdown) {
-            McFont* icons = osu->getFontIcons();
-            const std::string chevron = UniString::to_utf8(std::u32string(1, Icons::ANGLE_DOWN));
-            const f32 iconScale = (h * 0.34f) / icons->getHeight();
-            const f32 iconW = icons->getStringWidth(chevron) * iconScale;
-            drawText(std::max(r.getX() + pad, r.getX() + (r.getWidth() - pad * 0.6f - iconW - textW) * 0.5f),
-                     theme.ink);
-            g->setColor(theme.ink3);
-            g->pushTransform();
-            {
-                g->scale(iconScale, iconScale);
-                g->translate((f32)(i32)(r.getX() + r.getWidth() - pad - iconW * 0.5f),
-                             (f32)(i32)(r.getY() + h * 0.5f + icons->getHeight() * iconScale * 0.42f));
-                g->drawString(icons, chevron);
-            }
-            g->popTransform();
-        } else {
-            drawText(r.getX() + (r.getWidth() - textW) * 0.5f, theme.ink);
+            UIType::icon(UIType::Style::ICON_19, Icons::ANGLE_DOWN, {r.getX() + textW + UIType::px(6.f + 7.5f), mid},
+                         this->themedActive ? theme.ink2 : ink);
+        }
+        if(this->themedActive) {
+            const f32 lineH = std::max(2.f, UIType::px(3.f));
+            const McRect line{r.getX(), r.getY() + h - lineH, this->getThemedWidth(), lineH};
+            UIDraw::glow(UIDraw::Shape{.rect = line}, UIType::px(6.f), UITheme::fade(theme.pink, 0.5f));
+            UIDraw::fill(UIDraw::Shape{.rect = line}, theme.pink);
         }
         return;
     }
 
-    // tab: text only, the active one bright with a glowing underline
-    const f32 x = r.getX() + (r.getWidth() - textW) * 0.5f;
-    drawText(x, this->themedActive ? theme.ink : hover ? theme.ink2 : theme.ink3);
-    if(this->themedActive) {
-        const f32 y = r.getY() + h - std::max(2.f, h * 0.06f);
-        const std::array<vec2, 2> underline{vec2{x, y}, vec2{x + textW, y}};
-        UIDraw::glowLine(underline, theme.line, std::max(2.f, h * 0.08f),
-                         Color(theme.lineGlow).setA(theme.lineGlow.Af() * 0.4f), h * 0.15f);
+    // a link: text (and a chevron), brighter while hovered
+    const Color ink = hover ? theme.ink : theme.ink2;
+    UIType::drawCentredY(style, text, r.getX(), mid, ink);
+    if(this->themedDropdown) {
+        UIType::icon(UIType::Style::ICON_19, Icons::ANGLE_DOWN,
+                     {r.getX() + UIType::width(style, text) + UIType::px(6.f + 7.5f), mid}, ink);
     }
 }
 

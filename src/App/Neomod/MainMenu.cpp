@@ -2,6 +2,7 @@
 #include "MainMenu.h"
 #include "UIDraw.h"
 #include "UITheme.h"
+#include "UIType.h"
 
 #include "AboutScreen.h"
 #include "AsyncPool.h"
@@ -371,7 +372,7 @@ MainMenu::MainMenu() : UIScreen() {
                     button->setThemed(UIButtonRounded::Themed::MENU)->setThemedAccent(0, Icons::PLAY);
                     break;
                 case SubButtonType::Multiplayer:
-                    button->setThemed(UIButtonRounded::Themed::MENU)->setThemedAccent(1, Icons::GLOBE);
+                    button->setThemed(UIButtonRounded::Themed::MENU)->setThemedAccent(1, Icons::USERS);
                     break;
                 case SubButtonType::Options:
                     button->setThemed(UIButtonRounded::Themed::MENU)->setThemedAccent(2, Icons::GEAR);
@@ -411,6 +412,10 @@ MainMenu::MainMenu() : UIScreen() {
     this->discordButton = new UIButtonWithIcon(PACKAGE_NAME " on GitHub", Icons::GLOBE);
     this->discordButton->setClickCallback([]() { env->openURLInDefaultBrowser(BRAND_REPO_URL); });
     this->addBaseUIElement(this->discordButton);
+
+    this->onlineMapsLink = new UIButtonWithIcon(_("Online maps"), Icons::DOWNLOAD);
+    this->onlineMapsLink->setClickCallback([this]() { this->onOnlineBeatmapsButtonPressed(); });
+    this->addBaseUIElement(this->onlineMapsLink);
 
     this->twitterButton = new UIButtonWithIcon("Report a problem", Icons::WRENCH);
     this->twitterButton->setClickCallback([]() { env->openURLInDefaultBrowser(BRAND_ISSUES_URL); });
@@ -742,43 +747,49 @@ std::pair<bool, float> MainMenu::getTimingpointPulseAmount() {
 // the placeholder logo (not the osu! cookie), flat and matte: a frosted disc inside a thin approach ring in the theme's
 // line colours, the hit dot on the ring, and the wordmark (docs/renovation/DESIGN.md)
 void MainMenu::drawLogoRedesigned(const McRect &rect) {
+    // round 6 (docs/renovation/mockups/mainmenu6.html): the placeholder logo, not the osu! cookie: a dark disc inside a
+    // thick ring graded pink, violet and sky, the white hit dot on the ring, the wordmark and faint drifting triangles.
+    // Flat and matte; it pulses with the beat through the rect's size.
     const auto &theme = UITheme::current();
     const f32 d = std::min(rect.getWidth(), rect.getHeight());
     if(d <= 1.f) return;
     const vec2 c = rect.getCenter();
-    const f32 ringR = d * 0.5f;
-    const f32 discR = ringR * 0.866f;
+    const f32 outer = d * 0.5f;
+    const f32 ringW = outer * (14.f / 107.f);
+    const f32 ringR = outer - ringW * 0.5f;
+    const f32 discR = outer * (93.f / 107.f);
 
-    const UIDraw::Shape disc =
-        UIDraw::Shape::rounded(McRect{c.x - discR, c.y - discR, discR * 2.f, discR * 2.f}, discR);
-    UIDraw::glow(disc, d * 0.05f, argb(0.16f, 0.f, 0.f, 0.f));
-    UIDraw::glass(disc, theme.bar);
-    UIDraw::Shape edge = disc;
-    edge.border = std::max(1.f, d * 0.003f);
-    UIDraw::fill(edge, argb(theme.logoEdgeAlpha, 1.f, 1.f, 1.f));
+    const McRect discRect{c.x - discR, c.y - discR, discR * 2.f, discR * 2.f};
+    const UIDraw::Shape disc = UIDraw::Shape::rounded(discRect, discR);
+    UIDraw::Shape shadow = UIDraw::Shape::rounded(McRect{c.x - outer, c.y - outer + d * 0.03f, d, d}, outer);
+    UIDraw::glow(shadow, d * 0.06f, argb(0.35f, 0.f, 0.f, 0.f));
+    UIDraw::fill(disc, theme.logoDisc1);
+    // the disc lit from the top left
+    const f32 hiR = discR * 0.55f;
+    const vec2 hi = c + vec2{-0.28f, -0.4f} * discR;
+    UIDraw::Shape light = UIDraw::Shape::rounded(McRect{hi.x - hiR, hi.y - hiR, hiR * 2.f, hiR * 2.f}, hiR);
+    light.softness = discR * 0.9f;
+    UIDraw::fill(light, UITheme::fade(theme.logoDisc0, 0.9f));
+    UIDraw::triangles(disc, 91u, 9, discR * 0.75f, std::max(1.f, d * 0.006f), argb(0.1f, 1.f, 1.f, 1.f),
+                      (f32)engine->getTime());
 
-    UIDraw::Shape ring = UIDraw::Shape::rounded(McRect{c.x - ringR, c.y - ringR, ringR * 2.f, ringR * 2.f}, ringR);
-    ring.border = std::max(1.5f, d * 0.0062f);
-    UIDraw::fill(ring, theme.logoRing[0], theme.logoRing[1], theme.logoRing[2], 0.5f);
+    UIDraw::Shape ring = UIDraw::Shape::rounded(McRect{c.x - outer, c.y - outer, d, d}, outer);
+    ring.border = ringW;
+    UIDraw::fill(ring, theme.logoRing[0], theme.logoRing[1], theme.logoRing[2], 0.55f);
 
     const vec2 dot = c + vec2{-0.866f, -0.5f} * ringR;
-    const f32 dotR = std::max(3.f, d * 0.014f);
+    const f32 dotR = outer * (8.f / 107.f);
     const UIDraw::Shape hit = UIDraw::Shape::rounded(McRect{dot.x - dotR, dot.y - dotR, dotR * 2.f, dotR * 2.f}, dotR);
-    UIDraw::glow(hit, dotR * 1.4f, argb(0.45f, 1.f, 1.f, 1.f));
+    UIDraw::glow(hit, dotR * 1.2f, argb(0.35f, 1.f, 1.f, 1.f));
     UIDraw::fill(hit, 0xffffffff);
 
-    McFont *font = osu->getLogoFont() ? osu->getLogoFont() : osu->getSongBrowserFont();
-    const std::string word{"mikosu"};
-    const f32 scale = (d * 0.175f) / font->getHeight();
-    g->setColor(theme.logoWord);
-    g->pushTransform();
-    {
-        g->scale(scale, scale);
-        g->translate((f32)(i32)(c.x - font->getStringWidth(word) * scale * 0.5f),
-                     (f32)(i32)(c.y + font->getHeight() * scale * 0.36f));
-        g->drawString(font, word);
-    }
-    g->popTransform();
+    // the wordmark, made for a 462px logo at 1080p, follows the logo's size (it pulses with it)
+    const std::string_view word{"mikosu"};
+    const f32 scale = d / UIType::px(462.f);
+    const f32 w = UIType::width(UIType::Style::LOGO, word) * scale;
+    UIType::drawScaled(UIType::Style::LOGO, word,
+                       {c.x - w * 0.5f, c.y + UIType::capHeight(UIType::Style::LOGO) * scale * 0.5f}, scale,
+                       0xffffffff);
 }
 
 // the cube
@@ -1014,6 +1025,16 @@ void MainMenu::draw() {
             }
             g->popTransform();
         }
+    }
+
+    if(!UITheme::classic()) {
+        // soft scrims top and bottom so the corners' text reads over any background
+        const auto &theme = UITheme::current();
+        const f32 w = (f32)osu->getVirtScreenWidth(), h = (f32)osu->getVirtScreenHeight();
+        UIDraw::fillVertical(McRect{0.f, 0.f, w, UIType::px(260.f)}, UITheme::fade(theme.scrim, 0.72f),
+                             UITheme::fade(theme.scrim, 0.f));
+        UIDraw::fillVertical(McRect{0.f, h - UIType::px(220.f), w, UIType::px(220.f)}, UITheme::fade(theme.scrim, 0.f),
+                             UITheme::fade(theme.scrim, 0.72f));
     }
 
     // draw notification arrow for changelog (version button)
@@ -1527,7 +1548,8 @@ void MainMenu::updateLayout() {
 
     const vec2 screenSize = osu->getVirtScreenSize();
     this->vCenter = screenSize / 2.0f;
-    const float size = Osu::getUIScale(324.0f);
+    // the redesign's logo is 462px on a 1080-high screen (round 6); the cube is stable's size
+    const float size = UITheme::classic() ? Osu::getUIScale(324.0f) : UIType::px(462.f);
     this->vSize = vec2(size, size);
 
     this->cube->setRelPos(this->vCenter - this->vSize / 2.0f - vec2((f32)this->centerOffsetAnim, 0.0f));
@@ -1573,6 +1595,59 @@ void MainMenu::updateLayout() {
         this->twitterButton->onResized();
         ads_y -= this->twitterButton->getSize().y + margin;
         this->twitterButton->setRelPos(screenSize.x - this->twitterButton->getSize().x, ads_y);
+    }
+
+    if(!UITheme::classic()) {
+        // round 6's corners: the player top right, the version bottom left, the tip at the bottom's centre
+        auto D = [](f32 v) { return UIType::px(v); };
+        this->nowPlaying->setRelPos(screenSize.x - this->nowPlaying->getSize().x - D(44.f), D(34.f));
+        this->versionButton->setFont(UIType::font(UIType::Style::NOTE));
+        this->versionButton->onResized();
+        this->versionButton->setSizeToContent(D(8.f), D(8.f));
+        this->versionButton->setRelPos(D(36.f), screenSize.y - this->versionButton->getSize().y - D(26.f));
+        this->tipLabel->setFont(UIType::font(UIType::Style::SMALL));
+        this->tipLabel->setSizeX(screenSize.x * 0.5f);
+        this->tipLabel->setText(mainmenu::getCurrentTip());
+        this->tipLabel->setRelPos((screenSize.x - this->tipLabel->getSize().x) / 2.f,
+                                  screenSize.y - this->tipLabel->getSize().y - D(30.f));
+
+        // the links in a row at the bottom right; the online beatmaps are one of them instead of a side tab
+        this->onlineBeatmapsButton->setVisible(false);
+        this->onlineMapsLink->setVisible(true);
+        f32 x = screenSize.x - D(44.f);
+        for(UIButtonWithIcon *link : {this->discordButton, this->twitterButton, this->onlineMapsLink}) {
+            link->onResized();
+            if(!link->isVisible()) continue;
+            x -= link->getSize().x;
+            link->setRelPos(x, screenSize.y - link->getSize().y - D(28.f));
+            x -= D(28.f);
+        }
+    } else {
+        this->onlineBeatmapsButton->setVisible(true);
+        this->onlineMapsLink->setVisible(false);
+    }
+    if(!UITheme::classic()) {
+        // round 6: stable's bars, 90px for a 462px logo with 18px between them, centred on the logo; their left end
+        // starts under its centre, so they always come out from behind it (sliding out as the menu opens)
+        const f32 n = (f32)this->menuElements.size();
+        const f32 barH = std::round(this->vSize.y * (90.f / 462.f));
+        const f32 gap = std::round(this->vSize.y * (18.f / 462.f));
+        const f32 barW = std::round(this->vSize.x * (860.f / 462.f));
+        const f32 open = this->centerOffsetAnim / (this->vSize.x / 2.0f);
+        const vec2 centre = this->cube->getRelPos() + this->vSize / 2.f;
+        f32 y = centre.y - (n * barH + (n - 1.f) * gap) * 0.5f;
+        for(auto *element : this->menuElements) {
+            auto *bar = static_cast<UIButtonRounded *>(element);
+            bar->onResized();
+            bar->setRelPos(centre.x - barW * 0.6f * (1.f - open), y);
+            bar->setSize(barW, barH);
+            bar->setThemedInset(std::round(this->vSize.x * (330.f / 462.f)));
+            bar->setFrameColor(argb(open, 1.0f, 1.0f, 1.0f));
+            y += barH + gap;
+        }
+        this->setSize(screenSize + vec2(1, 1));
+        this->update_pos();
+        return;
     }
 
     int numButtons = this->menuElements.size();

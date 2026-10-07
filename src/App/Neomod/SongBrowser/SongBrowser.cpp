@@ -66,6 +66,7 @@
 #include "UISearchOverlay.h"
 #include "UIDraw.h"
 #include "UITheme.h"
+#include "UIType.h"
 #include "ScoreButton.h"
 #include "BottomBar.h"
 #include "RoomScreen.h"
@@ -119,6 +120,17 @@ vec2 SongBrowser::getSkinDimensions(const SkinImage &img) {
 }
 
 namespace {
+// the redesign's message in the leaderboard's place: a row like the leaderboard's, an icon in osu!'s pink and the text
+void drawMessageRow(const McRect &r, char32_t glyph, std::string_view text) {
+    const auto &theme = UITheme::current();
+    const f32 h = r.getHeight();
+    UIDraw::fill(UIDraw::Shape{.rect = r, .cut = UIDraw::slant(h) * 0.7f}, theme.row);
+    const f32 mid = r.getY() + h * 0.5f;
+    const f32 x = r.getX() + UIType::px(24.f);
+    UIType::icon(UIType::Style::ICON_22, glyph, {x + UIType::px(11.f), mid}, theme.pink);
+    UIType::drawCentredY(UIType::Style::BODY, text, x + UIType::px(38.f), mid, theme.ink2);
+}
+
 class ScoresStillLoadingElement final : public CBaseUILabel {
    public:
     ScoresStillLoadingElement(std::string text)
@@ -127,16 +139,7 @@ class ScoresStillLoadingElement final : public CBaseUILabel {
 
     void draw() override {
         if(!UITheme::classic() && this->isVisible()) {
-            // the redesign: a frosted rounded row like the leaderboard's
-            const auto &theme = UITheme::current();
-            const f32 h = this->getSize().y;
-            const UIDraw::Shape row =
-                UIDraw::Shape::rounded(McRect{this->getPos(), this->getSize()}, std::round(h * 0.2f));
-            UIDraw::glass(row, theme.row);
-            UIDraw::Shape edge = row;
-            edge.border = 1.f;
-            UIDraw::fill(edge, theme.barEdge);
-            this->drawText();
+            drawMessageRow(McRect{this->getPos(), this->getSize()}, Icons::GLOBE, this->sText);
             return;
         }
         CBaseUILabel::draw();
@@ -144,7 +147,6 @@ class ScoresStillLoadingElement final : public CBaseUILabel {
 
    protected:
     void drawText() override {
-        const bool themed = !UITheme::classic();
         // draw icon
         const float iconScale = 0.6f;
         McFont *iconFont = osu->getFontIcons();
@@ -159,7 +161,7 @@ class ScoresStillLoadingElement final : public CBaseUILabel {
             g->scale(scale, scale);
             g->translate((f32)(i32)(this->getPos().x + paddingLeft),
                          (f32)(i32)(this->getPos().y + this->getSize().y / 2 + iconFont->getHeight() * scale / 2));
-            g->setColor(themed ? UITheme::current().accentSet : Color(0xffffffff));
+            g->setColor(0xffffffff);
             g->drawString(iconFont, this->sIconString);
         }
         g->popTransform();
@@ -177,7 +179,7 @@ class ScoresStillLoadingElement final : public CBaseUILabel {
             g->translate((f32)(i32)(this->getPos().x + iconWidth + (this->getSize().x - iconWidth) / 2 -
                                     stringWidth * scale / 2),
                          (f32)(i32)(this->getPos().y + this->getSize().y / 2 + textFont->getHeight() * scale / 2));
-            g->setColor(themed ? UITheme::current().ink2 : Color(0xff02c3e5));
+            g->setColor(0xff02c3e5);
             g->drawString(textFont, this->sText);
         }
         g->popTransform();
@@ -195,16 +197,7 @@ class NoRecordsSetElement final : public CBaseUILabel {
 
     void draw() override {
         if(!UITheme::classic() && this->isVisible()) {
-            // the redesign: a frosted rounded row like the leaderboard's
-            const auto &theme = UITheme::current();
-            const f32 h = this->getSize().y;
-            const UIDraw::Shape row =
-                UIDraw::Shape::rounded(McRect{this->getPos(), this->getSize()}, std::round(h * 0.2f));
-            UIDraw::glass(row, theme.row);
-            UIDraw::Shape edge = row;
-            edge.border = 1.f;
-            UIDraw::fill(edge, theme.barEdge);
-            this->drawText();
+            drawMessageRow(McRect{this->getPos(), this->getSize()}, Icons::TROPHY, this->sText);
             return;
         }
         CBaseUILabel::draw();
@@ -212,7 +205,6 @@ class NoRecordsSetElement final : public CBaseUILabel {
 
    protected:
     void drawText() override {
-        const bool themed = !UITheme::classic();
         // draw icon
         const float iconScale = 0.6f;
         McFont *iconFont = osu->getFontIcons();
@@ -227,7 +219,7 @@ class NoRecordsSetElement final : public CBaseUILabel {
             g->scale(scale, scale);
             g->translate((f32)(i32)(this->getPos().x + paddingLeft),
                          (f32)(i32)(this->getPos().y + this->getSize().y / 2 + iconFont->getHeight() * scale / 2));
-            g->setColor(themed ? UITheme::current().accentSet : Color(0xffffffff));
+            g->setColor(0xffffffff);
             g->drawString(iconFont, this->sIconString);
         }
         g->popTransform();
@@ -245,7 +237,7 @@ class NoRecordsSetElement final : public CBaseUILabel {
             g->translate((f32)(i32)(this->getPos().x + iconWidth + (this->getSize().x - iconWidth) / 2 -
                                     stringWidth * scale / 2),
                          (f32)(i32)(this->getPos().y + this->getSize().y / 2 + textFont->getHeight() * scale / 2));
-            g->setColor(themed ? UITheme::current().ink2 : Color(0xff02c3e5));
+            g->setColor(0xff02c3e5);
             g->drawString(textFont, this->sText);
         }
         g->popTransform();
@@ -449,7 +441,9 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
     this->filterScoresDropdown = new UIButtonRounded(0, 0, 0, 0, "", _("Local"), 5);
     this->filterScoresDropdown->setClickCallback(SA::MakeDelegate<&SongBrowser::onFilterScoresClicked>(this));
     this->filterScoresDropdown->setDrawShadow(true)->setDrawBackground(false);
-    static_cast<UIButtonRounded *>(this->filterScoresDropdown)->setThemed(UIButtonRounded::Themed::FIELD, true);
+    static_cast<UIButtonRounded *>(this->filterScoresDropdown)
+        ->setThemed(UIButtonRounded::Themed::TAB, true)
+        ->setThemedActive(true);
     this->topbarLeft->addBaseUIElement(this->filterScoresDropdown);
 
     this->sortScoresDropdown = new UIButtonRounded(0, 0, 0, 0, "", _("By score"), 5);
@@ -569,6 +563,7 @@ SongBrowser::SongBrowser() : ScreenBackable(), global_songbrowser_(this) {
 
     // search
     this->search = new UISearchOverlay(0, 0, 0, 0, "songbrowser_search");
+    this->search->setRedesigned(true);
     this->search->setOffsetRight(10);
     this->fSearchWaitTime = 0.0f;
     this->bInSearch = (!cv::songbrowser_search_hardcoded_filter.getString().empty());
@@ -677,7 +672,13 @@ void SongBrowser::draw() {
     // draw background
     this->drawBeatmapOrMenuBackground();
 
-    {
+    const bool redesign = !UITheme::classic();
+    if(redesign) {
+        // stable's way: the background dimmed evenly, solid bands top and bottom
+        const auto &theme = UITheme::current();
+        g->setColor(UITheme::fade(theme.scrim, theme.dimSongSelect));
+        g->fillRect(0, 0, osu->getVirtScreenWidth(), osu->getVirtScreenHeight());
+    } else {
         f32 mode_osu_scale = SongBrowser::getSkinScale(osu->getSkin()->i_mode_osu);
 
         g->setColor(0xffffffff);
@@ -751,15 +752,10 @@ void SongBrowser::draw() {
     // draw bottom bar
     BottomBar::draw();
 
-    // draw top bar (the group and sort labels follow the theme)
-    if(!UITheme::classic()) {
-        const Color label = UITheme::current().ink3;
-        this->groupLabel->setTextColor(label)->setDrawTextShadow(false)->setScale(0.5f);
-        this->sortLabel->setTextColor(label)->setDrawTextShadow(false)->setScale(0.5f);
-    } else {
-        this->groupLabel->setTextColor(rgba(200, 200, 255, 255))->setDrawTextShadow(true)->setScale(0.75f);
-        this->sortLabel->setTextColor(rgba(225, 255, 225, 255))->setDrawTextShadow(true)->setScale(0.75f);
-    }
+    // draw top bar (the redesign labels the group and sort dropdowns itself)
+    this->groupLabel->setVisible(!redesign);
+    this->sortLabel->setVisible(!redesign);
+    if(redesign) this->drawHeaderLabels();
     this->topbarLeft->draw();
     if(cv::debug_osu.getBool()) this->topbarLeft->draw_debug();
     this->topbarRight->draw();
@@ -823,23 +819,41 @@ void SongBrowser::draw() {
 }
 
 void SongBrowser::drawHeader() {
-    // stable's top bar: deeper on the left for the map info, stepping up diagonally to the right part with group,
-    // sort and the filter tabs; frosted glass with a thin glowing line along the stepped edge
+    // stable's top bar as a solid band: deep on the left for the map's details and the leaderboard tabs, stepping up
+    // diagonally to the right part with the search, sorting and grouping; osu!'s pink, violet and sky along its edge
     const auto &theme = UITheme::current();
     const f32 w = (f32)osu->getVirtScreenWidth();
-    const f32 deep = this->topbarLeft->getSize().y;
-    const f32 shallow = std::min(this->topbarRight->getSize().y, deep);
-    const f32 stepStart = this->topbarLeft->getSize().x * 0.94f;
-    const f32 stepEnd = std::min(w, stepStart + (deep - shallow) * 2.2f);
+    const f32 deep = UIType::px(284.f), shallow = UIType::px(150.f);
+    const f32 stepStart = UIType::px(740.f), stepEnd = UIType::px(880.f);
 
     const std::array<vec2, 5> left{vec2{0.f, 0.f}, {stepEnd, 0.f}, {stepEnd, shallow}, {stepStart, deep}, {0.f, deep}};
     const std::array<vec2, 4> right{vec2{stepEnd, 0.f}, {w, 0.f}, {w, shallow}, {stepEnd, shallow}};
-    UIDraw::glassPolygon(left, theme.bar);
-    UIDraw::glassPolygon(right, theme.bar);
+    const Color band = UITheme::fade(theme.scrim, theme.band);
+    UIDraw::glassPolygon(left, band);
+    UIDraw::glassPolygon(right, band);
 
-    const f32 s = SongBrowser::getUIScale();
     const std::array<vec2, 4> edge{vec2{0.f, deep}, {stepStart, deep}, {stepEnd, shallow}, {w, shallow}};
-    UIDraw::glowLine(edge, theme.line, 1.5f * s, Color(theme.lineGlow).setA(theme.lineGlow.Af() * 0.35f), 5.f * s);
+    UIDraw::glowLine(edge, theme.edge, std::max(2.f, UIType::px(2.5f)), UITheme::fade(theme.pink, 0.25f),
+                     UIType::px(5.f));
+}
+
+void SongBrowser::drawHeaderLabels() {
+    // "GROUP" and "SORT" before their dropdowns, and a hairline between the dropdowns and the quick tabs
+    const auto &theme = UITheme::current();
+    auto label = [&](CBaseUIElement *button, std::string_view text) {
+        if(!button->isVisible()) return;
+        const f32 w = UIType::width(UIType::Style::LABEL, text, 0.12f);
+        UIType::drawCentredY(UIType::Style::LABEL, text, button->getPos().x - w - UIType::px(10.f),
+                             button->getPos().y + button->getSize().y * 0.5f, theme.ink4, 0.12f);
+    };
+    label(this->groupButton, _("GROUP"));
+    label(this->sortButton, _("SORT"));
+    if(this->groupByCollectionBtn->isVisible()) {
+        const f32 x = this->groupByCollectionBtn->getPos().x - UIType::px(26.f);
+        const f32 mid = this->groupByCollectionBtn->getPos().y + this->groupByCollectionBtn->getSize().y * 0.5f;
+        g->setColor(theme.hair2);
+        g->fillRect(x, mid - UIType::px(9.f), std::max(1.f, UIType::px(1.f)), UIType::px(18.f));
+    }
 }
 
 void SongBrowser::drawStrainGraphOverlay() {
@@ -2289,6 +2303,11 @@ SongBrowser::SetVisibility SongBrowser::getSetVisibility(const SongButton *paren
 
 void SongBrowser::updateLayout() {
     ScreenBackable::updateLayout();
+    // the redesign keeps the scrollbars quiet
+    const Color scrollbar = UITheme::classic() ? Color(0xaaffffff) : UITheme::fade(UITheme::current().ink, 0.16f);
+    this->carousel->setScrollbarColor(scrollbar);
+    this->scoreBrowser->setScrollbarColor(scrollbar);
+    if(!UITheme::classic()) return this->updateLayoutRedesigned();
 
     const float dpiScale = Osu::getUIScale();
     const f32 margin = 5 * dpiScale;
@@ -2383,6 +2402,80 @@ void SongBrowser::updateLayout() {
     this->search->setSize((f32)osu->getVirtScreenWidth() / 2, 20 * dpiScale);
 }
 
+void SongBrowser::updateLayoutRedesigned() {
+    // round 6 (docs/renovation/mockups/songselect6.html), in design pixels of a 1080-high screen
+    auto D = [](f32 v) { return UIType::px(v); };
+    const f32 W = (f32)osu->getVirtScreenWidth(), H = (f32)osu->getVirtScreenHeight();
+    auto themed = [](CBaseUIButton *b) { return static_cast<UIButtonRounded *>(b); };
+
+    // the header's left part: the map's details, then the leaderboard tabs along its bottom edge
+    this->topbarLeft->setPos(0, 0);
+    this->topbarLeft->setSize(D(740.f), D(284.f));
+    this->songInfo->onResized();
+    this->songInfo->setRelPos(D(56.f), D(28.f));
+    this->songInfo->setSize(D(740.f - 56.f - 24.f), D(208.f));
+
+    const f32 tabY = D(238.f), tabH = D(44.f);
+    auto *filter = themed(this->filterScoresDropdown);
+    auto *web = themed(this->webButton);
+    auto *sortScores = themed(this->sortScoresDropdown);
+    filter->setSize(filter->getThemedWidth(), tabH);
+    filter->setRelPos(D(56.f), tabY);
+    web->setSize(web->getThemedWidth(), tabH);
+    web->setRelPos(filter->getRelPos().x + filter->getSize().x + D(30.f), tabY);
+    sortScores->setSize(sortScores->getThemedWidth(), tabH);
+    sortScores->setRelPos(D(704.f) - sortScores->getSize().x, tabY);
+    this->topbarLeft->update_pos();
+
+    // the right part: GROUP and SORT, a hairline, then the quick group tabs, right-aligned above its bottom edge
+    this->topbarRight->setPos(D(880.f), 0);
+    this->topbarRight->setSize(std::max(W - D(880.f), 1.f), D(150.f));
+    const f32 rowY = D(100.f), rowH = D(44.f), gap = D(26.f);
+    const f32 labelGap = D(10.f);
+    const f32 groupLabelW = UIType::width(UIType::Style::LABEL, _("GROUP"), 0.12f);
+    const f32 sortLabelW = UIType::width(UIType::Style::LABEL, _("SORT"), 0.12f);
+    auto *groupBtn = themed(this->groupButton);
+    auto *sortBtn = themed(this->sortButton);
+    const std::array<UIButtonRounded *, 4> tabs{themed(this->groupByNothingBtn), themed(this->groupByDifficultyBtn),
+                                                themed(this->groupByArtistBtn), themed(this->groupByCollectionBtn)};
+    f32 tabsW = gap * (f32)(tabs.size() - 1);
+    for(auto *t : tabs) tabsW += t->getThemedWidth();
+    const f32 dropsW =
+        groupLabelW + labelGap + groupBtn->getThemedWidth() + gap + sortLabelW + labelGap + sortBtn->getThemedWidth();
+    const f32 room = this->topbarRight->getSize().x - D(48.f) - D(24.f);
+    const bool tabsFit = dropsW + 2.f * gap + tabsW <= room;
+
+    f32 x = this->topbarRight->getSize().x - D(48.f);
+    for(auto *t : tabs) {
+        t->setVisible(tabsFit);
+        if(!tabsFit) continue;
+        t->setSize(t->getThemedWidth(), rowH);
+        x -= t->getSize().x;
+        t->setRelPos(x, rowY);
+        x -= gap;
+    }
+    if(tabsFit) x -= gap;  // the hairline sits in this gap
+    sortBtn->setSize(sortBtn->getThemedWidth(), rowH);
+    x -= sortBtn->getSize().x;
+    sortBtn->setRelPos(x, rowY);
+    x -= sortLabelW + labelGap + gap;
+    groupBtn->setSize(groupBtn->getThemedWidth(), rowH);
+    x -= groupBtn->getSize().x;
+    groupBtn->setRelPos(x, rowY);
+    this->topbarRight->update_pos();
+
+    // the leaderboard, then the carousel (full height: its cards pass under the bands)
+    this->updateScoreBrowserLayout();
+    this->carousel->setPos(D(740.f) + 1.f, 0);
+    this->carousel->setSize(std::max(W - D(740.f) - 1.f, 1.f), H);
+    this->updateSongButtonLayout();
+
+    // the search field, top right
+    const f32 searchW = std::clamp(W - D(880.f) - D(48.f + 24.f), D(240.f), D(540.f));
+    this->search->setPos(W - D(48.f) - searchW, D(28.f));
+    this->search->setSize(searchW, D(58.f));
+}
+
 void SongBrowser::onBack() {
     if(BanchoState::is_in_a_multi_room()) {
         ui->setScreen(ui->getRoomScreen());
@@ -2414,6 +2507,43 @@ void SongBrowser::updateScoreBrowserLayout() {
         (cv::scores_enabled.getBool() && cv::songbrowser_scorebrowser_enabled.getBool());
     if(shouldScoreBrowserBeVisible != this->scoreBrowser->isVisible())
         this->scoreBrowser->setVisible(shouldScoreBrowserBeVisible);
+
+    if(!UITheme::classic()) {
+        // round 6: 72px rows 6px apart under the header, the personal best (when shown) above the footer
+        auto D = [](f32 v) { return UIType::px(v); };
+        const f32 rowH = D(78.f);
+        const f32 top = D(300.f), left = D(48.f), width = D(656.f);
+        const f32 bottom = (f32)osu->getVirtScreenHeight() - BottomBar::get_height() - D(16.f);
+        const f32 localBestH = this->localBestContainer->isVisible() ? D(44.f) + rowH : 0.f;
+        const f32 browserH = std::max(bottom - top - localBestH, rowH);
+        this->scoreBrowser->setPos(left, top);
+        this->scoreBrowser->setSize(width, browserH);
+
+        const std::vector<CBaseUIElement *> &rows = this->scoreBrowser->container.getElements();
+        for(size_t i = 0; i < rows.size(); i++) {
+            rows[i]->setSize(width, rowH);
+            rows[i]->setRelPos(0, (f32)i * rowH);
+        }
+        this->scoreBrowserScoresStillLoadingElement->setSize(width, D(72.f));
+        this->scoreBrowserScoresStillLoadingElement->setRelPos(0, 0);
+        this->scoreBrowserNoRecordsSetElement->setSize(width, D(72.f));
+        this->scoreBrowserNoRecordsSetElement->setRelPos(0, 0);
+
+        if(this->localBestContainer->isVisible()) {
+            this->localBestContainer->setPos(left, top + browserH);
+            this->localBestContainer->setSize(width, localBestH);
+            this->localBestLabel->setRelPos(0, 0);
+            this->localBestLabel->setSize(width, D(44.f));
+            if(this->localBestButton) {
+                this->localBestButton->setRelPos(0, D(44.f));
+                this->localBestButton->setSize(width, rowH);
+            }
+        }
+        this->localBestContainer->update_pos();
+        this->scoreBrowser->container.update_pos();
+        this->scoreBrowser->setScrollSizeToContent();
+        return;
+    }
 
     const f32 scoreButtonWidthMax = this->topbarLeft->getSize().x;
 

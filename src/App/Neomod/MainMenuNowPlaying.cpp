@@ -2,6 +2,7 @@
 #include "MainMenuNowPlaying.h"
 #include "UIDraw.h"
 #include "UITheme.h"
+#include "UIType.h"
 
 #include "BeatmapInterface.h"
 #include "DatabaseBeatmap.h"
@@ -54,6 +55,9 @@ constexpr int MARQUEE_FADE_STEPS{5};
 
 constexpr f32 TIME_TEXT_SCALE{0.8f};
 
+// the panel's unit: the classic look follows the UI scale, the redesign the screen's height (a little larger)
+f32 unitScale() { return UITheme::classic() ? Osu::getUIScale() : UIType::scale() * 1.2f; }
+
 std::string format_time(f64 secs) {
     const auto s = (u32)secs;
     return fmt::format("{}:{:02d}", s / 60, s % 60);
@@ -104,7 +108,7 @@ Color shadowWithAlpha(f32 alpha) { return UITheme::classic() ? argb(alpha, 0.f, 
 void NowPlaying::SeekBar::draw() {
     if(!this->isVisible()) return;
 
-    const f32 scale = Osu::getUIScale();
+    const f32 scale = unitScale();
     const f32 barHeight =
         std::round(std::lerp(COLLAPSED_BAR_HEIGHT, SEEK_BAR_HEIGHT, (f32)this->panel.expandAnim) * scale);
     const McRect &rect = this->getRect();
@@ -112,14 +116,15 @@ void NowPlaying::SeekBar::draw() {
     const bool themed = !UITheme::classic();
     const auto fill = [&](f32 width, f32 alpha) {
         if(themed) {
-            // the redesign: a rounded track, the played part in the theme's line colours
+            // the redesign: a square track, the played part in osu!'s pink
             const auto &theme = UITheme::current();
-            const UIDraw::Shape bar =
-                UIDraw::Shape::rounded(McRect{rect.getX(), y, width, barHeight}, barHeight * 0.5f);
-            if(alpha >= 0.9f)
-                UIDraw::fill(bar, theme.line[0], theme.line[1], theme.line[2], 0.5f);
-            else
-                UIDraw::fill(bar, Color(theme.ink).setA(alpha * 0.8f));
+            const UIDraw::Shape bar{.rect = McRect{rect.getX(), y, width, barHeight}};
+            if(alpha >= 0.9f) {
+                UIDraw::glow(bar, barHeight, UITheme::fade(theme.pink, 0.5f));
+                UIDraw::fill(bar, theme.pink);
+            } else {
+                UIDraw::fill(bar, UITheme::fade(theme.ink, alpha * 0.8f));
+            }
             return;
         }
         g->setColor(argb(alpha, 1.f, 1.f, 1.f));
@@ -259,7 +264,7 @@ void NowPlaying::tick() {
     // song, or after the panel was expanded) before it comes to rest at its start
     if(this->expanded) this->marqueeScrollFinished = false;
     if(!this->marqueeScrollFinished) {
-        const f32 scale = Osu::getUIScale();
+        const f32 scale = unitScale();
         const f64 cycle =
             MARQUEE_REST + (this->font->getStringWidth(this->title) + MARQUEE_GAP * scale) / (MARQUEE_SPEED * scale);
         this->marqueeTime += engine->getFrameTime();
@@ -271,7 +276,8 @@ void NowPlaying::tick() {
 }
 
 void NowPlaying::updateLayout() {
-    const f32 scale = Osu::getUIScale();
+    this->font = UITheme::classic() ? engine->getDefaultFont() : UIType::font(UIType::Style::SMALL_STRONG);
+    const f32 scale = unitScale();
     const f32 width =
         std::min(((f32)osu->getVirtScreenWidth() - (PAD * 2)) * scale, std::round(PANEL_MAX_WIDTH * scale));
     const f32 border = std::round(scale);
@@ -302,18 +308,11 @@ void NowPlaying::updateLayout() {
 void NowPlaying::draw() {
     if(!this->isVisible()) return;
 
-    const f32 scale = Osu::getUIScale();
+    const f32 scale = unitScale();
     const McRect &rect = this->getRect();
 
     if(!UITheme::classic()) {
-        // the redesign: a frosted card
-        const auto &theme = UITheme::current();
-        const UIDraw::Shape card = UIDraw::Shape::rounded(rect, std::round(8.f * scale));
-        UIDraw::glow(card, 10.f * scale, argb(0.14f, 0.f, 0.f, 0.f));
-        UIDraw::glass(card, theme.bar);
-        UIDraw::Shape edge = card;
-        edge.border = 1.f;
-        UIDraw::fill(edge, theme.barEdge);
+        // the redesign: no card; the text sits on the menu's top scrim
     } else {
         // like the online beatmaps screen's preview panel
         g->setColor(rgb(15, 15, 15).setA(0.85f));
@@ -332,7 +331,8 @@ void NowPlaying::draw() {
     {
         // fades in with the controls: while collapsed, the progress line takes its row
         if(this->expandAnim > 0.f) {
-            g->setColor(rgb(50, 50, 50).setA(0.85f * this->expandAnim));
+            g->setColor(UITheme::classic() ? rgb(50, 50, 50).setA(0.85f * this->expandAnim)
+                                           : UITheme::fade(UITheme::current().hair, this->expandAnim));
             g->fillRect((int)(rect.getX() + PAD * scale), (int)(rect.getY() + std::round(TITLE_HEIGHT * scale)),
                         (int)(rect.getWidth() - 2.f * PAD * scale), 1);
         }
@@ -350,7 +350,7 @@ void NowPlaying::drawTimes() {
     const MusicTrack *music = osu->getMusicTrack();
     if(!music->isReady() || music->getLengthMS() == 0) return;
 
-    const f32 scale = Osu::getUIScale();
+    const f32 scale = unitScale();
     const f32 baseline = std::round(this->getPos().y + std::round(TITLE_HEIGHT * scale) + BUTTON_HEIGHT * scale / 2.f +
                                     this->font->getHeight() * TIME_TEXT_SCALE / 2.f);
     const auto drawAt = [&](const std::string &text, f32 x) {
@@ -377,7 +377,7 @@ void NowPlaying::drawTimes() {
 void NowPlaying::drawTitle() {
     if(this->title.empty()) return;
 
-    const f32 scale = Osu::getUIScale();
+    const f32 scale = unitScale();
     const f32 left = this->getPos().x + PAD * scale;
     const f32 baseline =
         std::round(this->getPos().y + std::round(TITLE_HEIGHT * scale) / 2.f + this->font->getHeight() / 2.f);
@@ -391,7 +391,7 @@ void NowPlaying::drawTitle() {
         g->scale(stateScale, stateScale);
         g->translate(left, baseline);
         g->drawString(this->iconFont, stateGlyph,
-                      TextFX{.col_text = inkWithAlpha(0.7f),
+                      TextFX{.col_text = UITheme::classic() ? inkWithAlpha(0.7f) : UITheme::current().pink,
                              .col_shadow = shadowWithAlpha(0.6f),
                              .offs_px = std::round((f32)this->iconFont->getDPI() / 96.0f),
                              .shadow_softness_px = 1.f});

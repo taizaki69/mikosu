@@ -7,6 +7,7 @@
 #include "CBaseUIButton.h"
 
 class BeatmapCarousel;
+class Image;
 class DatabaseBeatmap;
 class SongBrowser;
 class SongButton;
@@ -90,6 +91,9 @@ class CarouselButton : public CBaseUIButton {
     [[nodiscard]] virtual PanelKind panelKind() const { return PanelKind::SET; }
     // text on this panel: the skin's song select colours, or the theme's (secondary: artist lines, numbers)
     [[nodiscard]] Color textColour(bool selectedStyle, bool secondary = false) const;
+    // the redesign's card: where it is drawn, and the colour of its left edge
+    [[nodiscard]] McRect cardRect() const;
+    [[nodiscard]] virtual Color cardMark() const;
     [[nodiscard]] virtual Color getActiveBackgroundColor() const;
     [[nodiscard]] virtual Color getInactiveBackgroundColor() const;
 
@@ -106,6 +110,8 @@ class CarouselButton : public CBaseUIButton {
     [[nodiscard]] bool childrenNeedSorting() const;
 
     void drawMenuButtonBackground();
+    // the redesign's card with the map's art (or none) showing through on the right
+    void drawCard(const Image *art, f32 artAlpha);
 
     virtual void onSelected(bool /*wasSelected*/, SelOpts /*opts*/) { ; }
 

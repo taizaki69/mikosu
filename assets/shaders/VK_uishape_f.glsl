@@ -16,7 +16,8 @@ layout(std140, set = 3, binding = 0) uniform ShapeParams {
     vec4 quad;   // xy: size of the drawn quad (px), zw: the shape's top-left inside the quad (px)
     vec4 shape;  // xy: shape size (px), z: edge softness (px; ~1 antialiases, more gives a shadow or glow), w: border width (0 = filled)
     vec4 radii;  // corner radii (px): top-left, top-right, bottom-right, bottom-left
-    vec4 extra;  // x: diagonal cut at the right end (how much shorter the bottom edge is, px), y: 1 = texture under the colour
+    vec4 extra;  // x: diagonal cut at the right end (how much shorter the bottom edge is, px), y: 1 = texture under the colour,
+                 // z: diagonal cut at the left end (how much shorter the top edge is, px): both cuts lean like '/'
     vec4 uvmap;  // texture coordinates: xy at the quad's top-left, zw across the whole quad
     vec4 col;    // colour multiplier (the engine's current colour)
 } sp;
@@ -37,6 +38,11 @@ void main() {
         // the right edge runs from the top-right corner down to (width - cut, height)
         vec2 n = normalize(vec2(sp.shape.y, sp.extra.x));
         d = max(d, dot(px - vec2(sp.shape.x, 0.0), n));
+    }
+    if (sp.extra.z > 0.0) {
+        // the left edge runs from the bottom-left corner up to (cut, 0)
+        vec2 n = normalize(vec2(-sp.shape.y, -sp.extra.z));
+        d = max(d, dot(px - vec2(0.0, sp.shape.y), n));
     }
 
     float soft = max(sp.shape.z, 0.75);

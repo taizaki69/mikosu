@@ -2,6 +2,9 @@
 #include "ScoreButton.h"
 #include "UIDraw.h"
 #include "UITheme.h"
+#include "UIParts.h"
+#include "UIType.h"
+#include "Bancho.h"
 
 #include "OptionsOverlay.h"
 #include "SongBrowser.h"
@@ -65,30 +68,102 @@ ScoreButton::ScoreButton(UIContextMenu *contextMenu, float xPos, float yPos, flo
 
 ScoreButton::~ScoreButton() = default;
 
+void ScoreButton::drawRedesigned() {
+    // round 6 (docs/renovation/mockups/songselect6.html): a solid row with a slanted right end; the place, the grade
+    // letter, the avatar, the name with the mods and how long ago, then the score and the accuracy on the right
+    using Style = UIType::Style;
+    const auto &theme = UITheme::current();
+    const auto &sc = *this->storedScore;
+    auto D = [](f32 v) { return UIType::px(v); };
+
+    const McRect slot{this->getPos(), this->getSize()};
+    const McRect r{slot.getX(), slot.getY(), slot.getWidth(), std::min(slot.getHeight(), D(72.f))};
+    const f32 x = r.getX(), mid = r.getY() + r.getHeight() * 0.5f;
+    const bool mine = !sc.playerName.empty() && sc.playerName == BanchoState::get_username();
+    const bool hover = this->isMouseInside();
+
+    const UIDraw::Shape row{.rect = r, .cut = D(15.f)};
+    if(mine) {
+        const std::array<UIDraw::Stop, 3> grad{{{0.f, theme.rowMe0}, {0.7f, theme.rowMe1}, {1.f, theme.rowMe1}}};
+        UIDraw::fillStops(row, grad);
+        UIDraw::fill(UIDraw::Shape{.rect = McRect{x, r.getY(), D(5.f), r.getHeight()}}, theme.pink);
+    } else {
+        UIDraw::fill(row, theme.row);
+    }
+    if(hover) UIDraw::fill(row, theme.light ? argb(0.05f, 0.f, 0.f, 0.f) : argb(0.06f, 1.f, 1.f, 1.f));
+
+    // the place (fading in with the list), the grade letter, the avatar
+    const std::string place = fmt::format("{:d}", this->iScoreIndexNumber);
+    UIType::drawCentredY(Style::FINE, place, x + D(36.f) - UIType::width(Style::FINE, place), mid,
+                         UITheme::fade(theme.ink4, 0.4f + 0.6f * this->fIndexNumberAnim));
+    const std::string_view grade = UIParts::gradeText(this->scoreGrade);
+    UIType::drawCentredY(Style::RANK, grade, x + D(70.f) - UIType::width(Style::RANK, grade) * 0.5f, mid,
+                         UIParts::gradeColour(this->scoreGrade));
+    const McRect av{x + D(104.f), mid - D(24.f), D(48.f), D(48.f)};
+    if(this->avatar) {
+        this->avatar->setPos(av.getX(), av.getY());
+        this->avatar->setSize(av.getWidth(), av.getHeight());
+        this->avatar->draw_avatar(1.f);
+    } else {
+        UIParts::avatarTile(av, this->sScoreUsername, Style::BODY, D(4.f));
+    }
+
+    // the score (or pp, by the leaderboard's sorting) and accuracy · combo, right-aligned before the slant
+    const f32 right = r.getX() + r.getWidth() - D(30.f);
+    bool showPP = cv::scores_always_display_pp.getBool();
+    if(!showPP) {
+        const u32 sortIndex = cv::songbrowser_scores_sortingtype.getInt();
+        if(sortIndex < g_songbrowser->SCORE_SORTING_METHODS.size())
+            showPP = g_songbrowser->SCORE_SORTING_METHODS[sortIndex].comparator == db->sortScoreByPP;
+        else
+            showPP = cv::scores_sort_by_pp.getBool();
+    }
+    const f64 pp = sc.get_pp();
+    const std::string value = showPP ? (pp == -1.0 ? std::string{"???pp"} : fmt::format("{}pp", (i32)std::round(pp)))
+                                     : SString::thousands(sc.score);
+    const std::string detail = fmt::format("{:s} \u00b7 {}x", this->sScoreAccuracy, SString::thousands(sc.comboMax));
+    const f32 valueW = UIType::width(Style::STRONG, value);
+    UIType::draw(Style::STRONG, value, {right - valueW, r.getY() + D(31.f)}, theme.ink);
+    const f32 detailW = UIType::width(Style::FINE, detail);
+    UIType::draw(Style::FINE, detail, {right - detailW, r.getY() + D(56.f)}, theme.ink3);
+
+    // the name, then the mods as chips and how long ago
+    const f32 nameX = x + D(166.f);
+    const f32 nameW = std::max(right - std::max(valueW, detailW) - D(16.f) - nameX, D(40.f));
+    UIType::draw(Style::STRONG, UIType::fit(Style::STRONG, this->sScoreUsername, nameW), {nameX, r.getY() + D(31.f)},
+                 this->is_friend ? theme.pink2 : theme.ink);
+    f32 cx = nameX;
+    const f32 subMid = r.getY() + D(51.f);
+    std::string_view mods{this->sScoreMods};
+    while(!mods.empty() && cx < nameX + nameW - D(60.f)) {
+        const size_t comma = mods.find(',');
+        const std::string_view mod = mods.substr(0, comma);
+        cx += UIParts::modPill({cx, subMid}, mod) + D(6.f);
+        mods = comma == std::string_view::npos ? std::string_view{} : mods.substr(comma + 1);
+    }
+    std::string when = this->sScoreTime.empty() ? std::string{} : fmt::format("{:s} ago", this->sScoreTime);
+    if(!this->sCustom.empty())
+        when = when.empty() ? this->sCustom : fmt::format("{:s} \u00b7 {:s}", when, this->sCustom);
+    if(!when.empty()) {
+        UIType::draw(Style::FINE, UIType::fit(Style::FINE, when, std::max(nameX + nameW - cx, D(20.f))),
+                     {cx + (cx > nameX ? D(2.f) : 0.f), r.getY() + D(56.f)}, theme.ink3);
+    }
+}
+
 void ScoreButton::draw() {
     if(!this->bVisible) return;
 
-    // the redesign (outside the classic theme, unless the skin brings menu-button-background): frosted rows, the
-    // theme's text colours, no heavy shadows
+    // the redesign (outside the classic theme, unless the skin brings menu-button-background)
     const bool themed = this->style == STYLE::SONG_BROWSER && !UITheme::classic() &&
                         osu->getSkin()->usesDefault(osu->getSkin()->i_menu_button_bg);
+    if(themed) return this->drawRedesigned();
     const auto &theme = UITheme::current();
     const Color inkMain = themed ? theme.ink : Color(0xffffffff);
     const Color inkSub = themed ? theme.ink2 : Color(0xffffffff);
     const Color shadowCol = themed ? Color(0x00000000) : Color(0xff000000).setA(0.75f);
 
     // background
-    if(themed) {
-        const f32 h = this->getSize().y;
-        const UIDraw::Shape row = UIDraw::Shape::rounded(
-            McRect{this->getPos().x + 2.f, this->getPos().y + h * 0.04f, this->getSize().x - 4.f, h * 0.92f},
-            std::round(h * 0.2f));
-        UIDraw::glow(row, h * 0.1f, argb(0.12f, 0.f, 0.f, 0.f));
-        UIDraw::glass(row, theme.row);
-        UIDraw::Shape edge = row;
-        edge.border = 1.f;
-        UIDraw::fill(edge, theme.barEdge);
-    } else if(this->style == STYLE::SONG_BROWSER) {
+    if(this->style == STYLE::SONG_BROWSER) {
         // XXX: Make it flash with song BPM
         g->setColor(Color(0xff000000).setA(0.59f * (0.5f + 0.5f * this->fIndexNumberAnim)));
 

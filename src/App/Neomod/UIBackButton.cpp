@@ -19,6 +19,7 @@
 #include "UniString.h"
 #include "UIDraw.h"
 #include "UITheme.h"
+#include "UIType.h"
 
 UIBackButton::UIBackButton(float xPos, float yPos, float xSize, float ySize, std::string name)
     : CBaseUIButton(xPos, yPos, xSize, ySize, std::move(name), "") {
@@ -37,38 +38,30 @@ void UIBackButton::draw() {
     if(!this->bVisible) return;
 
     if(this->redesigned()) {
-        // the theme's back: a graded block ending in the diagonal of song select's header, a chevron and "back"
+        // stable's pink back button, slanted like the menu bars, running in from off the left edge, with drifting
+        // triangles; it brightens and the label nudges right while hovered
         const auto &theme = UITheme::current();
         const McRect r{this->getPos(), this->getSize()};
         const f32 h = r.getHeight();
         const f32 hover = std::clamp<f32>(this->fAnimation, 0.f, 1.f);
+        const f32 over = UIType::px(30.f);
+        const McRect block{r.getX() - over, r.getY(), r.getWidth() + over - UIType::px(8.f), h};
+        const UIDraw::Shape shape = UIDraw::Shape::slanted(block, UIDraw::slant(h));
         const Color white = 0xffffffff;
-        UIDraw::Shape shape{.rect = r, .cut = h * 0.34f};
-        UIDraw::fill(shape, UITheme::mix(theme.back[0], white, hover * 0.18f),
-                     UITheme::mix(UITheme::mix(theme.back[0], theme.back[1], 0.5f), white, hover * 0.18f),
-                     UITheme::mix(theme.back[1], white, hover * 0.18f));
+        UIDraw::glow(shape, UIType::px(16.f), UITheme::fade(theme.pink, 0.3f + 0.25f * hover));
+        UIDraw::fill(shape, UITheme::mix(theme.back[0], white, hover * 0.12f),
+                     UITheme::mix(theme.back[1], white, hover * 0.12f),
+                     UITheme::mix(theme.back[2], white, hover * 0.12f), 0.7f);
+        UIDraw::triangles(shape, 31u, 6, h * 0.62f, std::max(1.f, UIType::px(1.6f)), argb(0.3f, 1.f, 1.f, 1.f),
+                          (f32)engine->getTime());
 
-        McFont *icons = osu->getFontIcons();
-        McFont *font = osu->getSongBrowserFont();
-        const std::u32string chevron(1, Icons::CHEVRON_LEFT);
-        const f32 iconScale = (h * 0.2f) / icons->getHeight();
-        const f32 textScale = (h * 0.3f) / font->getHeight();
-        const f32 x = r.getX() + h * 0.34f + hover * h * 0.05f;
-        g->setColor(theme.backInk);
-        g->pushTransform();
-        {
-            g->scale(iconScale, iconScale);
-            g->translate(x, r.getY() + h * 0.5f + icons->getHeight() * iconScale * 0.5f);
-            g->drawString(icons, UniString::to_utf8(chevron));
-        }
-        g->popTransform();
-        g->pushTransform();
-        {
-            g->scale(textScale, textScale);
-            g->translate(x + h * 0.24f, r.getY() + h * 0.5f + font->getHeight() * textScale * 0.36f);
-            g->drawString(font, "back");
-        }
-        g->popTransform();
+        const f32 mid = r.getY() + h * 0.5f;
+        const f32 labelW = UIType::width(UIType::Style::BACK, "back");
+        const f32 iconW = UIType::px(30.f), gap = UIType::px(12.f);
+        const f32 x = r.getX() + (r.getWidth() - UIType::px(8.f) - (iconW + gap + labelW)) * 0.5f + UIType::px(8.f) +
+                      hover * UIType::px(6.f);
+        UIType::icon(UIType::Style::ICON_30, Icons::CHEVRON_LEFT, {x + iconW * 0.5f, mid}, white);
+        UIType::drawCentredY(UIType::Style::BACK, "back", x + iconW + gap, mid, white);
 
         this->bFocusStolenDelay = false;
         return;
@@ -133,9 +126,8 @@ void UIBackButton::updateLayout() {
     }
 
     if(this->redesigned()) {
-        // as tall as song select's bottom bar
-        const f32 h = SongBrowser::getUIScale() * 101.f;
-        this->setSize(h * 2.45f, h);
+        // as tall as song select's bottom bar (round 6: 112px)
+        this->setSize(UIType::px(240.f), UIType::px(112.f));
         return;
     }
     this->setSize(backimg->getSize());

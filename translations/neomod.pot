@@ -3575,3 +3575,31 @@ msgstr ""
 #: src/App/Neomod/OptionsOverlay.cpp
 msgid "Classic (neomod's)"
 msgstr ""
+
+#: src/App/Neomod/SongBrowser/BottomBar.cpp
+msgid "Mode"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/BottomBar.cpp
+msgid "Random"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "mapped by {:s}"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/SongBrowser.cpp
+msgid "GROUP"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/SongBrowser.cpp
+msgid "SORT"
+msgstr ""
+
+#: src/App/Neomod/UISearchOverlay.cpp
+msgid "Type to search"
+msgstr ""
+
+#: src/App/Neomod/MainMenu.cpp
+msgid "Online maps"
+msgstr ""

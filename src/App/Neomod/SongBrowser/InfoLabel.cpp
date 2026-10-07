@@ -1,6 +1,9 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "InfoLabel.h"
 #include "UITheme.h"
+#include "UIParts.h"
+#include "UIType.h"
+#include "Icons.h"
 
 #include <algorithm>
 #include <utility>
@@ -54,117 +57,107 @@ InfoLabel::InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, std::string name)
 }
 
 namespace {
-// draws text pieces left to right on one baseline, each in its own font and colour
-struct Line {
-    f32 x, baseline, height;
-    void add(McFont *font, std::string_view text, Color colour) {
-        if(text.empty()) return;
-        const f32 scale = this->height / font->getHeight();
-        g->setColor(colour);
-        g->pushTransform();
-        {
-            g->scale(scale, scale);
-            g->translate((f32)(i32)this->x, (f32)(i32)this->baseline);
-            g->drawString(font, text);
-        }
-        g->popTransform();
-        this->x += font->getStringWidth(text) * scale;
+// text pieces left to right on one baseline, each in its own style and colour (round 6)
+struct Row {
+    f32 x, baseline;
+    void text(UIType::Style style, std::string_view t, Color colour, f32 tracking = 0.f) {
+        if(t.empty()) return;
+        UIType::draw(style, t, {this->x, this->baseline}, colour, tracking);
+        this->x += UIType::width(style, t, tracking);
     }
-    void gap(f32 px) { this->x += px; }
+    void icon(char32_t glyph, Color colour) {
+        const f32 size = UIType::px(19.f);
+        UIType::icon(UIType::Style::ICON_19, glyph,
+                     {this->x + size * 0.5f, this->baseline - UIType::capHeight(UIType::Style::META) * 0.5f}, colour);
+        this->x += size;
+    }
+    void gap(f32 design) { this->x += UIType::px(design); }
 };
+
+std::string asciiUpper(std::string_view s) {
+    std::string out{s};
+    for(char &ch : out)
+        if(ch >= 'a' && ch <= 'z') ch = (char)(ch - 'a' + 'A');
+    return out;
+}
 }  // namespace
 
 void InfoLabel::drawRedesigned() {
+    // round 6 (docs/renovation/mockups/songselect6.html): the artist in capitals, the title large, the difficulty and
+    // mapper, the map's details with icons, then CS/AR/OD/HP, the star rating as a chip and the pp
+    using Style = UIType::Style;
     const auto &theme = UITheme::current();
     const auto *pf = osu->getMapInterface();
     const auto *map = pf->getBeatmap();
 
-    McFont *semibold = osu->getTitleFont();  // outfit 600, large: crisp when scaled down
-    McFont *semiboldSmall = osu->getSubTitleFont();
-    McFont *regular = osu->getSongBrowserFont();  // outfit 400
+    const f32 x0 = this->getPos().x;
+    const f32 y0 = this->getPos().y;
+    const f32 width = this->getSize().x;
+    auto D = [](f32 design) { return UIType::px(design); };
 
-    const f32 h = this->getSize().y;
-    const f32 x0 = this->getPos().x + h * 0.08f;
-    const f32 width = this->getSize().x - h * 0.08f;
-
-    // title [difficulty], shrunk to fit
-    f32 titleH = h * 0.235f;
+    UIType::draw(Style::CAPS, UIType::fit(Style::CAPS, asciiUpper(this->sArtist), width), {x0, y0 + D(15.f)},
+                 theme.ink3, 0.14f);
+    UIType::draw(Style::TITLE, UIType::fit(Style::TITLE, this->sTitle, width), {x0, y0 + D(84.f)}, theme.ink);
     {
-        const std::string diff = fmt::format(" [{:s}]", this->sDiff);
-        const f32 w = semibold->getStringWidth(this->sTitle) * (titleH / semibold->getHeight()) +
-                      regular->getStringWidth(diff) * (titleH / regular->getHeight());
-        if(w > width) titleH *= width / w;
-        Line line{x0, this->getPos().y + h * 0.27f, titleH};
-        line.add(semibold, this->sTitle, theme.ink);
-        line.add(regular, diff, theme.ink2);
-    }
-
-    // artist · mapped by mapper
-    f32 y = this->getPos().y + h * 0.27f + h * 0.16f;
-    {
-        Line line{x0, y, h * 0.118f};
-        line.add(semiboldSmall, this->sArtist, theme.ink);
-        line.add(regular, " \u00b7 ", theme.ink3);
-        line.add(regular, tformat("Mapped by {:s}", this->sMapper), theme.ink2);
+        Row row{x0, y0 + D(127.f)};
+        const std::string diff = UIType::fit(Style::HEAD, this->sDiff, width * 0.6f);
+        row.text(Style::HEAD, diff, theme.ink);
+        row.gap(12.f);
+        row.text(Style::BODY, UIType::fit(Style::BODY, tformat("mapped by {:s}", this->sMapper), x0 + width - row.x),
+                 theme.ink3);
     }
     if(!map) return;
 
-    const f32 rowH = h * 0.1f;
-    const f32 pairGap = rowH * 1.25f;
-    auto pair = [&](Line &line, std::string_view label, const std::string &value, Color valueColour) {
-        line.add(regular, label, theme.ink3);
-        line.gap(rowH * 0.3f);
-        line.add(semiboldSmall, value, valueColour);
-        line.gap(pairGap);
-    };
-
     const f32 speed = pf->getSpeedMultiplier();
-    const Color speedColour = speed > 1.f ? Color(0xffff8a8a) : speed < 1.f ? Color(0xff9fd8ff) : theme.ink;
+    const Color speedColour = speed > 1.f ? Color(0xffff8a8a) : speed < 1.f ? Color(0xff9fd8ff) : theme.ink2;
 
-    // length, bpm, objects
-    y += h * 0.155f;
+    // length, bpm, circles, sliders, spinners
     {
-        Line line{x0, y, rowH};
+        Row row{x0, y0 + D(166.f)};
+        auto item = [&](char32_t glyph, const std::string &value, Color colour) {
+            row.icon(glyph, theme.ink3);
+            row.gap(8.f);
+            row.text(Style::META, value, colour);
+            row.gap(22.f);
+        };
         const u32 fullSeconds = (u32)((map->getLengthMS() * (1.0 / speed)) / 1000.0);
-        pair(line, _("Length"), fmt::format("{:d}:{:02d}", fullSeconds / 60, fullSeconds % 60), speedColour);
+        item(Icons::CLOCK_O, fmt::format("{:d}:{:02d}", fullSeconds / 60, fullSeconds % 60), speedColour);
         const i32 minBPM = (i32)(map->getMinBPM() * speed), maxBPM = (i32)(map->getMaxBPM() * speed);
-        pair(line, _("BPM"),
-             minBPM == maxBPM ? fmt::format("{}", maxBPM)
-                              : fmt::format("{}-{} ({})", minBPM, maxBPM, (i32)(map->getMostCommonBPM() * speed)),
+        item(Icons::HEARTBEAT,
+             minBPM == maxBPM ? fmt::format("{} bpm", maxBPM)
+                              : fmt::format("{}-{} ({}) bpm", minBPM, maxBPM, (i32)(map->getMostCommonBPM() * speed)),
              speedColour);
-        pair(line, _("Objects"), fmt::format("{}", map->getNumObjects()), theme.ink);
-    }
-
-    // circles, sliders, spinners
-    y += h * 0.15f;
-    {
-        Line line{x0, y, rowH};
-        pair(line, _("Circles"), fmt::format("{}", map->getNumCircles()), theme.ink);
-        pair(line, _("Sliders"), fmt::format("{}", map->getNumSliders()), theme.ink);
-        pair(line, _("Spinners"), fmt::format("{}", map->getNumSpinners()), theme.ink);
+        item(Icons::CIRCLE_O, fmt::format("{}", map->getNumCircles()), theme.ink2);
+        item(Icons::ARROWS_H, fmt::format("{}", map->getNumSliders()), theme.ink2);
+        item(Icons::REFRESH, fmt::format("{}", map->getNumSpinners()), theme.ink2);
     }
 
     // CS AR OD HP, stars, pp
-    y += h * 0.15f;
     {
-        Line line{x0, y, rowH};
+        const f32 mid = y0 + D(198.f);
+        Row row{x0, mid + UIType::capHeight(Style::META) * 0.5f};
         const Color modColour = osu->getModEZ() ? Color(0xff9fd8ff) : osu->getModHR() ? Color(0xffff8a8a) : theme.ink;
-        pair(line, "CS", fmt::format("{:.3g}", pf->getCS()), modColour);
-        pair(line, "AR", fmt::format("{:.3g}", pf->getApproachRateForSpeedMultiplier()), modColour);
-        pair(line, "OD", fmt::format("{:.3g}", pf->getOverallDifficultyForSpeedMultiplier()), modColour);
-        pair(line, "HP", fmt::format("{:.3g}", pf->getHP()), modColour);
+        auto pair = [&](std::string_view label, const std::string &value) {
+            row.text(Style::LABEL, label, theme.ink3, 0.08f);
+            row.gap(7.f);
+            row.text(Style::META, value, modColour);
+            row.gap(22.f);
+        };
+        pair("CS", fmt::format("{:.3g}", pf->getCS()));
+        pair("AR", fmt::format("{:.3g}", pf->getApproachRateForSpeedMultiplier()));
+        pair("OD", fmt::format("{:.3g}", pf->getOverallDifficultyForSpeedMultiplier()));
+        pair("HP", fmt::format("{:.3g}", pf->getHP()));
         const auto &pp = pf->getWholeMapPPInfo();
         const f32 stars = pp.pp != -1.0 ? (f32)pp.total_stars : map->getStarsNomod();
-        pair(line, _("Stars"), fmt::format("{:.2f}", stars), theme.ink);
+        row.x += UIParts::starPill({row.x, mid}, stars, false);
+        row.gap(18.f);
         if(pp.pp != -1.0 && std::isfinite(pp.pp)) {
-            pair(line, "SS", fmt::format("{}pp", (i32)std::round(pp.pp)), theme.accentSet);
+            row.text(Style::TAB, fmt::format("{}pp", (i32)std::round(pp.pp)), theme.pink);
         }
     }
 
     if(this->iLocalOffset != 0 || this->iOnlineOffset != 0) {
-        y += h * 0.15f;
-        Line line{x0, y, rowH * 0.9f};
-        line.add(regular, this->buildOffsetInfoString(), theme.ink3);
+        UIType::draw(Style::FINE, this->buildOffsetInfoString(), {x0, y0 + D(240.f)}, theme.ink3);
     }
 }
 

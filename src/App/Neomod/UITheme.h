@@ -1,8 +1,8 @@
 #pragma once
 // Copyright (c) 2026, mikosu contributors, All rights reserved.
 
-// The redesign's themes (docs/renovation/DESIGN.md, round 4): Dusk (the default), Stable, Moon and Day share stable's
-// layout and differ only in these tokens. "classic" keeps neomod's look while the redesign lands screen by screen.
+// The redesign's themes (docs/renovation/DESIGN.md, round 6): Dusk (the default), Stable, Moon and Day share the layout
+// and differ only in these tokens. "classic" keeps neomod's look.
 
 #include "Color.h"
 #include "types.h"
@@ -15,41 +15,42 @@ enum class Id : u8 { CLASSIC, DUSK, STABLE, MOON, DAY };
 
 struct Tokens {
     Id id;
+    bool light;  // dark text on light surfaces (Day)
 
-    // text: primary, secondary, hints
-    Color ink, ink2, ink3;
+    // text, from primary to faint, and hairlines
+    Color ink, ink2, ink3, ink4;
+    Color hair, hair2;
 
-    // frosted glass tints (the alpha is the opacity over the blurred background) and hairlines
-    Color bar, barEdge, row, rowMe, field, chip;
+    // the dim over backgrounds and the solid bands (song select's header and footer): the colour, and how strongly
+    Color scrim;
+    f32 dimSongSelect, dimMenu, band;
 
-    // the thin glowing lines (header edge, bottom bar, selection underlines): three stops left to right
-    std::array<Color, 3> line;
-    Color lineGlow;
+    // surfaces: leaderboard rows (the personal best graded from the first colour), the search field
+    Color row, rowMe0, rowMe1, rowMeEdge;
+    Color field;
 
-    // carousel panels, graded left to right (at 0, 55% and 100% of the width)
-    std::array<Color, 3> set, diff, sel;
-    Color panelInk, panelInk2, selInk, selInk2;
+    // accents: osu!'s pink and its neighbours; the header's edge line runs pink, violet, sky
+    Color pink, pink2, violet, violet2, sky;
+    std::array<Color, 3> edge;
+
+    // grades
+    Color gold, green, blue, orange, red, grey;
+
+    // carousel cards: solid on the left, the map's art showing through on the right (stable's pink sets, blue
+    // difficulties and white selection)
+    Color setCard, setMark, diffCard, groupCard, groupMark, selCard;
+    Color cardInk, cardInk2;  // text on sets and difficulties
+    Color selInk, selInk2;    // text on the selected card
     Color selGlow;
-    Color panelEdge;              // hairline around panels
-    Color accentSet, accentDiff;  // pink and blue: stable's set and difficulty colours as accents
-    bool panelEdgeAccents;        // moon: colour as a thin left edge instead of a fill
 
-    // stars: lit and dim, on normal panels and on the selected one
-    Color starOn, starOff, selStarOn, selStarOff;
-
-    // song select's back button (graded) and the markers above mode, mods, random and options
-    std::array<Color, 2> back;
-    Color backInk;
+    // song select's footer: the back button (graded) and the bars over mode, mods, random and options
+    std::array<Color, 3> back;
     std::array<Color, 4> footMarks;
 
-    // main menu buttons (play, browse, options, exit) and the placeholder logo
-    std::array<Color, 4> menuAccents;
+    // main menu: the bars (graded) and the hovered one; the logo's ring and disc (centre, edge)
+    std::array<Color, 3> menuBar, menuOn;
     std::array<Color, 3> logoRing;
-    Color logoWord;
-    f32 logoEdgeAlpha;
-
-    // multiplies the song select and menu backgrounds (1 = as drawn by the game, 0 = black)
-    f32 bgBrightnessSongSelect, bgBrightnessMenu;
+    Color logoDisc0, logoDisc1;
 };
 
 // the tokens for the ui_theme convar
@@ -60,5 +61,12 @@ inline bool classic() { return current().id == Id::CLASSIC; }
 
 // lerp between two colours, alpha included
 Color mix(Color a, Color b, f32 t);
+
+// the colour with its alpha multiplied
+Color fade(Color c, f32 alpha);
+
+// lazer's star-rating spectrum (ppy/osu OsuColour, MIT), and the text colour on it
+Color starColour(f32 stars);
+Color starTextColour(f32 stars);
 
 }  // namespace UITheme

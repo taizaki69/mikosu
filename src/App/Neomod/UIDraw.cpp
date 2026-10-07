@@ -27,6 +27,7 @@ Shader *blurShader{nullptr};
 
 VertexArrayObject strip{DrawPrimitive::TRIANGLE_STRIP};
 VertexArrayObject fan{DrawPrimitive::TRIANGLE_FAN};
+VertexArrayObject tris{DrawPrimitive::TRIANGLES};
 
 struct {
     const Image *wanted{nullptr};  // what the game draws behind the UI now
@@ -71,7 +72,7 @@ void setParams(const McRect &quad, const Shape &s, bool textured, UVWindow uv, f
                               s.rect.getY() - quad.getY());
     shapeShader->setUniform4f("shape", s.rect.getWidth(), s.rect.getHeight(), s.softness, s.border);
     shapeShader->setUniform4f("radii", s.radii[0], s.radii[1], s.radii[2], s.radii[3]);
-    shapeShader->setUniform4f("extra", s.cut, textured ? 1.f : 0.f, 0.f, 0.f);
+    shapeShader->setUniform4f("extra", s.cut, textured ? 1.f : 0.f, s.cutLeft, 0.f);
     shapeShader->setUniform4f("uvmap", uv.u0, uv.v0, uv.du, uv.dv);
     shapeShader->setUniform4f("col", 1.f, 1.f, 1.f, alpha * s.opacity);
 }
@@ -184,6 +185,35 @@ void fill(const Shape &s, Color left, Color middle, Color right, f32 mid) {
     shapeShader->disable();
 }
 
+void fillStops(const Shape &s, std::span<const Stop> stops) {
+    if(stops.empty()) return;
+    if(!shapeReady()) {
+        g->setColor(stops[0].colour);
+        g->fillRect(s.rect);
+        return;
+    }
+    const McRect q = padded(s);
+    const f32 x0 = q.getX(), y0 = q.getY(), w = std::max(q.getWidth(), 1.f), h = q.getHeight();
+    // the stops are across the shape; the quad is a little wider (the soft edge)
+    auto quadU = [&](f32 at) { return std::clamp((s.rect.getX() + s.rect.getWidth() * at - x0) / w, 0.f, 1.f); };
+    strip.clear();
+    auto add = [&](f32 u, Color c) {
+        strip.addVertex(x0 + w * u, y0);
+        strip.addColor(c);
+        strip.addTexcoord(u, 0.f);
+        strip.addVertex(x0 + w * u, y0 + h);
+        strip.addColor(c);
+        strip.addTexcoord(u, 1.f);
+    };
+    add(0.f, stops.front().colour);
+    for(const Stop &st : stops) add(quadU(st.at), st.colour);
+    add(1.f, stops.back().colour);
+    shapeShader->enable();
+    setParams(q, s, false, {0.f, 0.f, 1.f, 1.f}, 1.f);
+    g->drawVAO(&strip);
+    shapeShader->disable();
+}
+
 void glass(const Shape &s, Color left, Color middle, Color right, f32 mid) {
     if(!backdropReady() || !shapeReady()) {
         // no backdrop yet: the tint, opaque, so the panel still reads
@@ -214,6 +244,102 @@ void glassPolygon(std::span<const vec2> points, Color tint) {
     }
     g->drawVAO(&fan);
     if(textured) backdrop.rt->unbind();
+    shapeShader->disable();
+}
+
+void fillPolygon(std::span<const vec2> points, Color colour) {
+    if(points.size() < 3 || !shapeReady()) return;
+    shapeShader->enable();
+    setParamsUnshaped(false);
+    fan.clear();
+    for(const vec2 &p : points) {
+        fan.addVertex(p.x, p.y);
+        fan.addColor(colour);
+        fan.addTexcoord(0.f, 0.f);
+    }
+    g->drawVAO(&fan);
+    shapeShader->disable();
+}
+
+void fillVertical(const McRect &r, Color top, Color bottom) {
+    if(!shapeReady()) {
+        g->setColor(bottom);
+        g->fillRect(r);
+        return;
+    }
+    shapeShader->enable();
+    setParamsUnshaped(false);
+    strip.clear();
+    auto add = [](f32 x, f32 y, Color c) {
+        strip.addVertex(x, y);
+        strip.addColor(c);
+        strip.addTexcoord(0.f, 0.f);
+    };
+    add(r.getX(), r.getY(), top);
+    add(r.getX(), r.getY() + r.getHeight(), bottom);
+    add(r.getX() + r.getWidth(), r.getY(), top);
+    add(r.getX() + r.getWidth(), r.getY() + r.getHeight(), bottom);
+    g->drawVAO(&strip);
+    shapeShader->disable();
+}
+
+void triangles(const Shape &clip, u32 seed, int count, f32 size, f32 stroke, Color colour, f32 time) {
+    if(count <= 0 || size <= 0.f || !shapeReady()) return;
+    const McRect &r = clip.rect;
+    const McRect q = padded(clip);
+    if(q.getWidth() < 1.f || q.getHeight() < 1.f) return;
+
+    // a small deterministic generator, so a seed always gives the same pattern
+    u32 state = seed * 2654435761u + 0x9e3779b9u;
+    auto rnd = [&state]() {
+        state = state * 1664525u + 1013904223u;
+        return (f32)(state >> 8) / (f32)(1u << 24);
+    };
+
+    tris.clear();
+    auto vertex = [&](vec2 p, Color c) {
+        tris.addVertex(p.x, p.y);
+        tris.addColor(c);
+        tris.addTexcoord((p.x - q.getX()) / q.getWidth(), (p.y - q.getY()) / q.getHeight());
+    };
+    auto edge = [&](vec2 a, vec2 b, Color c) {
+        const vec2 d = b - a;
+        const f32 len = vec::length(d);
+        if(len <= 0.f) return;
+        const vec2 n = vec2{-d.y, d.x} / len * (stroke * 0.5f);
+        vertex(a + n, c);
+        vertex(b + n, c);
+        vertex(b - n, c);
+        vertex(a + n, c);
+        vertex(b - n, c);
+        vertex(a - n, c);
+    };
+
+    const f32 travel = r.getHeight() + size;
+    for(int i = 0; i < count; i++) {
+        const f32 s = size * (0.6f + rnd() * 0.8f);
+        const f32 h = s * 0.866f;
+        const f32 x = r.getX() + rnd() * r.getWidth();
+        const f32 speed = 0.08f + rnd() * 0.08f;  // fractions of the travel per second
+        const f32 phase = rnd();
+        f32 t = std::fmod(phase + time * speed, 1.f);
+        if(t < 0.f) t += 1.f;
+        const f32 y = r.getY() + r.getHeight() - t * travel;  // the top vertex, rising
+        // fade in from the bottom, out towards the top
+        const f32 a = colour.Af() * std::min(1.f, t * 4.f) * std::min(1.f, (1.f - t) * 2.5f);
+        const Color c = Color(colour).setA(a);
+        const vec2 top{x, y}, left{x - s * 0.5f, y + h}, right{x + s * 0.5f, y + h};
+        edge(top, left, c);
+        edge(left, right, c);
+        edge(right, top, c);
+    }
+    if(tris.getNumVertices() == 0) return;
+
+    Shape inside = clip;
+    inside.border = 0.f;
+    shapeShader->enable();
+    setParams(q, inside, false, {0.f, 0.f, 1.f, 1.f}, 1.f);
+    g->drawVAO(&tris);
     shapeShader->disable();
 }
 

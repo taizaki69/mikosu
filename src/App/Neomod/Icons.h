@@ -51,6 +51,13 @@ inline constexpr char32_t INFO_CIRCLE{0xf05a};
 inline constexpr char32_t STAR{0xf005};
 inline constexpr char32_t CHECK{0xf00c};
 inline constexpr char32_t ANGLE_DOWN{0xf107};
+// round 6: map details and the multiplayer button
+inline constexpr char32_t CLOCK_O{0xf017};
+inline constexpr char32_t HEARTBEAT{0xf21e};
+inline constexpr char32_t CIRCLE_O{0xf10c};
+inline constexpr char32_t ARROWS_H{0xf07e};
+inline constexpr char32_t REFRESH{0xf021};
+inline constexpr char32_t USERS{0xf0c0};
 
 inline constexpr const std::array icons{
     Z_UNKNOWN_CHAR,   //
@@ -97,6 +104,11 @@ inline constexpr const std::array icons{
     STAR,             //
     CHECK,            //
     ANGLE_DOWN,       //
+    CLOCK_O,          //
+    HEARTBEAT,        //
+    ARROWS_H,         //
+    REFRESH,          //
+    USERS,            //
 };
 
 };  // namespace Icons

@@ -113,6 +113,7 @@ class MainMenu final : public UIScreen, public MouseListener {
     void onAdblockChangeCallback(float value);
     UIButtonWithIcon *discordButton{nullptr};
     UIButtonWithIcon *twitterButton{nullptr};
+    UIButtonWithIcon *onlineMapsLink{nullptr};  // the redesign's way to the online beatmaps
 
     bool setToggleableVisibilitiesOnce{false};
 

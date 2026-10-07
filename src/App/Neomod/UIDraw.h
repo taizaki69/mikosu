@@ -22,16 +22,29 @@ struct Shape {
     McRect rect;
     std::array<f32, 4> radii{0.f, 0.f, 0.f, 0.f};  // top-left, top-right, bottom-right, bottom-left
     f32 cut{0.f};                                  // diagonal cut at the right end: how much shorter the bottom is
+    f32 cutLeft{0.f};                              // diagonal cut at the left end: how much shorter the top is
     f32 softness{1.f};                             // about 1 antialiases; more gives a soft shadow or glow
     f32 border{0.f};                               // 0 = filled, else a border this wide inside the edge
     f32 opacity{1.f};                              // multiplies the whole shape (fades)
 
     static Shape rounded(const McRect &r, f32 radius) { return {.rect = r, .radii = {radius, radius, radius, radius}}; }
+    // a parallelogram leaning like '/' (both ends cut by `slant`)
+    static Shape slanted(const McRect &r, f32 slant) { return {.rect = r, .cut = slant, .cutLeft = slant}; }
 };
+
+// how far the redesign's slanted ends lean over a height (stable's menu bars: 12 degrees)
+inline f32 slant(f32 height) { return height * 0.2126f; }
 
 // a horizontal gradient through up to three stops (left, at `mid`, right)
 void fill(const Shape &s, Color left, Color middle, Color right, f32 mid = 0.55f);
 inline void fill(const Shape &s, Color colour) { fill(s, colour, colour, colour); }
+
+// a horizontal gradient through any number of stops (positions 0..1 across the shape, increasing)
+struct Stop {
+    f32 at;
+    Color colour;
+};
+void fillStops(const Shape &s, std::span<const Stop> stops);
 
 // frosted glass: the blurred background under a tint whose alpha is its opacity; a plain fill until the blurred
 // background exists
@@ -40,6 +53,16 @@ inline void glass(const Shape &s, Color tint) { glass(s, tint, tint, tint); }
 
 // a convex polygon (a fan from the first point) as frosted glass; no antialiasing, so put a line on its edges
 void glassPolygon(std::span<const vec2> points, Color tint);
+
+// a convex polygon in one colour (no antialiasing)
+void fillPolygon(std::span<const vec2> points, Color colour);
+
+// a rectangle graded from top to bottom
+void fillVertical(const McRect &r, Color top, Color bottom);
+
+// lazer-style outlined triangles drifting upwards inside the shape (seeded, so each element keeps its own pattern);
+// `size` is the triangles' width, `stroke` their outline, `time` in seconds drives the drift
+void triangles(const Shape &clip, u32 seed, int count, f32 size, f32 stroke, Color colour, f32 time);
 
 // an image cropped to fill the shape; `tint` multiplies it
 void image(const Shape &s, const Image *img, Color tint = 0xffffffff);

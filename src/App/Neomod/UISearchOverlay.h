@@ -13,6 +13,8 @@ class UISearchOverlay final : public CBaseUIElement {
     void draw() override;
 
     void setDrawNumResults(bool drawNumResults) { this->bDrawNumResults = drawNumResults; }
+    // the redesign's field (song select); elsewhere (options) the search keeps its centred hint
+    void setRedesigned(bool redesigned) { this->bRedesigned = redesigned; }
     void setOffsetRight(int offsetRight) { this->iOffsetRight = offsetRight; }
 
     inline void setSearchString(std::string searchString, std::string hardcodedSearchString = {}) {
@@ -35,4 +37,5 @@ class UISearchOverlay final : public CBaseUIElement {
     int iNumFoundResults;
 
     bool bSearching;
+    bool bRedesigned{false};
 };
