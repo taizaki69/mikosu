@@ -10,8 +10,9 @@ trap 'rm -rf "$profile"' EXIT
 # round 2: SCREENS="mainmenu2 songselect2" VARIANTS="all controls accents"
 # round 3: SCREENS="mainmenu3 songselect3" VARIANTS="lazer tinted upright"
 # round 4: SCREENS="mainmenu4 songselect4" VARIANTS="dusk stable moon day" (dusk is the default theme)
-for screen in ${SCREENS:-mainmenu4 songselect4}; do
-  for v in ${VARIANTS:-dusk stable moon day}; do
+# round 5: SCREENS="mainmenu5 songselect5" VARIANTS="dark light" (minimal; dark is the default)
+for screen in ${SCREENS:-mainmenu5 songselect5}; do
+  for v in ${VARIANTS:-dark light}; do
     out="$here/../$screen-$v.png"
     rm -f "$out"
     firefox --headless --no-remote --profile "$profile" --window-size=1920,1080 \

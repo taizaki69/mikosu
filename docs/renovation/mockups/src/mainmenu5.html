@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mikosu main menu mockup, round 5</title>
+<link rel="stylesheet" href="round5.css">
+</head>
+<body class="mm">
+<div class="bg"></div>
+<div class="scrim"></div>
+<canvas class="viz" id="viz" width="1920" height="1080"></canvas>
+
+<nav class="mbs" id="mbs"></nav>
+<div class="logo" id="logo"></div>
+
+<section class="topl" id="user"></section>
+<section class="topr" id="np"></section>
+<div class="foot-l">mikosu 0.1</div>
+<div class="foot-c">Tip &nbsp;&middot;&nbsp; <b>F2</b> in song select picks a random map, <b>Shift+F2</b> goes back</div>
+<div class="foot-r" id="links"></div>
+
+<script src="icons.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+const v = q.get("v") || "dark";
+document.body.classList.add("v-" + v);
+if (q.get("font")) document.body.classList.add("f-" + q.get("font"));
+const light = v === "light";
+
+// the logo: a frosted disc, one thin ring, the hit dot on it, and the wordmark; flat, no gloss
+const CX = 540, CY = 540, R = 196;
+const logo = document.getElementById("logo");
+logo.style.cssText = `left:${CX - R}px;top:${CY - R}px;width:${2 * R}px;height:${2 * R}px`;
+const ink = light ? "rgba(18,22,34,.9)" : "rgba(255,255,255,.94)";
+logo.innerHTML = `<div class="disc frost"></div><svg viewBox="${-R - 40} ${-R - 40} ${2 * R + 80} ${2 * R + 80}">
+  <circle r="${R}" fill="none" stroke="${ink}" stroke-width="2"/>
+  <circle r="${R + 22}" fill="none" stroke="${ink}" stroke-opacity=".18" stroke-width="1"/>
+  <circle cx="${-R * 0.866}" cy="${-R * 0.5}" r="7" fill="var(--accent)"/>
+  <text x="0" y="22" text-anchor="middle" font-family="${getComputedStyle(document.body).getPropertyValue("--font")}" font-weight="300" font-size="66" letter-spacing="-0.5" fill="${ink}">mikosu</text>
+</svg>`;
+
+// stable's visualiser, quieter: fine bars, low contrast
+(function viz() {
+  const c = document.getElementById("viz").getContext("2d"), rand = rng(7);
+  const N = 200, r0 = R + 30;
+  let s = 0;
+  c.lineCap = "round";
+  for (let i = 0; i < N; i++) {
+    s = s * 0.6 + rand() * 0.4;
+    const f = i / N;
+    const len = 6 + 70 * s * s * (0.4 + 0.6 * Math.pow(Math.cos(f * Math.PI * 2) * 0.5 + 0.5, 2));
+    const a = f * Math.PI * 2 - Math.PI / 2;
+    c.beginPath();
+    c.moveTo(CX + Math.cos(a) * r0, CY + Math.sin(a) * r0);
+    c.lineTo(CX + Math.cos(a) * (r0 + len), CY + Math.sin(a) * (r0 + len));
+    c.strokeStyle = light ? "rgba(18,22,34,.14)" : "rgba(255,255,255,.2)";
+    c.lineWidth = 2;
+    c.stroke();
+  }
+})();
+
+// the four buttons, sliding out from behind the logo; the first is hovered
+const C = light ? [["#f0569b", "#d63c84"], ["#3b9be8", "#2a7fc6"], ["#8a7cf0", "#6a5bd6"], ["#ef7a5a", "#d65e3e"]]
+                : [["#ff86c0", "#e8508f"], ["#8fcaff", "#2f86d6"], ["#b9a8ff", "#6f5bd8"], ["#ff9f87", "#d8603f"]];
+const B = [["play", "Singleplayer"], ["globe", "Multiplayer"], ["options", "Options"], ["exit", "Exit"]];
+document.getElementById("mbs").innerHTML = B.map(([ic, label], i) => `
+  <div class="mb frost${i === 0 ? " on" : ""}" style="--c:${C[i][0]};--c-strong:${C[i][1]}">${icon(ic)}<b>${label}</b></div>`).join("");
+
+document.getElementById("user").innerHTML = `<div class="av">T</div><div><b>taizaki</b><small>4,218 pp &nbsp;&middot;&nbsp; #48,213 &nbsp;&middot;&nbsp; 97.84%</small>
+  <div class="lvr">LV 92<div class="lv"><i></i></div></div></div>`;
+document.getElementById("np").innerHTML = `<div class="song">Lanternfall<small>Aurora Drift</small></div>
+  <div class="row"><span>1:24</span><div class="bar"><i></i></div><span>3:42</span></div>
+  <div class="btns">${icon("prev")}<span class="on">${icon("pause")}</span>${icon("next")}</div>`;
+document.getElementById("links").innerHTML = `<span>${icon("download")}Online maps</span><span>${icon("info")}Report a problem</span><span>${icon("globe")}GitHub</span>`;
+</script>
+</body>
+</html>
