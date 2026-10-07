@@ -1,6 +1,6 @@
 {
   "updated": "2026-10-06",
-  "phase": "4 visual renovation started: song select and main menu redesigned in-game (Dusk default, Stable/Moon/Day themes); phases 2-3 continue in parallel",
+  "phase": "4 visual renovation: round 6 built in game (song select, main menu; Dusk default, Stable/Moon/Day themes); phases 2-3 continue in parallel",
   "upstream": {
     "remote": "neomodnet/neomod",
     "fork_point": "0fedcafb3515c86d8be8ee736c76bce19d0198d3",

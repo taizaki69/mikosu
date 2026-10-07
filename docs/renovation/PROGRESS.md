@@ -2,6 +2,42 @@
 
 Newest session first. Every claim cites its evidence (a test, a measurement or a screenshot).
 
+## 2026-10-06 evening: rounds 5 and 6, built into the game
+
+- **User feedback on the in-game round 4:** "still looks awful ... make it more beautiful, like actually beautiful,
+  minimalistic and with the osu stable layout". Cause, from in-game screenshots next to the mockups: the game kept
+  neomod's sizes (the logo 1.6x the design, text scaled from one atlas, carousel cards stacked with no gap), so it looked
+  nothing like the mockups the user had liked (PLAN 32).
+- **Mockups (DESIGN.md rounds 5 and 6, PLAN 31):**
+  - Round 5, minimal (Inter, scrims, white selection): "looks better".
+  - Round 6, bigger with osu!'s soul, after looking at stable's and lazer's real screens (the osu-wiki repo's images):
+    stable's violet slanted menu bars, pink back button, pink/blue/white cards, the visualiser; lazer's sheared buttons,
+    star-rating chips, difficulty dots, triangles.
+  - Then, one request at a time: solid like stable (bands, opaque cards and rows); the map's art on the cards' right
+    side; the menu bars coming out from behind the logo; sharp rankings, search and chips; the cards rounded and smoother.
+- **Built in game (branch `ui-glass`):**
+  - `UIType` (fonts per style rasterised at the drawn size, icons, tracking), round-6 `UITheme` tokens, `UIDraw`
+    (slanted ends, multi-stop gradients, clipped drifting triangles, radial bars), `UIParts` (chips, avatars, grades).
+  - Song select: header band and details, tabs and GROUP/SORT, search field, leaderboard rows, cards with art and dots,
+    footer (back, buttons, player card), group headers, messages.
+  - Main menu: the logo at its design size, the bars from behind it, the player card top left, the corners' links
+    ("Online maps" replaces the side tab), the visualiser from the music's spectrum (SoLoud `calcFFT`, PLAN 33).
+  - Options' search hint keeps its old look; Classic keeps neomod's look everywhere.
+- **Evidence:**
+  - in-game captures at 1920x1080 and 2560x1440 for Dusk, Stable, Moon, Day and Classic, with hover states
+    (`capture.py`: the round-4 art, made-up scores from a generated stable `scores.db`, `mainmenu-hover`,
+    `songselect-hover`);
+  - sanity test on GL and SDL_gpu: pass;
+  - UI tests: 67 of 71 pass; the failures are the known machine-specific console and room tests, and
+    `carousel_wheel_forward`, which passes on its own (flaky);
+  - song select at 2560x1440: CPU p99 0.74–0.79 ms, GPU p99 0.46 ms (BASELINE.md; menu budget 1.5 ms).
+- **neomod's PR #11 merged** (merge commit); `ui-glass` rebased onto it.
+
+### Next
+1. The redesign PR, CI, merge. The user's play-test of round 6.
+2. The remaining screens in round 6's look: mod select, options, results, pause/fail/loading, notifications.
+3. Workstream C: spinners and the last score differences; workstream B: exact star rating and pp.
+
 ## 2026-10-05 night to 10-06: the redesign chosen and built in; neomod merged
 
 - **Design rounds (user feedback, verbatim in PLAN 28–30 and DESIGN.md):**
