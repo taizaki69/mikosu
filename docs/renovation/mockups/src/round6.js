@@ -8,7 +8,6 @@ function logo6(id, { word = "mikosu", light = false, tri = true } = {}) {
     <radialGradient id="disc${id}" cx=".38" cy=".3" r=".9"><stop offset="0" stop-color="${light ? "#3a2c7a" : "#2c2266"}"/><stop offset="1" stop-color="${light ? "#231a52" : "#140f2e"}"/></radialGradient>
     <clipPath id="clip${id}"><circle r="93"/></clipPath>
   </defs>
-  <circle r="116" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="2"/>
   <circle r="93" fill="url(#disc${id})"/>
   ${tri ? `<g clip-path="url(#clip${id})" transform="translate(-93 -93)" opacity=".1">${triangles(91, 186, 186, { count: 9, size: 70, stroke: 2.4 }).replace(/<svg[^>]*>/, "").replace("</svg>", "")}</g>` : ""}
   <circle r="100" fill="none" stroke="url(#ring${id})" stroke-width="14"/>

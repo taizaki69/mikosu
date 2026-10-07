@@ -10,8 +10,10 @@
 <div class="scrim"></div>
 <div class="car" id="car"></div>
 
-<svg class="hairline" width="1920" height="300" viewBox="0 0 1920 300">
-  <polyline points="0,284.5 740,284.5 880,150.5 1920,150.5" fill="none" stroke="var(--hair-2)" stroke-width="1.5"/>
+<svg class="band" width="1920" height="300" viewBox="0 0 1920 300">
+  <defs><linearGradient id="edge" x1="0" y1="0" x2="1920" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff66aa"/><stop offset=".5" stop-color="#9a72ff"/><stop offset="1" stop-color="#66ccff"/></linearGradient></defs>
+  <polygon points="0,0 1920,0 1920,150 880,150 740,284 0,284"/>
+  <polyline points="0,284 740,284 880,150 1920,150" fill="none" stroke="url(#edge)" stroke-width="2.5"/>
 </svg>
 
 <section class="info" id="info"></section>
@@ -77,19 +79,18 @@ const items = [
 const H = 100, GAP = 12;
 const car = document.getElementById("car");
 const sel = items.findIndex((it) => it.sel);
-const CY = 540 - 150;
+const CY = 540;
 let y = CY - H / 2 - sel * (H + GAP);
 items.forEach((it) => {
   const mid = y + H / 2, dist = Math.abs(mid - CY);
   const x = 1000 + (it.sel ? 0 : it.k === "diff" ? 40 : 80) + dist * dist * 0.00032;
   const el = document.createElement("div");
-  el.className = `card frost ${it.k}${it.sel ? " sel" : ""}`;
-  el.style.cssText = `left:${x}px;top:${y}px` + (it.k === "diff" ? `;--mark:${starColour(it.sr)}` : "");
+  el.className = `card ${it.k}${it.sel ? " sel" : ""}`;
+  el.style.cssText = `left:${x}px;top:${y}px;--art:url(art/${it.art}.png)` + (it.k === "diff" ? `;--mark:${starColour(it.sr)}` : "");
   const row = it.k === "diff"
     ? `<div class="d"><span class="rk" style="color:${gradeColour[it.g]}">${it.g}</span>${it.d}${starPill(it.sr, "sm")}</div>`
     : `<div class="dots">${it.diffs.map((s) => `<i style="--c:${starColour(s)}"></i>`).join("")}</div>`;
-  el.innerHTML = `${it.sel ? triangles(7, 1000, 100, { count: 14, size: 80, stroke: 1.6, colour: "#ff66aa", opacity: 0.22 }) : '<div class="wash"></div>'}
-    <div class="th" style="background-image:url(art/${it.art}.png)"></div>
+  el.innerHTML = `<div class="tint"></div>${triangles(7 + y, 1000, 100, { count: 10, size: 80, stroke: 1.6, colour: it.sel ? "#ff66aa" : "#ffffff", opacity: it.sel ? 0.28 : 0.12 })}
     <div class="tx"><div class="t">${it.t}</div><div class="a">${it.a}</div>${row}</div>`;
   car.appendChild(el);
   y += H + GAP;

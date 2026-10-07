@@ -78,12 +78,11 @@ svg.tri { position: absolute; left: 0; top: 0; pointer-events: none; }
 
 /* ============================== SONG SELECT ============================== */
 
-.ss .scrim { background:
-  linear-gradient(180deg, rgba(var(--scrim), 0.86) 0, rgba(var(--scrim), 0.6) 190px, rgba(var(--scrim), 0) 380px),
-  linear-gradient(90deg, rgba(var(--scrim), 0.8) 0, rgba(var(--scrim), 0.62) 680px, rgba(var(--scrim), 0.2) 980px, rgba(var(--scrim), 0) 1150px),
-  linear-gradient(0deg, rgba(var(--scrim), 0.92) 0, rgba(var(--scrim), 0.55) 130px, rgba(var(--scrim), 0) 300px),
-  linear-gradient(270deg, rgba(var(--scrim), 0.4) 0, rgba(var(--scrim), 0.28) 700px, rgba(var(--scrim), 0) 1000px),
-  rgba(var(--scrim), 0.2); }
+/* revised after "less transparent ... looks kinda weird compared to osu stable": the background dimmed evenly and
+   solid bands top and bottom, as stable does; solid cards with the map's art on their right */
+.ss .scrim { background: rgba(var(--scrim), 0.4); }
+.band { position: absolute; left: 0; top: 0; overflow: visible; }
+.band polygon { fill: rgba(var(--scrim), 0.9); }
 
 .info { position: absolute; left: 56px; top: 28px; width: 760px; }
 .info .caps { font-size: 15px; }
@@ -113,8 +112,9 @@ svg.tri { position: absolute; left: 0; top: 0; pointer-events: none; }
 .gtabs .sort .i, .lbtabs .sort .i { font-size: 15px; }
 
 .lb { position: absolute; left: 48px; top: 300px; width: 656px; display: flex; flex-direction: column; gap: 6px; }
-.lb .row { position: relative; height: 72px; display: grid; grid-template-columns: 26px 40px 48px 1fr auto; align-items: center; column-gap: 14px; padding: 0 18px 0 10px; border-radius: 14px; background: rgba(var(--scrim), 0.42); box-shadow: inset 0 0 0 1px var(--hair); }
-.lb .row.me { background: rgba(255, 102, 170, 0.16); box-shadow: inset 0 0 0 1px rgba(255, 102, 170, 0.45); }
+.lb .row { position: relative; height: 72px; display: grid; grid-template-columns: 26px 40px 48px 1fr auto; align-items: center; column-gap: 14px; padding: 0 18px 0 10px; border-radius: 14px; background: rgba(var(--scrim), 0.82); box-shadow: inset 0 0 0 1px var(--hair), 0 4px 14px rgba(0, 0, 0, 0.18); }
+.lb .row.me { background: linear-gradient(90deg, rgba(118, 34, 92, 0.94), rgba(var(--scrim), 0.88) 70%); box-shadow: inset 0 0 0 1px rgba(255, 102, 170, 0.55), 0 4px 14px rgba(0, 0, 0, 0.18); }
+.v-light .lb .row.me { background: linear-gradient(90deg, rgba(255, 196, 224, 0.95), rgba(var(--scrim), 0.9) 70%); }
 .lb .row.me::before { content: ""; position: absolute; left: 0; top: 16px; bottom: 16px; width: 4px; border-radius: 0 3px 3px 0; background: var(--pink); }
 .lb .n { font-size: 15px; font-weight: 600; color: var(--ink-4); text-align: right; }
 .lb .g { font-size: 34px; text-align: center; line-height: 1; }
@@ -125,26 +125,26 @@ svg.tri { position: absolute; left: 0; top: 0; pointer-events: none; }
 .lb .sc b { display: block; font-size: 21px; font-weight: 600; line-height: 1.1; }
 .lb .sc small { display: block; font-size: 15px; color: var(--ink-3); margin-top: 5px; }
 
-.car { position: absolute; left: 0; right: 0; top: 150px; bottom: 112px; overflow: hidden; pointer-events: none;
-       -webkit-mask-image: linear-gradient(transparent, #000 40px, #000 calc(100% - 30px), transparent); mask-image: linear-gradient(transparent, #000 40px, #000 calc(100% - 30px), transparent); }
-.card { position: absolute; width: 1000px; height: 100px; border-radius: 18px 0 0 18px; overflow: hidden; }
-.card .wash { position: absolute; inset: 0; }
-.card.set .wash { background: linear-gradient(90deg, rgba(255, 102, 170, 0.34), rgba(255, 102, 170, 0.08) 42%, rgba(255, 102, 170, 0) 70%); }
-.card.diff .wash { background: linear-gradient(90deg, rgba(102, 180, 255, 0.3), rgba(102, 180, 255, 0.07) 42%, rgba(102, 180, 255, 0) 70%); }
-.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--mark); z-index: 2; }
-.card.set { --mark: var(--pink); }
-.card.sel { box-shadow: 0 14px 44px rgba(0, 0, 0, 0.3), 0 0 32px rgba(255, 102, 170, 0.35); --ink: var(--sel-ink); --ink-2: var(--sel-ink-2); --ink-3: var(--sel-ink-2); --ink-4: rgba(20, 16, 40, 0.3); color: var(--ink); }
-.card.sel.frost { background: var(--sel); }
-.v-light .card.sel { --ink-4: rgba(255, 255, 255, 0.3); }
-.card .th { position: absolute; left: 18px; top: 12px; bottom: 12px; width: 122px; border-radius: 11px; background-size: cover; background-position: center; z-index: 1; }
-.card .tx { position: absolute; left: 160px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; z-index: 1; }
-.card .t { font-size: 24px; font-weight: 600; white-space: nowrap; line-height: 1.12; }
-.card .a { font-size: 17px; color: var(--ink-3); white-space: nowrap; }
-.card .d { display: flex; align-items: center; gap: 10px; margin-top: 3px; font-size: 18px; font-weight: 600; white-space: nowrap; }
-.card .dots { display: flex; gap: 6px; margin-top: 6px; }
-.card .dots i { width: 13px; height: 13px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.15); }
+.car { position: absolute; left: 0; right: 0; top: 0; bottom: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.card { position: absolute; width: 1000px; height: 100px; border-radius: 18px 0 0 18px; overflow: hidden; background: var(--art) center / cover;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28); }
+.card .tint { position: absolute; inset: 0; background: linear-gradient(90deg, rgb(var(--c)) 0, rgb(var(--c)) 34%, rgba(var(--c), 0.82) 50%, rgba(var(--c), 0.42) 72%, rgba(var(--c), 0.22) 100%); }
+.card.set { --c: 204, 68, 146; --mark: #ff8cc6; }
+.card.diff { --c: 40, 104, 212; }
+.card.sel { --c: 255, 255, 255; box-shadow: 0 10px 34px rgba(0, 0, 0, 0.3), 0 0 30px rgba(255, 102, 170, 0.45);
+            --ink: var(--sel-ink); --ink-2: var(--sel-ink-2); --ink-3: var(--sel-ink-2); color: var(--ink); }
+.v-light .card.sel { --c: 30, 24, 58; }
+.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 7px; background: var(--mark); z-index: 2; }
+.card .tx { position: absolute; left: 34px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; z-index: 1; }
+.card .t { font-size: 26px; font-weight: 600; white-space: nowrap; line-height: 1.1; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); }
+.card:not(.sel) .a { color: rgba(255, 255, 255, 0.8); }
+.card .a { font-size: 18px; white-space: nowrap; }
+.card .d { display: flex; align-items: center; gap: 10px; margin-top: 4px; font-size: 18px; font-weight: 600; white-space: nowrap; }
+.card .dots { display: flex; gap: 6px; margin-top: 7px; }
+.card .dots i { width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85); }
+.card .rk { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); }
 
-.foot { position: absolute; left: 0; right: 0; bottom: 0; height: 112px; }
+.foot { position: absolute; left: 0; right: 0; bottom: 0; height: 112px; background: rgba(var(--scrim), 0.9); }
 .foot .line { position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--hair); }
 .back { position: absolute; left: -30px; top: 0; bottom: 0; width: 262px; transform: skewX(-12deg); transform-origin: bottom left; overflow: hidden;
         background: linear-gradient(100deg, #ff5aa5, #ff7cb8 70%, #ff8fc4); box-shadow: 0 0 30px rgba(255, 102, 170, 0.35); }
@@ -176,10 +176,11 @@ svg.tri { position: absolute; left: 0; top: 0; pointer-events: none; }
 canvas.viz { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
 
 /* stable's menu bars: violet, slanted, sliding out from behind the logo; the hovered one turns pink and comes forward */
-.mbs { position: absolute; left: 700px; top: 333px; display: flex; flex-direction: column; gap: 18px; }
-.mb { position: relative; width: 720px; height: 90px; transform: skewX(-12deg); transform-origin: bottom left; overflow: hidden;
+/* the bars start under the logo's centre, so the disc always covers their ends: they come out from behind it */
+.mbs { position: absolute; left: 560px; top: 333px; display: flex; flex-direction: column; gap: 18px; }
+.mb { position: relative; width: 860px; height: 90px; transform: skewX(-12deg); transform-origin: bottom left; overflow: hidden;
       background: linear-gradient(90deg, rgba(102, 74, 222, 0.92), rgba(126, 92, 240, 0.9) 60%, rgba(146, 108, 250, 0.86)); box-shadow: 0 10px 30px rgba(20, 10, 60, 0.3); }
-.mb .in { position: absolute; inset: 0; transform: skewX(12deg); display: flex; align-items: center; gap: 22px; padding-left: 190px; color: #fff; }
+.mb .in { position: absolute; inset: 0; transform: skewX(12deg); display: flex; align-items: center; gap: 22px; padding-left: 330px; color: #fff; }
 .mb .i { font-size: 34px; stroke-width: 2.1; }
 .mb b { font-size: 40px; font-weight: 600; letter-spacing: 0.005em; }
 .mb small { margin-left: auto; margin-right: 70px; font-size: 14px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); }
