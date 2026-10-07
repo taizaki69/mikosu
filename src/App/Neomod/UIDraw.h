@@ -60,6 +60,10 @@ void fillPolygon(std::span<const vec2> points, Color colour);
 // a rectangle graded from top to bottom
 void fillVertical(const McRect &r, Color top, Color bottom);
 
+// bars radiating from a circle of radius `r0` around `centre`, `rounds` times around (each round offset by a full turn
+// over `rounds`), bar i of a round at angle `rotation` + i/n of a turn; lengths in pixels (stable's menu visualiser)
+void radialBars(vec2 centre, f32 r0, std::span<const f32> lengths, f32 width, Color colour, f32 rotation, int rounds);
+
 // lazer-style outlined triangles drifting upwards inside the shape (seeded, so each element keeps its own pattern);
 // `size` is the triangles' width, `stroke` their outline, `time` in seconds drives the drift
 void triangles(const Shape &clip, u32 seed, int count, f32 size, f32 stroke, Color colour, f32 time);

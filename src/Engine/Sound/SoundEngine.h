@@ -100,6 +100,11 @@ class SoundEngine {
     virtual std::optional<unsigned int> getOutputLatency() { return std::nullopt; }
     virtual void openDeviceControlPanel() { ; }
 
+    // mikosu: the output's spectrum for visualisers (256 bands from the bass up, magnitudes), while enabled; backends
+    // without one return false. Enable it only where it's shown: it costs a little in the mixer.
+    virtual void setSpectrumEnabled(bool /*enabled*/) { ; }
+    virtual bool getSpectrum(std::array<f32, 256> & /*out*/) { return false; }
+
     virtual void setOutputDevice(const OUTPUT_DEVICE &device) = 0;
     virtual void setMasterVolume(float volume) = 0;
 

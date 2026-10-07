@@ -283,6 +283,39 @@ void fillVertical(const McRect &r, Color top, Color bottom) {
     shapeShader->disable();
 }
 
+void radialBars(vec2 centre, f32 r0, std::span<const f32> lengths, f32 width, Color colour, f32 rotation, int rounds) {
+    if(lengths.empty() || rounds <= 0 || !shapeReady()) return;
+    constexpr f32 TAU = 6.28318530718f;
+    const f32 n = (f32)lengths.size();
+    tris.clear();
+    auto vertex = [](vec2 p, Color c) {
+        tris.addVertex(p.x, p.y);
+        tris.addColor(c);
+        tris.addTexcoord(0.f, 0.f);
+    };
+    for(int round = 0; round < rounds; round++) {
+        for(size_t i = 0; i < lengths.size(); i++) {
+            const f32 len = lengths[i];
+            if(len < 0.5f) continue;
+            const f32 angle = rotation + TAU * ((f32)i / n + (f32)round / (f32)rounds);
+            const vec2 dir{std::cos(angle), std::sin(angle)};
+            const vec2 side = vec2{-dir.y, dir.x} * (width * 0.5f);
+            const vec2 a = centre + dir * r0, b = centre + dir * (r0 + len);
+            vertex(a + side, colour);
+            vertex(b + side, colour);
+            vertex(b - side, colour);
+            vertex(a + side, colour);
+            vertex(b - side, colour);
+            vertex(a - side, colour);
+        }
+    }
+    if(tris.getNumVertices() == 0) return;
+    shapeShader->enable();
+    setParamsUnshaped(false);
+    g->drawVAO(&tris);
+    shapeShader->disable();
+}
+
 void triangles(const Shape &clip, u32 seed, int count, f32 size, f32 stroke, Color colour, f32 time) {
     if(count <= 0 || size <= 0.f || !shapeReady()) return;
     const McRect &r = clip.rect;

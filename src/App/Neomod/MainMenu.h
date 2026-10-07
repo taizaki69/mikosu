@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 // Copyright (c) 2015, PG, All rights reserved.
 #include <utility>
 
@@ -66,6 +67,10 @@ class MainMenu final : public UIScreen, public MouseListener {
     void drawLogoImage(const McRect &mainButtonRect);
     void drawFriend(const McRect &mainButtonRect, float pulse, bool haveTimingpoints);
     std::pair<bool, float> getTimingpointPulseAmount();  // for main menu cube anim
+    // the redesign's logo: where it is now (pulse, hover and opening included), and stable's visualiser around it
+    [[nodiscard]] McRect logoRect();
+    void updateVisualiser();
+    void drawVisualiser(const McRect &logo);
     void updateLayout();
     void restartMusic();
     // the menu plays its picks from the start, over the song browser's preview rule (the first one from its restart
@@ -145,6 +150,11 @@ class MainMenu final : public UIScreen, public MouseListener {
 
     bool isStartupAnim{true};
     AnimFloat startupAnim;
+    // the visualiser: bar amplitudes (0..1), when they next take the spectrum, and how far they've rotated
+    std::array<f32, 200> vizAmp{};
+    f64 vizNextUpdate{0.};
+    int vizOffset{0};
+    bool vizEnabled{false};
     AnimFloat startupAnim2;
     float prevShuffleTime{0.f};
 

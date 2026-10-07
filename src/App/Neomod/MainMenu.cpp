@@ -3,6 +3,7 @@
 #include "UIDraw.h"
 #include "UITheme.h"
 #include "UIType.h"
+#include "UserCard.h"
 
 #include "AboutScreen.h"
 #include "AsyncPool.h"
@@ -792,18 +793,51 @@ void MainMenu::drawLogoRedesigned(const McRect &rect) {
                        0xffffffff);
 }
 
+McRect MainMenu::logoRect() {
+    const auto [haveTimingpoints, pulse] = this->getTimingpointPulseAmount();
+    vec2 size = this->vSize;
+    size -= size * (0.05f * pulse);
+    size += size * (f32)this->sizeAddAnim;
+    size *= (f32)this->startupAnim;
+    return {this->vCenter.x - size.x / 2.0f - this->centerOffsetAnim, this->vCenter.y - size.y / 2.0f, size.x, size.y};
+}
+
+void MainMenu::updateVisualiser() {
+    // like lazer's logo visualisation (ppy/osu, MIT): every 50 ms each bar jumps up to the spectrum's band under it
+    // (the bands shift round by 5 each time, so the bass doesn't sit in one place), and between updates they fall
+    const f32 dtMs = (f32)engine->getFrameTime() * 1000.f;
+    for(f32 &a : this->vizAmp) a = std::max(0.f, a - dtMs * 0.0024f * (a + 0.03f));
+
+    const f64 now = engine->getTime();
+    if(now < this->vizNextUpdate) return;
+    this->vizNextUpdate = now + 0.05;
+    std::array<f32, 256> spectrum{};
+    if(!soundEngine->getSpectrum(spectrum)) return;
+    const size_t n = this->vizAmp.size();
+    for(size_t i = 0; i < n; i++) {
+        // SoLoud's magnitudes: quiet music sits around 1-10, loud bass reaches 50 and more
+        const f32 target = std::clamp(std::sqrt(std::max(spectrum[(i + (size_t)this->vizOffset) % n], 0.f)) / 7.f, 0.f, 1.f);
+        this->vizAmp[i] = std::max(this->vizAmp[i], target);
+    }
+    this->vizOffset = (this->vizOffset + 5) % (int)n;
+}
+
+void MainMenu::drawVisualiser(const McRect &logo) {
+    const f32 d = std::min(logo.getWidth(), logo.getHeight());
+    if(d <= 1.f) return;
+    std::array<f32, 200> lengths{};
+    const f32 maxLen = d * 0.36f;
+    for(size_t i = 0; i < lengths.size(); i++) lengths[i] = this->vizAmp[i] * maxLen;
+    const auto &theme = UITheme::current();
+    const Color colour = theme.light ? UITheme::fade(theme.ink, 0.22f) : argb(0.38f, 1.f, 1.f, 1.f);
+    UIDraw::radialBars(logo.getCenter(), d * 0.5f * 0.94f, lengths, std::max(1.f, d * (5.f / 462.f)), colour,
+                       -1.5707963f, 5);
+}
+
 // the cube
 void MainMenu::drawMainButton() {
     const auto [haveTimingpoints, pulse] = this->getTimingpointPulseAmount();
-
-    vec2 size = this->vSize;
-    const float pulseSub = 0.05f * pulse;
-    size -= size * pulseSub;
-    size += size * (f32)this->sizeAddAnim;
-    size *= (f32)this->startupAnim;
-
-    const McRect mainButtonRect{this->vCenter.x - size.x / 2.0f - this->centerOffsetAnim,
-                                this->vCenter.y - size.y / 2.0f, size.x, size.y};
+    const McRect mainButtonRect = this->logoRect();
 
     if(!UITheme::classic()) {
         // the redesign's flat logo in place of the cube (still pulsing with the beat)
@@ -1035,6 +1069,7 @@ void MainMenu::draw() {
                              UITheme::fade(theme.scrim, 0.f));
         UIDraw::fillVertical(McRect{0.f, h - UIType::px(220.f), w, UIType::px(220.f)}, UITheme::fade(theme.scrim, 0.f),
                              UITheme::fade(theme.scrim, 0.72f));
+        osu->getUserButton()->draw();
     }
 
     // draw notification arrow for changelog (version button)
@@ -1073,6 +1108,9 @@ void MainMenu::draw() {
         g->popTransform();
     }
 
+    // the visualiser, behind the menu bars and the logo
+    if(!UITheme::classic()) this->drawVisualiser(this->logoRect());
+
     // draw container
     UIScreen::draw();
 
@@ -1100,7 +1138,23 @@ void MainMenu::tick() {
     UIScreen::tick();
     this->updateAvailableButton->tick();
 
+    // the sound engine only computes a spectrum while the visualiser is on screen
+    if(const bool want = this->bVisible && !UITheme::classic(); want != this->vizEnabled) {
+        soundEngine->setSpectrumEnabled(want);
+        this->vizEnabled = want;
+        if(!want) this->vizAmp.fill(0.f);
+    }
+
     if(!this->bVisible) return;
+    if(this->vizEnabled) this->updateVisualiser();
+
+    if(!UITheme::classic()) {
+        // the redesign shows the player's card in the top left, as stable does (song select moves it to its footer)
+        UserCard *card = osu->getUserButton();
+        card->setSize(UIType::px(470.f), UIType::px(84.f));
+        card->setPos(UIType::px(44.f), UIType::px(34.f));
+        card->tick();
+    }
 
     {
         // Check if we need to update the background
@@ -1313,6 +1367,8 @@ void MainMenu::tick() {
 void MainMenu::updateInput(CBaseUIEventCtx &c) {
     if(!this->bVisible) return;
 
+    if(!UITheme::classic()) osu->getUserButton()->updateInput(c);
+
     // update and focus handling
     UIScreen::updateInput(c);
 
@@ -1496,6 +1552,13 @@ void MainMenu::onResolutionChange(vec2 /*newResolution*/) {
 CBaseUIContainer *MainMenu::setVisible(bool visible) {
     const bool changed = this->bVisible != visible;
     this->bVisible = visible;
+
+    // leaving the menu switches the visualiser's spectrum off right away (tick() may not run while hidden)
+    if(!visible && this->vizEnabled) {
+        soundEngine->setSpectrumEnabled(false);
+        this->vizEnabled = false;
+        this->vizAmp.fill(0.f);
+    }
 
     if(visible) {
         if(changed) {

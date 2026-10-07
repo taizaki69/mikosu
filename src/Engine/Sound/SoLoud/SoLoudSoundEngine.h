@@ -45,6 +45,9 @@ class SoLoudSoundEngine final : public SoundEngine {
     std::optional<unsigned int> getOutputLatency() override;
     void openDeviceControlPanel() override;
 
+    void setSpectrumEnabled(bool enabled) override;
+    bool getSpectrum(std::array<f32, 256> &out) override;
+
     void setOutputDevice(const OUTPUT_DEVICE &device) override;
     void setMasterVolume(f32 volume) override;
 
