@@ -28,7 +28,7 @@ class SoLoudSound final : public Sound {
 
     // Sound interface implementation
     void setPositionUS(u64 us) override;
-    void setSpeed(float speed) override;
+    void setSpeed(float speed, bool preservePitch) override;
     void setPitch(float pitch) override;
     void setFrequency(float frequency) override;
     void setPan(float pan) override;
@@ -62,10 +62,10 @@ class SoLoudSound final : public Sound {
 
     // helpers to access Wav/WavStream internals
     [[nodiscard]] double getSourceLengthInSeconds() const;
-    [[nodiscard]] double getStreamPositionInSeconds() const;
 
     // current playback parameters
     float fFrequency{44100.0f};  // sample rate in Hz
+    bool bPreservePitch{true};
 
     // SoLoud-specific members
     std::unique_ptr<SoLoud::AudioSource> audioSource{nullptr};  // base class pointer, could be either WavStream or Wav
@@ -84,11 +84,6 @@ class SoLoudSound final : public Sound {
     bool is_playing_cached() const;
     mutable bool cached_pause_state{false};
     mutable double soloud_paused_handle_cache_time{-1.};
-
-    // position caching to avoid blocking on getStreamPosition calls
-    mutable double cached_stream_position{0.0};
-    mutable double soloud_stream_position_cache_time{-1.};
-    mutable bool force_sync_position_next{true};
 };
 
 #endif

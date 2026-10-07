@@ -3,7 +3,10 @@
 #include <cmath>
 #include <utility>
 
+#include "AbstractBeatmapInterface.h"
 #include "AnimationHandler.h"
+#include "BeatmapPrimitives.h"
+#include "BeatmapStacking.h"
 #include "ContainerRanges.h"
 #include "Graphics.h"
 #include "Bancho.h"
@@ -12,36 +15,44 @@
 #include "GameRules.h"
 #include "HUD.h"
 #include "ModFPoSu.h"
-#include "Osu.h"
-#include "Sound.h"
 #include "Font.h"
 #include "VertexArrayObject.h"
-#include "BeatmapInterface.h"
 #include "DatabaseBeatmap.h"
+#include "PlayfieldView.h"
+#include "Replay.h"
 #include "RenderTarget.h"
 #include "ResourceManager.h"
 #include "Skin.h"
 #include "SkinImage.h"
 #include "SliderRenderer.h"
-#include "SoundEngine.h"
+#include "score.h"
 #include "Logging.h"
-#include "UI.h"
 #include "HitSounds.h"
+#include "LegacyReplay.h"
 #include "crypto.h"
+
+#define WANT_PDQSORT
+#include "Sorting.h"
 
 namespace neomod {
 using namespace flags::operators;
 
-void HitObject::drawHitResult(BeatmapInterface *pf, vec2 rawPos, LiveHitResult result, f32 animPercentInv,
-                              f32 hitDeltaRangePercent) {
-    drawHitResult(pf->getSkin(), pf->fHitcircleDiameter, pf->fRawHitcircleDiameter, rawPos, result, animPercentInv,
-                  hitDeltaRangePercent);
+namespace {
+// what a hit animation started at its hit (from 0.001, so it shows from the hit's frame on) is at elapsedMS of durationMS
+f32 hitAnimationAt(i32 elapsedMS, i32 durationMS) {
+    if(elapsedMS >= durationMS) return 1.0f;
+    const f32 eased = anim::ease(anim::QuadOut, (f32)elapsedMS / (f32)durationMS);
+    return 0.001f * (1.0f - eased) + eased;
 }
+}  // namespace
 
-void HitObject::drawHitResult(const Skin *skin, f32 hitcircleDiameter, f32 rawHitcircleDiameter, vec2 rawPos,
-                              LiveHitResult result, f32 animPercentInv, f32 hitDeltaRangePercent) {
+void HitObject::drawHitResult(const PlayfieldView &view, vec2 pos, LiveHitResult result, f32 animPercentInv,
+                              f32 hitDeltaRangePercent) {
     if(animPercentInv <= 0.0f) return;
 
+    const Skin *skin = view.getSkin();
+    const f32 hitcircleDiameter = view.getHitcircleDiameter();
+    const f32 rawHitcircleDiameter = view.getRawHitcircleDiameter();
     const f32 animPercent = 1.0f - animPercentInv;
 
     const f32 fadeInEndPercent = cv::hitresult_fadein_duration.getFloat() / cv::hitresult_duration.getFloat();
@@ -188,43 +199,43 @@ void HitObject::drawHitResult(const Skin *skin, f32 hitcircleDiameter, f32 rawHi
                 // TODO: rotation anim (only for all non-animated skins), rot = rng(-0.15f, 0.15f), anim1 = 120 ms to
                 // rot, anim2 = rest to rot*2, all ease in
 
-                skin->i_hit0.drawRaw(rawPos + downAnim, (doScaleOrRotateAnim ? missScale : 1.0f) * hitImageScale *
-                                                            cv::hitresult_scale.getFloat());
+                skin->i_hit0.drawRaw(pos + downAnim, (doScaleOrRotateAnim ? missScale : 1.0f) * hitImageScale *
+                                                         cv::hitresult_scale.getFloat());
             } break;
 
             case HIT_50:
                 skin->i_hit50.drawRaw(
-                    rawPos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
+                    pos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
                 break;
 
             case HIT_100:
                 skin->i_hit100.drawRaw(
-                    rawPos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
+                    pos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
                 break;
 
             case HIT_300:
                 if(cv::hitresult_draw_300s.getBool()) {
                     skin->i_hit300.drawRaw(
-                        rawPos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
+                        pos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
                 }
                 break;
 
             case HIT_100K:
                 skin->i_hit100k.drawRaw(
-                    rawPos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
+                    pos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
                 break;
 
             case HIT_300K:
                 if(cv::hitresult_draw_300s.getBool()) {
                     skin->i_hit300k.drawRaw(
-                        rawPos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
+                        pos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
                 }
                 break;
 
             case HIT_300G:
                 if(cv::hitresult_draw_300s.getBool()) {
                     skin->i_hit300g.drawRaw(
-                        rawPos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
+                        pos, (doScaleOrRotateAnim ? scale : 1.0f) * hitImageScale * cv::hitresult_scale.getFloat());
                 }
                 break;
 
@@ -236,15 +247,43 @@ void HitObject::drawHitResult(const Skin *skin, f32 hitcircleDiameter, f32 rawHi
 }
 
 HitObject::HitObject(i32 timeMS, DatabaseBeatmapTypes::HITSAMPLE_BITS samples, i32 comboNumber, bool isEndOfCombo,
-                     i32 colorCounter, i32 colorOffset, AbstractBeatmapInterface *pi)
-    : m_pi(pi),
-      m_pf(dynamic_cast<BeatmapInterface *>(pi)),  // should be NULL if SimulatedBeatmapInterface
+                     i32 colorCounter, i32 colorOffset, AbstractBeatmapInterface *judge, const PlayfieldView *view)
+    : m_judge(judge),
+      m_view(view),
       m_clickTimeMS(timeMS),
       m_comboNumber(comboNumber),
       m_hitSamples(samples),
       m_colorCounter(colorCounter),
       m_colorOffset(colorOffset),
       m_endOfCombo(isEndOfCombo) {}
+
+bool HitObject::sortByStartTimeComp(HitObject const *a, HitObject const *b) {
+    if(a == b) return false;
+
+    if((a->getClickTime()) != (b->getClickTime())) return (a->getClickTime()) < (b->getClickTime());
+
+    if(a->getType() != b->getType()) return static_cast<int>(a->getType()) < static_cast<int>(b->getType());
+    if(a->getComboNumber() != b->getComboNumber()) return a->getComboNumber() < b->getComboNumber();
+
+    auto aPosAtStartTime = a->getRawPosAt(a->getClickTime()), bPosAtClickTime = b->getRawPosAt(b->getClickTime());
+    if(aPosAtStartTime != bPosAtClickTime) return vec::all(vec::lessThan(aPosAtStartTime, bPosAtClickTime));
+
+    return false;  // equivalent
+}
+
+bool HitObject::sortByEndTimeComp(HitObject const *a, HitObject const *b) {
+    if(a == b) return false;
+
+    if((a->getEndTime()) != (b->getEndTime())) return (a->getEndTime()) < (b->getEndTime());
+
+    if(a->getType() != b->getType()) return static_cast<int>(a->getType()) < static_cast<int>(b->getType());
+    if(a->getComboNumber() != b->getComboNumber()) return a->getComboNumber() < b->getComboNumber();
+
+    auto aPosAtEndTime = a->getRawPosAt(a->getEndTime()), bPosAtClickTime = b->getRawPosAt(b->getEndTime());
+    if(aPosAtEndTime != bPosAtClickTime) return vec::all(vec::lessThan(aPosAtEndTime, bPosAtClickTime));
+
+    return false;  // equivalent
+}
 
 void HitObject::draw2() {
     drawHitResultAnim(m_hitresultanim1);
@@ -255,41 +294,44 @@ void HitObject::drawHitResultAnim(const HITRESULTANIM &hitresultanim) {
     if((hitresultanim.timeSecs - cv::hitresult_duration.getFloat()) <
            engine->getTime()  // NOTE: this is written like that on purpose, don't change it ("future" results can be
                               // scheduled with it, e.g. for slider end)
-       && (hitresultanim.timeSecs + cv::hitresult_duration_max.getFloat() * (1.0f / m_pf->getBaseAnimationSpeed())) >
+       && (hitresultanim.timeSecs + cv::hitresult_duration_max.getFloat() * (1.0f / m_view->getBaseAnimationSpeed())) >
               engine->getTime()) {
-        auto *skin = m_pf->getSkinMutable();
+        const Skin *skin = m_view->getSkin();
         const f32 skinSpeedMultiplier = skin->anim_speed;
 
         const i32 skinAnimationTimeStartOffset =
             m_clickTimeMS + (hitresultanim.addObjectDurationToSkinAnimationTimeStartOffset ? m_durationMS : 0) +
             hitresultanim.deltaMS;
 
-        for(auto skinElem : {&Skin::i_hit0, &Skin::i_hit50, &Skin::i_hit100, &Skin::i_hit100k, &Skin::i_hit300,
-                             &Skin::i_hit300g, &Skin::i_hit300k}) {
-            SkinImage &image{skin->*skinElem};
-            image.setAnimationTimeOffset(skinSpeedMultiplier, skinAnimationTimeStartOffset);
-            image.setAnimationFrameClampUp();
+        for(SkinImage *image : {&skin->i_hit0, &skin->i_hit50, &skin->i_hit100, &skin->i_hit100k, &skin->i_hit300,
+                                &skin->i_hit300g, &skin->i_hit300k}) {
+            image->setAnimationTimeOffset(skinSpeedMultiplier, skinAnimationTimeStartOffset);
+            image->setAnimationFrameClampUp();
         }
 
         const f32 animPercentInv =
-            1.0f - (((engine->getTime() - hitresultanim.timeSecs) * m_pf->getBaseAnimationSpeed()) /
+            1.0f - (((engine->getTime() - hitresultanim.timeSecs) * m_view->getBaseAnimationSpeed()) /
                     cv::hitresult_duration.getFloat());
 
-        drawHitResult(m_pf, m_pf->osuCoords2Pixels(hitresultanim.rawPos), hitresultanim.result, animPercentInv,
-                      std::clamp<f32>((f32)hitresultanim.deltaMS / m_pi->getHitWindow50(), -1.0f, 1.0f));
+        drawHitResult(*m_view, m_view->osuCoords2Pixels(hitresultanim.rawPos), hitresultanim.result, animPercentInv,
+                      hitresultanim.deltaRangePercent);
     }
 }
 
 void HitObject::update(i32 curPosMS, f64 /*frame_time*/) {
+    // (the view's mods include the experimental ones; objects without a view aren't drawn)
+    this->updateLook(curPosMS, m_view ? m_view->getModFlags() : m_judge->getMods().flags,
+                     m_judge->getCachedApproachTimeForUpdate(), m_judge->getSpeedAdjustedAnimationSpeed());
+}
+
+void HitObject::updateLook(i32 curPosMS, ModFlags mods, f32 approachTimeMS, f32 speedAdjustedAnimationSpeed) {
     m_alphaForApproachCircle = 0.0f;
     m_hittableDimRGBColorMultiplierPct = 1.0f;
 
-    const auto &mods = m_pi->getMods();
-
-    const f64 animationSpeedMultiplier = m_pi->getSpeedAdjustedAnimationSpeed();
-    const i32 visibleTms = (mods.has(ModFlags::FreezeFrame) ? m_comboStartMS : m_clickTimeMS);
+    const f64 animationSpeedMultiplier = speedAdjustedAnimationSpeed;
+    const i32 visibleTms = (flags::has<ModFlags::FreezeFrame>(mods) ? m_comboStartMS : m_clickTimeMS);
     m_fadeInTimeMS = GameRules::getFadeInTime() * animationSpeedMultiplier;
-    m_approachTimeMS = (m_useFadeInTimeAsApproachTime ? m_fadeInTimeMS : (i32)m_pi->getCachedApproachTimeForUpdate());
+    m_approachTimeMS = (m_useFadeInTimeAsApproachTime ? m_fadeInTimeMS : (i32)approachTimeMS);
     m_deltaMS = m_clickTimeMS - curPosMS;
 
     // 1 ms fudge by using >=, shouldn't really be a problem
@@ -297,7 +339,7 @@ void HitObject::update(i32 curPosMS, f64 /*frame_time*/) {
         // approach circle scale
         const f32 scale = std::clamp<f32>((f32)m_deltaMS / (f32)m_approachTimeMS, 0.0f, 1.0f);
         m_approachScale = 1 + (scale * cv::approach_scale_multiplier.getFloat());
-        if(cv::mod_approach_different.getBool()) {
+        if(flags::has<ModFlags::ApproachDifferent>(mods)) {
             constexpr f32 back_const = 1.70158;
 
             f32 time = 1.0f - scale;
@@ -359,7 +401,7 @@ void HitObject::update(i32 curPosMS, f64 /*frame_time*/) {
         m_alpha = std::clamp<f32>(1.0f - ((f32)(fadeInEnd - curPosMS) / (f32)(fadeInEnd - fadeInStart)), 0.0f, 1.0f);
         m_alphaWithoutHidden = m_alpha;
 
-        if(mods.has(ModFlags::FreezeFrame)) {
+        if(flags::has<ModFlags::FreezeFrame>(mods)) {
             // HACK: set m_alphaWithoutHidden as "alpha without freeze time or hidden"
             //       this makes slider bodies & spinners draw correctly
             const i32 fadeInStart = m_clickTimeMS - m_approachTimeMS;
@@ -368,7 +410,7 @@ void HitObject::update(i32 curPosMS, f64 /*frame_time*/) {
                 std::clamp<f32>(1.0f - ((f32)(fadeInEnd - curPosMS) / (f32)(fadeInEnd - fadeInStart)), 0.0f, 1.0f);
         }
 
-        if(mods.has(ModFlags::Hidden)) {
+        if(flags::has<ModFlags::Hidden>(mods)) {
             // hidden hitobject body fadein
             const f32 fin_start_percent = cv::mod_hd_circle_fadein_start_percent.getFloat();
             const f32 fin_end_percent = cv::mod_hd_circle_fadein_end_percent.getFloat();
@@ -401,7 +443,7 @@ void HitObject::update(i32 curPosMS, f64 /*frame_time*/) {
 
         // hittable dim, see https://github.com/ppy/osu/pull/20572
         if(cv::hitobject_hittable_dim.getBool() &&
-           (!flags::has<ModFlags::Mafham>(mods.flags) || !cv::mod_mafham_ignore_hittable_dim.getBool())) {
+           (!flags::has<ModFlags::Mafham>(mods) || !cv::mod_mafham_ignore_hittable_dim.getBool())) {
             const i32 hittableDimFadeStart = m_clickTimeMS - (i32)GameRules::HITWINDOW_MISS;
 
             // yes, this means the un-dim animation cuts into the already clickable range
@@ -424,8 +466,7 @@ void HitObject::update(i32 curPosMS, f64 /*frame_time*/) {
 void HitObject::addHitResult(LiveHitResult result, i32 delta, bool isEndOfCombo, vec2 posRaw, f32 targetDelta,
                              f32 targetAngle, bool ignoreOnHitErrorBar, bool ignoreCombo, bool ignoreHealth,
                              bool addObjectDurationToSkinAnimationTimeStartOffset) {
-    if(m_pf != nullptr && m_pi->getMods().has(ModFlags::Target) && result != LiveHitResult::HIT_MISS &&
-       targetDelta >= 0.0f) {
+    if(m_judge->getMods().has(ModFlags::Target) && result != LiveHitResult::HIT_MISS && targetDelta >= 0.0f) {
         const f32 p300 = cv::mod_target_300_percent.getFloat();
         const f32 p100 = cv::mod_target_100_percent.getFloat();
         const f32 p50 = cv::mod_target_50_percent.getFloat();
@@ -439,25 +480,26 @@ void HitObject::addHitResult(LiveHitResult result, i32 delta, bool isEndOfCombo,
         else
             result = LiveHitResult::HIT_MISS;
 
-        ui->getHUD()->addTarget(targetDelta, targetAngle);
+        m_judge->addTargetHit(targetDelta, targetAngle);
     }
 
-    const LiveHitResult returnedHit = m_pi->addHitResult(this, result, delta, isEndOfCombo, ignoreOnHitErrorBar, false,
-                                                         ignoreCombo, false, ignoreHealth);
-    if(m_pf == nullptr) return;
+    const LiveHitResult returnedHit = m_judge->addHitResult(this, result, delta, isEndOfCombo, ignoreOnHitErrorBar,
+                                                            false, ignoreCombo, false, ignoreHealth);
+    if(m_view == nullptr) return;
 
     HITRESULTANIM hitresultanim;
     {
         hitresultanim.result = (returnedHit != LiveHitResult::HIT_MISS ? returnedHit : result);
         hitresultanim.rawPos = posRaw;
         hitresultanim.deltaMS = delta;
+        hitresultanim.deltaRangePercent = std::clamp<f32>((f32)delta / m_judge->getHitWindow50(), -1.0f, 1.0f);
         hitresultanim.timeSecs = engine->getTime();
         hitresultanim.addObjectDurationToSkinAnimationTimeStartOffset = addObjectDurationToSkinAnimationTimeStartOffset;
     }
 
     // currently a maximum of 2 simultaneous results are supported (for drawing, per hitobject)
     if(engine->getTime() >
-       m_hitresultanim1.timeSecs + cv::hitresult_duration_max.getFloat() * (1.0f / m_pf->getBaseAnimationSpeed()))
+       m_hitresultanim1.timeSecs + cv::hitresult_duration_max.getFloat() * (1.0f / m_view->getBaseAnimationSpeed()))
         m_hitresultanim1 = hitresultanim;
     else
         m_hitresultanim2 = hitresultanim;
@@ -481,35 +523,34 @@ f32 HitObject::lerp3f(f32 a, f32 b, f32 c, f32 percent) {
 i32 Circle::rainbowNumber = 0;
 i32 Circle::rainbowColorCounter = 0;
 
-void Circle::drawApproachCircle(BeatmapInterface *pf, vec2 rawPos, i32 number, i32 colorCounter, i32 colorOffset,
+void Circle::drawApproachCircle(const PlayfieldView &view, vec2 rawPos, i32 number, i32 colorCounter, i32 colorOffset,
                                 f32 colorRGBMultiplier, f32 approachScale, f32 alpha, bool overrideHDApproachCircle) {
     rainbowNumber = number;
     rainbowColorCounter = colorCounter;
 
-    Color comboColor = Colors::scale(pf->getSkin()->getComboColorForCounter(colorCounter, colorOffset),
+    if(flags::has<ModFlags::Mafham>(view.getModFlags())) return;
+
+    Color comboColor = Colors::scale(view.getComboColor(colorCounter, colorOffset),
                                      colorRGBMultiplier * cv::circle_color_saturation.getFloat());
 
-    drawApproachCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), comboColor, pf->fHitcircleDiameter, approachScale,
-                       alpha, pf->getMods().has(ModFlags::Hidden), overrideHDApproachCircle);
+    drawApproachCircle(view.getSkin(), view.osuCoords2Pixels(rawPos), comboColor, view.getHitcircleDiameter(),
+                       approachScale, alpha, flags::has<ModFlags::Hidden>(view.getModFlags()),
+                       overrideHDApproachCircle);
 }
 
-void Circle::drawCircle(BeatmapInterface *pf, vec2 rawPos, i32 number, i32 colorCounter, i32 colorOffset,
-                        f32 colorRGBMultiplier, f32 approachScale, f32 alpha, f32 numberAlpha, bool drawNumber,
-                        bool overrideHDApproachCircle) {
-    drawCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), pf->fHitcircleDiameter, pf->getNumberScale(),
-               pf->getHitcircleOverlapScale(), number, colorCounter, colorOffset, colorRGBMultiplier, approachScale,
-               alpha, numberAlpha, drawNumber, overrideHDApproachCircle);
-}
-
-void Circle::drawCircle(const Skin *skin, vec2 pos, f32 hitcircleDiameter, f32 numberScale, f32 overlapScale,
-                        i32 number, i32 colorCounter, i32 colorOffset, f32 colorRGBMultiplier, f32 /*approachScale*/,
-                        f32 alpha, f32 numberAlpha, bool drawNumber, bool /*overrideHDApproachCircle*/) {
+void Circle::drawCircle(const PlayfieldView &view, vec2 rawPos, i32 number, i32 colorCounter, i32 colorOffset,
+                        f32 colorRGBMultiplier, f32 /*approachScale*/, f32 alpha, f32 numberAlpha, bool drawNumber,
+                        bool /*overrideHDApproachCircle*/) {
     if(alpha <= 0.0f || !cv::draw_circles.getBool()) return;
 
     rainbowNumber = number;
     rainbowColorCounter = colorCounter;
 
-    Color comboColor = Colors::scale(skin->getComboColorForCounter(colorCounter, colorOffset),
+    const Skin *skin = view.getSkin();
+    const vec2 pos = view.osuCoords2Pixels(rawPos);
+    const f32 hitcircleDiameter = view.getHitcircleDiameter();
+
+    Color comboColor = Colors::scale(view.getComboColor(colorCounter, colorOffset),
                                      colorRGBMultiplier * cv::circle_color_saturation.getFloat());
 
     // approach circle
@@ -526,7 +567,9 @@ void Circle::drawCircle(const Skin *skin, vec2 pos, f32 hitcircleDiameter, f32 n
         drawHitCircleOverlay(skin->i_hitcircleoverlay, pos, circleOverlayImageScale, alpha, colorRGBMultiplier);
 
     // number
-    if(drawNumber) drawHitCircleNumber(skin, numberScale, overlapScale, pos, number, numberAlpha, colorRGBMultiplier);
+    if(drawNumber)
+        drawHitCircleNumber(skin, view.getNumberScale(), view.getHitcircleOverlapScale(), pos, number, numberAlpha,
+                            colorRGBMultiplier);
 
     // overlay
     if(skin->o_hitcircle_overlay_above_number)
@@ -545,32 +588,27 @@ void Circle::drawCircle(const Skin *skin, vec2 pos, f32 hitcircleDiameter, Color
     drawHitCircleOverlay(skin->i_hitcircleoverlay, pos, circleOverlayImageScale, alpha, 1.0f);
 }
 
-void Circle::drawSliderStartCircle(BeatmapInterface *pf, vec2 rawPos, i32 number, i32 colorCounter, i32 colorOffset,
-                                   f32 colorRGBMultiplier, f32 approachScale, f32 alpha, f32 numberAlpha,
-                                   bool drawNumber, bool overrideHDApproachCircle) {
-    drawSliderStartCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), pf->fHitcircleDiameter, pf->getNumberScale(),
-                          pf->getHitcircleOverlapScale(), number, colorCounter, colorOffset, colorRGBMultiplier,
-                          approachScale, alpha, numberAlpha, drawNumber, overrideHDApproachCircle);
-}
-
-void Circle::drawSliderStartCircle(const Skin *skin, vec2 pos, f32 hitcircleDiameter, f32 numberScale,
-                                   f32 hitcircleOverlapScale, i32 number, i32 colorCounter, i32 colorOffset,
-                                   f32 colorRGBMultiplier, f32 approachScale, f32 alpha, f32 numberAlpha,
-                                   bool drawNumber, bool overrideHDApproachCircle) {
+void Circle::drawSliderStartCircle(const PlayfieldView &view, vec2 rawPos, i32 number, i32 colorCounter,
+                                   i32 colorOffset, f32 colorRGBMultiplier, f32 approachScale, f32 alpha,
+                                   f32 numberAlpha, bool drawNumber, bool overrideHDApproachCircle) {
     if(alpha <= 0.0f || !cv::draw_circles.getBool()) return;
+
+    const Skin *skin = view.getSkin();
 
     // if no sliderstartcircle image is preset, fallback to default circle
     if(skin->i_slider_start_circle == MISSING_TEXTURE) {
-        drawCircle(skin, pos, hitcircleDiameter, numberScale, hitcircleOverlapScale, number, colorCounter, colorOffset,
-                   colorRGBMultiplier, approachScale, alpha, numberAlpha, drawNumber,
-                   overrideHDApproachCircle);  // normal
+        drawCircle(view, rawPos, number, colorCounter, colorOffset, colorRGBMultiplier, approachScale, alpha,
+                   numberAlpha, drawNumber, overrideHDApproachCircle);  // normal
         return;
     }
 
     rainbowNumber = number;
     rainbowColorCounter = colorCounter;
 
-    Color comboColor = Colors::scale(skin->getComboColorForCounter(colorCounter, colorOffset),
+    const vec2 pos = view.osuCoords2Pixels(rawPos);
+    const f32 hitcircleDiameter = view.getHitcircleDiameter();
+
+    Color comboColor = Colors::scale(view.getComboColor(colorCounter, colorOffset),
                                      colorRGBMultiplier * cv::circle_color_saturation.getFloat());
 
     // circle
@@ -587,7 +625,8 @@ void Circle::drawSliderStartCircle(const Skin *skin, vec2 pos, f32 hitcircleDiam
 
     // number
     if(drawNumber)
-        drawHitCircleNumber(skin, numberScale, hitcircleOverlapScale, pos, number, numberAlpha, colorRGBMultiplier);
+        drawHitCircleNumber(skin, view.getNumberScale(), view.getHitcircleOverlapScale(), pos, number, numberAlpha,
+                            colorRGBMultiplier);
 
     // overlay
     if(skin->i_slider_start_circle_overlay != MISSING_TEXTURE) {
@@ -597,31 +636,27 @@ void Circle::drawSliderStartCircle(const Skin *skin, vec2 pos, f32 hitcircleDiam
     }
 }
 
-void Circle::drawSliderEndCircle(BeatmapInterface *pf, vec2 rawPos, i32 number, i32 colorCounter, i32 colorOffset,
+void Circle::drawSliderEndCircle(const PlayfieldView &view, vec2 rawPos, i32 number, i32 colorCounter, i32 colorOffset,
                                  f32 colorRGBMultiplier, f32 approachScale, f32 alpha, f32 numberAlpha, bool drawNumber,
-                                 bool overrideHDApproachCircle) {
-    drawSliderEndCircle(pf->getSkin(), pf->osuCoords2Pixels(rawPos), pf->fHitcircleDiameter, pf->getNumberScale(),
-                        pf->getHitcircleOverlapScale(), number, colorCounter, colorOffset, colorRGBMultiplier,
-                        approachScale, alpha, numberAlpha, drawNumber, overrideHDApproachCircle);
-}
-
-void Circle::drawSliderEndCircle(const Skin *skin, vec2 pos, f32 hitcircleDiameter, f32 numberScale, f32 overlapScale,
-                                 i32 number, i32 colorCounter, i32 colorOffset, f32 colorRGBMultiplier,
-                                 f32 approachScale, f32 alpha, f32 numberAlpha, bool drawNumber,
                                  bool overrideHDApproachCircle) {
     if(alpha <= 0.0f || !cv::slider_draw_endcircle.getBool() || !cv::draw_circles.getBool()) return;
 
+    const Skin *skin = view.getSkin();
+
     // if no sliderendcircle image is preset, fallback to default circle
     if(skin->i_slider_end_circle == MISSING_TEXTURE) {
-        drawCircle(skin, pos, hitcircleDiameter, numberScale, overlapScale, number, colorCounter, colorOffset,
-                   colorRGBMultiplier, approachScale, alpha, numberAlpha, drawNumber, overrideHDApproachCircle);
+        drawCircle(view, rawPos, number, colorCounter, colorOffset, colorRGBMultiplier, approachScale, alpha,
+                   numberAlpha, drawNumber, overrideHDApproachCircle);
         return;
     }
 
     rainbowNumber = number;
     rainbowColorCounter = colorCounter;
 
-    Color comboColor = Colors::scale(skin->getComboColorForCounter(colorCounter, colorOffset),
+    const vec2 pos = view.osuCoords2Pixels(rawPos);
+    const f32 hitcircleDiameter = view.getHitcircleDiameter();
+
+    Color comboColor = Colors::scale(view.getComboColor(colorCounter, colorOffset),
                                      colorRGBMultiplier * cv::circle_color_saturation.getFloat());
 
     // circle
@@ -638,7 +673,7 @@ void Circle::drawSliderEndCircle(const Skin *skin, vec2 pos, f32 hitcircleDiamet
 
 void Circle::drawApproachCircle(const Skin *skin, vec2 pos, Color comboColor, f32 hitcircleDiameter, f32 approachScale,
                                 f32 alpha, bool modHD, bool overrideHDApproachCircle) {
-    if((!modHD || overrideHDApproachCircle) && cv::draw_approach_circles.getBool() && !cv::mod_mafham.getBool()) {
+    if((!modHD || overrideHDApproachCircle) && cv::draw_approach_circles.getBool()) {
         if(approachScale > 1.0f) {
             const f32 approachCircleImageScale = hitcircleDiameter / (128.0f * (skin->i_approachcircle.scale()));
 
@@ -771,8 +806,8 @@ void Circle::drawHitCircleNumber(const Skin *skin, f32 numberScale, f32 overlapS
 }
 
 Circle::Circle(vec2 pos, i32 timeMS, DatabaseBeatmapTypes::HITSAMPLE_BITS samples, i32 comboNumber, bool isEndOfCombo,
-               i32 colorCounter, i32 colorOffset, AbstractBeatmapInterface *pi)
-    : HitObject(timeMS, samples, comboNumber, isEndOfCombo, colorCounter, colorOffset, pi),
+               i32 colorCounter, i32 colorOffset, AbstractBeatmapInterface *judge, const PlayfieldView *view)
+    : HitObject(timeMS, samples, comboNumber, isEndOfCombo, colorCounter, colorOffset, judge, view),
       m_rawPos(pos),
       m_originalRawPos(m_rawPos) {
     m_type = HitObjectType::CIRCLE;
@@ -783,9 +818,9 @@ Circle::~Circle() { onReset(0); }
 void Circle::draw() {
     HitObject::draw();
 
-    const Skin *skin = m_pf->getSkin();
+    const Skin *skin = m_view->getSkin();
 
-    const ModFlags curGameplayFlags = m_pf->getMods().flags;
+    const ModFlags curGameplayFlags = m_view->getModFlags();
 
     if(flags::has<ModFlags::Traceable>(curGameplayFlags)) {
         // draw nothing for traceable (approach circles are drawn in draw2())
@@ -795,7 +830,7 @@ void Circle::draw() {
     const bool hd = flags::has<ModFlags::Hidden>(curGameplayFlags);
 
     const i32 animTimeOffset =
-        !m_pf->isInMafhamRenderChunk() ? m_clickTimeMS - m_approachTimeMS : m_pf->getCurMusicPosWithOffsets();
+        !m_view->isInMafhamRenderChunk() ? m_clickTimeMS - m_approachTimeMS : m_view->getCurMusicPosWithOffsets();
 
     // draw hit animation (if not hidden)
     if(!hd && !cv::instafade.getBool() && m_hitAnimation > 0.0f && m_hitAnimation != 1.0f) {
@@ -812,7 +847,7 @@ void Circle::draw() {
             g->scale((1.0f + scale * foscale), (1.0f + scale * foscale));
 
             skin->i_hitcircleoverlay.setAnimationTimeOffset(skin->anim_speed, animTimeOffset);
-            drawCircle(m_pf, m_rawPos, m_comboNumber, m_colorCounter, m_colorOffset, 1.0f, 1.0f, alpha, alpha,
+            drawCircle(*m_view, m_rawPos, m_comboNumber, m_colorCounter, m_colorOffset, 1.0f, 1.0f, alpha, alpha,
                        drawNumber);
         }
         g->popTransform();
@@ -825,7 +860,7 @@ void Circle::draw() {
 
     // draw circle
     vec2 shakeCorrectedPos = m_rawPos;
-    if(engine->getTime() < m_shakeAnimation && !m_pf->isInMafhamRenderChunk())  // handle note blocking shaking
+    if(engine->getTime() < m_shakeAnimation && !m_view->isInMafhamRenderChunk())  // handle note blocking shaking
     {
         f32 smooth =
             1.0f - ((m_shakeAnimation - engine->getTime()) / cv::circle_shake_duration.getFloat());  // goes from 0 to 1
@@ -845,7 +880,7 @@ void Circle::draw() {
         const f32 alpha = m_waiting && !hd ? 1.0f : m_alpha;
         const f32 numberAlpha = m_waiting && !hd ? 1.0f : m_alpha;
 
-        drawCircle(m_pf, shakeCorrectedPos, m_comboNumber, m_colorCounter, m_colorOffset,
+        drawCircle(*m_view, shakeCorrectedPos, m_comboNumber, m_colorCounter, m_colorOffset,
                    m_hittableDimRGBColorMultiplierPct, approachScale, alpha, numberAlpha, true,
                    m_overrideHDApproachCircle);
     }
@@ -858,27 +893,27 @@ void Circle::draw2() {
                  // we still need to draw the object
 
     // draw approach circle
-    const bool hd = m_pi->getMods().has(ModFlags::Hidden);
+    const bool hd = flags::has<ModFlags::Hidden>(m_view->getModFlags());
 
     // HACKHACK: don't fucking change this piece of code here, it fixes a heisenbug
     // (https://github.com/McKay42/McOsu/issues/165)
     if(cv::bug_flicker_log.getBool()) {
         const f32 approachCircleImageScale =
-            m_pf->fHitcircleDiameter / (128.0f * (m_pf->getSkin()->i_approachcircle.scale()));
+            m_view->getHitcircleDiameter() / (128.0f * (m_view->getSkin()->i_approachcircle.scale()));
         debugLog("click_time = {:d}, aScale = {:f}, iScale = {:f}", m_clickTimeMS, m_approachScale,
                  approachCircleImageScale);
     }
 
-    drawApproachCircle(m_pf, m_rawPos, m_comboNumber, m_colorCounter, m_colorOffset, m_hittableDimRGBColorMultiplierPct,
-                       m_waiting && !hd ? 1.0f : m_approachScale, m_waiting && !hd ? 1.0f : m_alphaForApproachCircle,
-                       m_overrideHDApproachCircle);
+    drawApproachCircle(*m_view, m_rawPos, m_comboNumber, m_colorCounter, m_colorOffset,
+                       m_hittableDimRGBColorMultiplierPct, m_waiting && !hd ? 1.0f : m_approachScale,
+                       m_waiting && !hd ? 1.0f : m_alphaForApproachCircle, m_overrideHDApproachCircle);
 }
 
 void Circle::update(i32 curPosMS, f64 frameTimeSecs) {
     HitObject::update(curPosMS, frameTimeSecs);
     if(m_finished) return;
 
-    const ModFlags curIFaceMods = m_pi->getMods().flags;
+    const ModFlags curIFaceMods = m_judge->getMods().flags;
     const i32 deltaMS = curPosMS - m_clickTimeMS;
 
     if(flags::has<ModFlags::Autoplay>(curIFaceMods)) {
@@ -889,17 +924,17 @@ void Circle::update(i32 curPosMS, f64 frameTimeSecs) {
     }
 
     if(flags::has<ModFlags::Relax>(curIFaceMods)) {
-        if(curPosMS >= m_clickTimeMS + (i32)cv::relax_offset.getInt() && !m_pi->isPaused() &&
-           !m_pi->isContinueScheduled()) {
-            const vec2 pos = m_pi->osuCoords2Pixels(m_rawPos);
-            const f32 cursorDelta = vec::length(m_pi->getCursorPos() - pos);
-            if((cursorDelta < m_pi->fHitcircleDiameter / 2.0f && (flags::has<ModFlags::Relax>(curIFaceMods)))) {
-                LiveHitResult result = m_pi->getHitResult(deltaMS);
+        if(curPosMS >= m_clickTimeMS + (i32)cv::relax_offset.getInt() && !m_judge->isPaused() &&
+           !m_judge->isContinueScheduled()) {
+            const vec2 pos = m_judge->osuCoords2Pixels(m_rawPos);
+            const f32 cursorDelta = vec::length(m_judge->getCursorPos() - pos);
+            if((cursorDelta < m_judge->fHitcircleDiameter / 2.0f && (flags::has<ModFlags::Relax>(curIFaceMods)))) {
+                LiveHitResult result = m_judge->getHitResult(deltaMS);
 
                 if(result != LiveHitResult::HIT_NULL) {
-                    const f32 targetDelta = cursorDelta / (m_pi->fHitcircleDiameter / 2.0f);
+                    const f32 targetDelta = cursorDelta / (m_judge->fHitcircleDiameter / 2.0f);
                     const f32 targetAngle =
-                        vec::degrees(std::atan2(m_pi->getCursorPos().y - pos.y, m_pi->getCursorPos().x - pos.x));
+                        vec::degrees(std::atan2(m_judge->getCursorPos().y - pos.y, m_judge->getCursorPos().x - pos.x));
 
                     onHit(result, deltaMS, targetDelta, targetAngle);
                 }
@@ -911,7 +946,7 @@ void Circle::update(i32 curPosMS, f64 frameTimeSecs) {
         m_waiting = true;
 
         // if this is a miss after waiting
-        if(deltaMS > (i32)m_pi->getHitWindow50()) {
+        if(deltaMS > (i32)m_judge->getHitWindow50()) {
             onHit(LiveHitResult::HIT_MISS, deltaMS);
         }
     } else {
@@ -919,10 +954,18 @@ void Circle::update(i32 curPosMS, f64 frameTimeSecs) {
     }
 }
 
-void Circle::updateStackPosition(f32 stackOffset) {
-    m_rawPos = m_originalRawPos - vec2(m_stackNum * stackOffset,
-                                       m_stackNum * stackOffset *
-                                           ((flags::has<ModFlags::HardRock>(m_pi->getMods().flags)) ? -1.0f : 1.0f));
+void Circle::pose(i32 timeMS, i32 fadeOutMS) {
+    this->updateLook(timeMS, m_view->getModFlags(), m_view->getApproachTime(),
+                     m_view->getSpeedAdjustedAnimationSpeed());
+
+    m_waiting = false;
+    m_finished = timeMS >= m_clickTimeMS;
+    m_hitAnimation = m_finished ? hitAnimationAt(timeMS - m_clickTimeMS, fadeOutMS) : 0.0f;
+    m_shakeAnimation = 0.0f;
+}
+
+void Circle::updateStackPosition(f32 stackOffset, bool hardRock) {
+    m_rawPos = m_originalRawPos - vec2(m_stackNum * stackOffset, m_stackNum * stackOffset * (hardRock ? -1.0f : 1.0f));
 }
 
 void Circle::miss(i32 curPosMS) {
@@ -935,11 +978,11 @@ void Circle::miss(i32 curPosMS) {
 
 bool Circle::isClickableFrom(i32 music_pos, vec2 cursor_pos) const {
     if(m_finished || m_blocked) return false;
-    if(m_pi->getHitResult(music_pos - m_clickTimeMS) == LiveHitResult::HIT_NULL) return false;
+    if(m_judge->getHitResult(music_pos - m_clickTimeMS) == LiveHitResult::HIT_NULL) return false;
 
-    const vec2 pos = m_pi->osuCoords2Pixels(m_rawPos);
+    const vec2 pos = m_judge->osuCoords2Pixels(m_rawPos);
     const f32 cursorDelta = vec::length(cursor_pos - pos);
-    if(cursorDelta >= m_pi->fHitcircleDiameter / 2.0f) return false;
+    if(cursorDelta >= m_judge->fHitcircleDiameter / 2.0f) return false;
 
     return true;
 }
@@ -948,10 +991,10 @@ void Circle::onClickEvent(std::vector<Click> &clicks) {
     if(m_finished) return;
 
     const vec2 cursorPos = clicks[0].cursorPos;
-    const vec2 pos = m_pi->osuCoords2Pixels(m_rawPos);
+    const vec2 pos = m_judge->osuCoords2Pixels(m_rawPos);
     const f32 cursorDelta = vec::length(cursorPos - pos);
 
-    if(cursorDelta < m_pi->fHitcircleDiameter / 2.0f) {
+    if(cursorDelta < m_judge->fHitcircleDiameter / 2.0f) {
         // note blocking & shake
         if(m_blocked) {
             m_shakeAnimation = engine->getTime() + cv::circle_shake_duration.getFloat();
@@ -960,9 +1003,9 @@ void Circle::onClickEvent(std::vector<Click> &clicks) {
 
         const i32 deltaMS = clicks[0].musicPosMS - m_clickTimeMS;
 
-        LiveHitResult result = m_pi->getHitResult(deltaMS);
+        LiveHitResult result = m_judge->getHitResult(deltaMS);
         if(result != LiveHitResult::HIT_NULL) {
-            const f32 targetDelta = cursorDelta / (m_pi->fHitcircleDiameter / 2.0f);
+            const f32 targetDelta = cursorDelta / (m_judge->fHitcircleDiameter / 2.0f);
             const f32 targetAngle = vec::degrees(std::atan2(cursorPos.y - pos.y, cursorPos.x - pos.x));
 
             clicks.erase(clicks.begin());
@@ -973,13 +1016,13 @@ void Circle::onClickEvent(std::vector<Click> &clicks) {
 
 void Circle::onHit(LiveHitResult result, i32 delta, f32 targetDelta, f32 targetAngle) {
     // sound and hit animation
-    if(m_pf != nullptr && result != LiveHitResult::HIT_MISS) {
-        const vec2 osuCoords = m_pf->pixels2OsuCoords(m_pf->osuCoords2Pixels(m_rawPos));
-        f32 pan = GameRules::osuCoords2Pan(osuCoords.x);
-        HitSoundUtils::play(m_pf, m_hitSamples, pan, delta, m_clickTimeMS);
+    if(result != LiveHitResult::HIT_MISS) {
+        m_judge->playHitSound(m_hitSamples, m_rawPos, delta, m_clickTimeMS);
 
-        m_hitAnimation = 0.001f;  // quickfix for 1 frame missing images
-        m_hitAnimation.set(1.0f, GameRules::getFadeOutTime(m_pi->getBaseAnimationSpeed()), anim::QuadOut);
+        if(m_view != nullptr) {
+            m_hitAnimation = 0.001f;  // quickfix for 1 frame missing images
+            m_hitAnimation.set(1.0f, GameRules::getFadeOutTime(m_view->getBaseAnimationSpeed()), anim::QuadOut);
+        }
     }
 
     // add it, and we are finished
@@ -993,7 +1036,7 @@ void Circle::onReset(i32 curPosMS) {
     m_waiting = false;
     m_shakeAnimation = 0.0f;
 
-    if(m_pf != nullptr) {
+    if(m_view != nullptr) {
         m_hitAnimation.stop();
     }
 
@@ -1006,14 +1049,14 @@ void Circle::onReset(i32 curPosMS) {
     }
 }
 
-vec2 Circle::getAutoCursorPos(i32 /*curPos*/) const { return m_pi->osuCoords2Pixels(m_rawPos); }
+vec2 Circle::getAutoCursorPos(i32 /*curPos*/) const { return m_judge->osuCoords2Pixels(m_rawPos); }
 
 Slider::Slider(SLIDERCURVETYPE stype, i32 repeat, f32 pixelLength, std::vector<vec2> points,
                const std::vector<f32> &ticks, f32 sliderTimeMS, f32 sliderTimeMSWithoutRepeats, i32 timeMS,
                DatabaseBeatmapTypes::HITSAMPLE_BITS hoverSamples,
                std::vector<DatabaseBeatmapTypes::HITSAMPLE_BITS> edgeSamples, i32 comboNumber, bool isEndOfCombo,
-               i32 colorCounter, i32 colorOffset, AbstractBeatmapInterface *pi)
-    : HitObject(timeMS, hoverSamples, comboNumber, isEndOfCombo, colorCounter, colorOffset, pi),
+               i32 colorCounter, i32 colorOffset, AbstractBeatmapInterface *judge, const PlayfieldView *view)
+    : HitObject(timeMS, hoverSamples, comboNumber, isEndOfCombo, colorCounter, colorOffset, judge, view),
       m_ctrlPoints(std::move(points)),
       m_edgeSamples(std::move(edgeSamples)),
       // build curve
@@ -1080,9 +1123,9 @@ void Slider::draw() {
     if(m_ctrlPoints.size() <= 0) return;
 
     const f32 foscale = cv::circle_fade_out_scale.getFloat();
-    const Skin *skin = m_pf->getSkin();
+    const Skin *skin = m_view->getSkin();
 
-    const ModFlags curGameplayFlags = m_pf->getMods().flags;
+    const ModFlags curGameplayFlags = m_view->getModFlags();
 
     const bool hd = flags::has<ModFlags::Hidden>(curGameplayFlags);
     const bool tc = flags::has<ModFlags::Traceable>(curGameplayFlags);
@@ -1100,11 +1143,12 @@ void Slider::draw() {
         // draw slider ticks
         Color tickColor = 0xffffffff;
         tickColor = Colors::scale(tickColor, m_hittableDimRGBColorMultiplierPct);
-        const f32 tickImageScale = (m_pf->fHitcircleDiameter / (16.0f * (skin->i_slider_score_point.scale()))) * 0.125f;
+        const f32 tickImageScale =
+            (m_view->getHitcircleDiameter() / (16.0f * (skin->i_slider_score_point.scale()))) * 0.125f;
         for(const auto &tick : m_ticks) {
             if(tick.finished || tick.percent > sliderSnake) continue;
 
-            vec2 pos = m_pf->osuCoords2Pixels(curvePointAt(tick.percent));
+            vec2 pos = m_view->osuCoords2Pixels(curvePointAt(tick.percent));
 
             g->setColor(Color(tickColor).setA(alpha));
 
@@ -1137,7 +1181,7 @@ void Slider::draw() {
             }
 
             const bool ifStrictTrackingModShouldDrawEndCircle =
-                (!cv::mod_strict_tracking.getBool() || m_endResult != LiveHitResult::HIT_MISS);
+                (!flags::has<ModFlags::StrictTracking>(curGameplayFlags) || m_endResult != LiveHitResult::HIT_MISS);
 
             const bool draw_end =
                 ((!m_endFinished && m_repeat % 2 != 0 && ifStrictTrackingModShouldDrawEndCircle) ||
@@ -1167,7 +1211,7 @@ void Slider::draw() {
         const bool reverseStart = reversePossible && (m_reverseArrowPos == 1 || m_reverseArrowPos == 3);
         if(reverseEnd || reverseStart) {
             // if the combo color is nearly white, blacken the reverse arrow
-            Color comboColor = skin->getComboColorForCounter(m_colorCounter, m_colorOffset);
+            Color comboColor = m_view->getComboColor(m_colorCounter, m_colorOffset);
             Color reverseArrowColor = 0xffffffff;
             if((comboColor.Rf() + comboColor.Gf() + comboColor.Bf()) / 3.0f >
                cv::slider_reverse_arrow_black_threshold.getFloat())
@@ -1176,17 +1220,17 @@ void Slider::draw() {
             reverseArrowColor = Colors::scale(reverseArrowColor, m_hittableDimRGBColorMultiplierPct);
 
             f32 div = 0.30f;
-            f32 pulse = (div - std::fmod(std::abs(m_pf->getCurMusicPos()) / 1000.0f, div)) / div;
+            f32 pulse = (div - std::fmod(std::abs(m_view->getCurMusicPos()) / 1000.0f, div)) / div;
             pulse *= pulse;  // quad in
 
-            if(!cv::slider_reverse_arrow_animated.getBool() || m_pf->isInMafhamRenderChunk()) {
+            if(!cv::slider_reverse_arrow_animated.getBool() || m_view->isInMafhamRenderChunk()) {
                 pulse = 0.0f;
             }
 
             const auto &raImage = skin->i_reversearrow;
-            const f32 osuCoordScaleMultiplier = m_pf->fHitcircleDiameter / m_pf->fRawHitcircleDiameter;
+            const f32 osuCoordScaleMultiplier = m_view->getHitcircleDiameter() / m_view->getRawHitcircleDiameter();
             const f32 reverseArrowImageScale =
-                ((m_pf->fRawHitcircleDiameter / (128.0f * raImage.scale())) * osuCoordScaleMultiplier) *
+                ((m_view->getRawHitcircleDiameter() / (128.0f * raImage.scale())) * osuCoordScaleMultiplier) *
                 (1.0f + pulse * 0.30f);
 
             // end and/or start
@@ -1194,12 +1238,9 @@ void Slider::draw() {
                 const bool isEnd = rev == 0;
                 if(isEnd && !reverseEnd) continue;
                 if(!isEnd && !reverseStart) continue;
-                vec2 pos = m_pf->osuCoords2Pixels(curvePointAt(isEnd ? 1.f : 0.f));
-                f32 rotation = (isEnd ? m_curve.getEndAngle() : m_curve.getStartAngle()) -
-                               cv::playfield_rotation.getFloat() - m_pf->getPlayfieldRotation();
-                if((flags::has<ModFlags::HardRock>(curGameplayFlags))) rotation = 360.0f - rotation;
-                if(cv::playfield_mirror_horizontal.getBool()) rotation = 360.0f - rotation;
-                if(cv::playfield_mirror_vertical.getBool()) rotation = 180.0f - rotation;
+                vec2 pos = m_view->osuCoords2Pixels(curvePointAt(isEnd ? 1.f : 0.f));
+                const f32 rotation =
+                    m_view->osuAngle2PixelAngle(isEnd ? m_curve.getEndAngle() : m_curve.getStartAngle());
 
                 g->setColor(Color(reverseArrowColor).setA(m_reverseArrowAlpha));
 
@@ -1242,23 +1283,23 @@ void Slider::draw() {
             {
                 g->scale((1.0f + scale * foscale), (1.0f + scale * foscale));
                 if(m_curRepeat < 1) {
-                    const i32 animTimeOffset = !m_pf->isInMafhamRenderChunk() ? m_clickTimeMS - m_approachTimeMS
-                                                                              : m_pf->getCurMusicPosWithOffsets();
+                    const i32 animTimeOffset = !m_view->isInMafhamRenderChunk() ? m_clickTimeMS - m_approachTimeMS
+                                                                                : m_view->getCurMusicPosWithOffsets();
 
                     skin->i_hitcircleoverlay.setAnimationTimeOffset(skin->anim_speed, animTimeOffset);
                     skin->i_slider_start_circle_overlay2.setAnimationTimeOffset(skin->anim_speed, animTimeOffset);
 
-                    Circle::drawSliderStartCircle(m_pf, curvePointAt(0.0f), m_comboNumber, m_colorCounter,
+                    Circle::drawSliderStartCircle(*m_view, curvePointAt(0.0f), m_comboNumber, m_colorCounter,
                                                   m_colorOffset, 1.0f, 1.0f, alpha, number_alpha, drawNumber);
                 } else {
                     const i32 animTimeOffset =
-                        !m_pf->isInMafhamRenderChunk() ? m_clickTimeMS : m_pf->getCurMusicPosWithOffsets();
+                        !m_view->isInMafhamRenderChunk() ? m_clickTimeMS : m_view->getCurMusicPosWithOffsets();
 
                     skin->i_hitcircleoverlay.setAnimationTimeOffset(skin->anim_speed, animTimeOffset);
                     skin->i_slider_end_circle_overlay2.setAnimationTimeOffset(skin->anim_speed, animTimeOffset);
 
-                    Circle::drawSliderEndCircle(m_pf, curvePointAt(0.0f), m_comboNumber, m_colorCounter, m_colorOffset,
-                                                1.0f, 1.0f, alpha, alpha, drawNumber);
+                    Circle::drawSliderEndCircle(*m_view, curvePointAt(0.0f), m_comboNumber, m_colorCounter,
+                                                m_colorOffset, 1.0f, 1.0f, alpha, alpha, drawNumber);
                 }
             }
             g->popTransform();
@@ -1273,13 +1314,13 @@ void Slider::draw() {
             {
                 g->scale((1.0f + scale * foscale), (1.0f + scale * foscale));
 
-                const i32 animTimeOffset =
-                    !m_pf->isInMafhamRenderChunk() ? m_clickTimeMS - m_fadeInTimeMS : m_pf->getCurMusicPosWithOffsets();
+                const i32 animTimeOffset = !m_view->isInMafhamRenderChunk() ? m_clickTimeMS - m_fadeInTimeMS
+                                                                            : m_view->getCurMusicPosWithOffsets();
 
                 skin->i_hitcircleoverlay.setAnimationTimeOffset(skin->anim_speed, animTimeOffset);
                 skin->i_slider_end_circle_overlay2.setAnimationTimeOffset(skin->anim_speed, animTimeOffset);
 
-                Circle::drawSliderEndCircle(m_pf, curvePointAt(1.0f), m_comboNumber, m_colorCounter, m_colorOffset,
+                Circle::drawSliderEndCircle(*m_view, curvePointAt(1.0f), m_comboNumber, m_colorCounter, m_colorOffset,
                                             1.0f, 1.0f, alpha, 0.0f, false);
             }
             g->popTransform();
@@ -1292,7 +1333,7 @@ void Slider::draw() {
 void Slider::draw2(bool drawApproachCircle, bool drawOnlyApproachCircle) {
     HitObject::draw2();
 
-    const Skin *skin = m_pf->getSkin();
+    const Skin *skin = m_view->getSkin();
 
     // HACKHACK: so much code duplication aaaaaaah
     if((m_visible || (m_startFinished && !m_finished)) &&
@@ -1310,7 +1351,7 @@ void Slider::draw2(bool drawApproachCircle, bool drawOnlyApproachCircle) {
 
             // start circle
             if(!m_startFinished || !sliderRepeatStartCircleFinished || (!m_endFinished && m_repeat % 2 == 0)) {
-                Circle::drawApproachCircle(m_pf, curvePointAt(0.0f), m_comboNumber, m_colorCounter, m_colorOffset,
+                Circle::drawApproachCircle(*m_view, curvePointAt(0.0f), m_comboNumber, m_colorCounter, m_colorOffset,
                                            m_hittableDimRGBColorMultiplierPct, m_approachScale,
                                            m_alphaForApproachCircle, m_overrideHDApproachCircle);
             }
@@ -1319,19 +1360,14 @@ void Slider::draw2(bool drawApproachCircle, bool drawOnlyApproachCircle) {
 
     if(drawApproachCircle && drawOnlyApproachCircle) return;
 
-    const ModFlags curGameplayFlags = m_pf->getMods().flags;
-
     // draw followcircle
     // HACKHACK: this is not entirely correct (due to m_bHeldTillEnd, if held within 300 range but then released, will
     // flash followcircle at the end)
-    bool is_holding_click = isClickHeldSlider();
-    is_holding_click |= flags::any<ModFlags::Autoplay | ModFlags::Relax>(curGameplayFlags);
-
-    bool should_draw_followcircle = (m_visible && m_cursorInside && is_holding_click);
+    bool should_draw_followcircle = (m_visible && m_tracking);
     should_draw_followcircle |= (m_finished && m_followCircleAnimationAlpha > 0.0f && m_heldTillEnd);
 
     if(should_draw_followcircle) {
-        vec2 point = m_pf->osuCoords2Pixels(m_curPointRaw);
+        vec2 point = m_view->osuCoords2Pixels(m_curPointRaw);
 
         // HACKHACK: this is shit
         f32 tickAnimation =
@@ -1348,8 +1384,9 @@ void Slider::draw2(bool drawApproachCircle, bool drawOnlyApproachCircle) {
         skin->i_slider_follow_circle.setAnimationTimeOffset(skin->anim_speed, m_clickTimeMS);
         skin->i_slider_follow_circle.drawRaw(
             point,
-            (m_pf->fSliderFollowCircleDiameter / skin->i_slider_follow_circle.getSizeBaseRaw().x) * tickAnimationScale *
-                m_followCircleAnimationScale * 0.85f);  // this is a bit strange, but seems to work perfectly with 0.85
+            (m_view->getSliderFollowCircleDiameter() / skin->i_slider_follow_circle.getSizeBaseRaw().x) *
+                tickAnimationScale * m_followCircleAnimationScale *
+                0.85f);  // this is a bit strange, but seems to work perfectly with 0.85
     }
 
     const bool isCompletelyFinished = m_startFinished && m_endFinished && m_finished;
@@ -1361,24 +1398,23 @@ void Slider::draw2(bool drawApproachCircle, bool drawOnlyApproachCircle) {
     {
         if(m_slidePct > 0.0f) {
             // draw sliderb
-            vec2 point = m_pf->osuCoords2Pixels(m_curPointRaw);
+            vec2 point = m_view->osuCoords2Pixels(m_curPointRaw);
             vec2 c1 =
-                m_pf->osuCoords2Pixels(curvePointAt(m_slidePct + 0.01f <= 1.0f ? m_slidePct : m_slidePct - 0.01f));
+                m_view->osuCoords2Pixels(curvePointAt(m_slidePct + 0.01f <= 1.0f ? m_slidePct : m_slidePct - 0.01f));
             vec2 c2 =
-                m_pf->osuCoords2Pixels(curvePointAt(m_slidePct + 0.01f <= 1.0f ? m_slidePct + 0.01f : m_slidePct));
+                m_view->osuCoords2Pixels(curvePointAt(m_slidePct + 0.01f <= 1.0f ? m_slidePct + 0.01f : m_slidePct));
             f32 ballAngle = vec::degrees(std::atan2(c2.y - c1.y, c2.x - c1.x));
             if(skin->o_sliderball_flip) ballAngle += (m_curRepeat % 2 == 0) ? 0 : 180;
 
-            g->setColor(skin->o_allow_sliderball_tint
-                            ? (cv::slider_ball_tint_combo_color.getBool()
-                                   ? skin->getComboColorForCounter(m_colorCounter, m_colorOffset)
-                                   : skin->c_slider_ball)
-                            : rgb(255, 255, 255));
+            g->setColor(skin->o_allow_sliderball_tint ? (cv::slider_ball_tint_combo_color.getBool()
+                                                             ? m_view->getComboColor(m_colorCounter, m_colorOffset)
+                                                             : skin->c_slider_ball)
+                                                      : rgb(255, 255, 255));
             g->pushTransform();
             {
                 g->rotate(ballAngle);
                 skin->i_sliderb.setAnimationTimeOffset(skin->anim_speed, m_clickTimeMS);
-                skin->i_sliderb.drawRaw(point, m_pf->fHitcircleDiameter / skin->i_sliderb.getSizeBaseRaw().x);
+                skin->i_sliderb.drawRaw(point, m_view->getHitcircleDiameter() / skin->i_sliderb.getSizeBaseRaw().x);
             }
             g->popTransform();
         }
@@ -1386,40 +1422,41 @@ void Slider::draw2(bool drawApproachCircle, bool drawOnlyApproachCircle) {
 }
 
 void Slider::drawStartCircle(f32 alpha) {
-    const Skin *skin = m_pf->getSkin();
+    const Skin *skin = m_view->getSkin();
 
     if(m_startFinished) {
-        const i32 animTimeOffset = !m_pf->isInMafhamRenderChunk() ? m_clickTimeMS : m_pf->getCurMusicPosWithOffsets();
+        const i32 animTimeOffset =
+            !m_view->isInMafhamRenderChunk() ? m_clickTimeMS : m_view->getCurMusicPosWithOffsets();
 
         skin->i_hitcircleoverlay.setAnimationTimeOffset(skin->anim_speed, animTimeOffset);
         skin->i_slider_end_circle_overlay2.setAnimationTimeOffset(skin->anim_speed, animTimeOffset);
 
-        Circle::drawSliderEndCircle(m_pf, curvePointAt(0.0f), m_comboNumber, m_colorCounter, m_colorOffset,
+        Circle::drawSliderEndCircle(*m_view, curvePointAt(0.0f), m_comboNumber, m_colorCounter, m_colorOffset,
                                     m_hittableDimRGBColorMultiplierPct, 1.0f, alpha, 0.0f, false, false);
     } else {
         const i32 visibleTms =
-            flags::has<ModFlags::FreezeFrame>(m_pf->getMods().flags) ? m_comboStartMS : m_clickTimeMS;
+            flags::has<ModFlags::FreezeFrame>(m_view->getModFlags()) ? m_comboStartMS : m_clickTimeMS;
         const i32 animTimeOffset =
-            !m_pf->isInMafhamRenderChunk() ? visibleTms - m_approachTimeMS : m_pf->getCurMusicPosWithOffsets();
+            !m_view->isInMafhamRenderChunk() ? visibleTms - m_approachTimeMS : m_view->getCurMusicPosWithOffsets();
 
         skin->i_hitcircleoverlay.setAnimationTimeOffset(skin->anim_speed, animTimeOffset);
         skin->i_slider_start_circle_overlay2.setAnimationTimeOffset(skin->anim_speed, animTimeOffset);
 
-        Circle::drawSliderStartCircle(m_pf, curvePointAt(0.0f), m_comboNumber, m_colorCounter, m_colorOffset,
+        Circle::drawSliderStartCircle(*m_view, curvePointAt(0.0f), m_comboNumber, m_colorCounter, m_colorOffset,
                                       m_hittableDimRGBColorMultiplierPct, m_approachScale, alpha, alpha,
                                       !m_hideNumberAfterFirstRepeatHit, m_overrideHDApproachCircle);
     }
 }
 
 void Slider::drawEndCircle(f32 alpha, f32 sliderSnake) {
-    const Skin *skin = m_pf->getSkin();
+    const Skin *skin = m_view->getSkin();
     const i32 animTimeOffset =
-        !m_pf->isInMafhamRenderChunk() ? m_clickTimeMS - m_fadeInTimeMS : m_pf->getCurMusicPosWithOffsets();
+        !m_view->isInMafhamRenderChunk() ? m_clickTimeMS - m_fadeInTimeMS : m_view->getCurMusicPosWithOffsets();
 
     skin->i_hitcircleoverlay.setAnimationTimeOffset(skin->anim_speed, animTimeOffset);
     skin->i_slider_end_circle_overlay2.setAnimationTimeOffset(skin->anim_speed, animTimeOffset);
 
-    Circle::drawSliderEndCircle(m_pf, curvePointAt(sliderSnake), m_comboNumber, m_colorCounter, m_colorOffset,
+    Circle::drawSliderEndCircle(*m_view, curvePointAt(sliderSnake), m_comboNumber, m_colorCounter, m_colorOffset,
                                 m_hittableDimRGBColorMultiplierPct, 1.0f, alpha, 0.0f, false, false);
 }
 
@@ -1437,23 +1474,22 @@ std::optional<SliderRenderer::Body> Slider::getBody() const {
 
     // fading out after the end hit (which finishes the slider, so never together with the live body above)
     const bool slider_fading_out = m_endSliderBodyFadeAnimation > 0.0f && m_endSliderBodyFadeAnimation != 1.0f;
-    if(flags::has<ModFlags::Hidden>(m_pf->getMods().flags) || cv::instafade_sliders.getBool() || !slider_fading_out)
+    if(flags::has<ModFlags::Hidden>(m_view->getModFlags()) || cv::instafade_sliders.getBool() || !slider_fading_out)
         return std::nullopt;
 
     if(!cv::slider_shrink.getBool()) return makeBody(1.0f - m_endSliderBodyFadeAnimation, 0, 1);
     if(!cv::slider_body_lazer_fadeout_style.getBool()) return std::nullopt;
 
     alwaysPointsBuf.clear();
-    alwaysPointsBuf.push_back(m_pf->osuCoords2Pixels(curvePointAt(m_slidePct)));
-    return SliderRenderer::Body{
-        .alwaysPoints = alwaysPointsBuf,
-        .hitcircleDiameter = m_pf->fHitcircleDiameter,
-        .from = 0.0f,
-        .to = 0.0f,
-        .skinSettings = {m_pf->getSkin()},
-        .undimmedColor = m_pf->getSkin()->getComboColorForCounter(m_colorCounter, m_colorOffset),
-        .alpha = 1.0f - m_endSliderBodyFadeAnimation,
-        .sliderTimeForRainbow = m_clickTimeMS};
+    alwaysPointsBuf.push_back(m_view->osuCoords2Pixels(curvePointAt(m_slidePct)));
+    return SliderRenderer::Body{.alwaysPoints = alwaysPointsBuf,
+                                .hitcircleDiameter = m_view->getHitcircleDiameter(),
+                                .from = 0.0f,
+                                .to = 0.0f,
+                                .skinSettings = {m_view->getSkin()},
+                                .undimmedColor = m_view->getComboColor(m_colorCounter, m_colorOffset),
+                                .alpha = 1.0f - m_endSliderBodyFadeAnimation,
+                                .sliderTimeForRainbow = m_clickTimeMS};
 }
 
 SliderRenderer::Body Slider::makeBody(f32 alpha, f32 from, f32 to) const {
@@ -1461,32 +1497,32 @@ SliderRenderer::Body Slider::makeBody(f32 alpha, f32 from, f32 to) const {
     // smooth begin/end while snaking/shrinking
     if(cv::slider_body_smoothsnake.getBool()) {
         if(cv::slider_shrink.getBool() && m_sliderSnakePercent > 0.999f) {
-            alwaysPointsBuf.push_back(m_pf->osuCoords2Pixels(curvePointAt(m_slidePct)));  // curpoint
-            alwaysPointsBuf.push_back(m_pf->osuCoords2Pixels(
+            alwaysPointsBuf.push_back(m_view->osuCoords2Pixels(curvePointAt(m_slidePct)));  // curpoint
+            alwaysPointsBuf.push_back(m_view->osuCoords2Pixels(
                 getRawPosAt(getEndTime() + 1)));  // endpoint (because setDrawPercent() causes the last
                                                   // circle mesh to become invisible too quickly)
         }
         if(cv::snaking_sliders.getBool() && m_sliderSnakePercent < 1.0f)
-            alwaysPointsBuf.push_back(
-                m_pf->osuCoords2Pixels(curvePointAt(m_sliderSnakePercent)));  // snakeoutpoint (only while snaking out)
+            alwaysPointsBuf.push_back(m_view->osuCoords2Pixels(
+                curvePointAt(m_sliderSnakePercent)));  // snakeoutpoint (only while snaking out)
     }
 
     SliderRenderer::Body body{.alwaysPoints = alwaysPointsBuf,
-                              .hitcircleDiameter = m_pf->fHitcircleDiameter,
+                              .hitcircleDiameter = m_view->getHitcircleDiameter(),
                               .from = from,
                               .to = to,
-                              .skinSettings = {m_pf->getSkin()},
-                              .undimmedColor = m_pf->getSkin()->getComboColorForCounter(m_colorCounter, m_colorOffset),
+                              .skinSettings = {m_view->getSkin()},
+                              .undimmedColor = m_view->getComboColor(m_colorCounter, m_colorOffset),
                               .colorRGBMultiplier = m_hittableDimRGBColorMultiplierPct,
                               .alpha = alpha,
                               .sliderTimeForRainbow = m_clickTimeMS};
 
-    if(osu->slidersRenderDynamically()) {
+    if(m_view->slidersRenderDynamically()) {
         // peppy sliders: the shape changes every frame
         legacyScreenPointsBuf.clear();
         Mc::ranges::assign(legacyScreenPointsBuf, m_curve.getPoints());
         for(auto &screenPoint : legacyScreenPointsBuf) {
-            screenPoint = m_pf->osuCoords2Pixels(screenPoint - m_stackOffset);
+            screenPoint = m_view->osuCoords2Pixels(screenPoint - m_stackOffset);
         }
         body.points = legacyScreenPointsBuf;
     } else {
@@ -1494,14 +1530,14 @@ SliderRenderer::Body Slider::makeBody(f32 alpha, f32 from, f32 to) const {
         // as the base mesh is centered at (0, 0, 0) and in raw osu coordinates, we have to scale and translate it to
         // make it fit the actual desktop playfield
         body.mesh = &m_mesh;
-        body.scale = GameRules::getPlayfieldScaleFactor();
-        body.translation = GameRules::getPlayfieldCenter();
+        body.scale = m_view->getPlayfieldScaleFactor();
+        body.translation = m_view->getPlayfieldCenter();
 
-        if(m_pf->hasFailed())
+        if(m_view->hasFailed())
             body.translation =
-                m_pf->osuCoords2Pixels(vec2(GameRules::OSU_COORD_WIDTH / 2, GameRules::OSU_COORD_HEIGHT / 2));
+                m_view->osuCoords2Pixels(vec2(GameRules::OSU_COORD_WIDTH / 2, GameRules::OSU_COORD_HEIGHT / 2));
 
-        if(cv::mod_fps.getBool()) body.translation += m_pf->getFirstPersonCursorDelta();
+        if(flags::has<ModFlags::FPS>(m_view->getModFlags())) body.translation += m_view->getFirstPersonCursorDelta();
     }
     return body;
 }
@@ -1521,131 +1557,66 @@ std::pair<f32, f32> Slider::getSnakeRange() const {
 void Slider::update(i32 curPosMS, f64 frameTimeSecs) {
     HitObject::update(curPosMS, frameTimeSecs);
 
-    if(m_pf != nullptr) {
-        // stop slide sound while paused
-        if(m_pf->isPaused() || !m_pf->isPlaying() || m_pf->hasFailed()) {
-            HitSoundUtils::stopSliderSounds(m_pf, m_lastSliderSampleSets);
-        }
-
-        // animations must be updated even if we are finished
-        updateAnimations(curPosMS);
+    // stop slide sound while paused
+    if(m_judge->isPaused() || !m_judge->isPlaying() || m_judge->hasFailed()) {
+        m_judge->stopSliderSounds(m_lastSliderSampleSets);
     }
+
+    // animations must be updated even if we are finished
+    if(m_view != nullptr) updateAnimations(curPosMS, m_view->getSpeedAdjustedAnimationSpeed());
 
     // all further calculations are only done while we are active
-    if(m_finished) return;
-
-    const ModFlags curIFaceMods = m_pi->getMods().flags;
-
-    // slider slide percent
-    m_slidePct = 0.0f;
-    if(curPosMS > m_clickTimeMS)
-        m_slidePct = std::clamp<f32>(
-            std::clamp<i32>((curPosMS - (m_clickTimeMS)), 0, (i32)m_sliderTimeMS) / m_sliderTimeMS, 0.0f, 1.0f);
-
-    const i32 visibleTms = flags::has<ModFlags::FreezeFrame>(curIFaceMods) ? m_comboStartMS : m_clickTimeMS;
-    const f32 sliderSnakeDuration = (1.0f / 3.0f) * m_approachTimeMS * cv::slider_snake_duration_multiplier.getFloat();
-    m_sliderSnakePercent = std::min(1.0f, (curPosMS - (visibleTms - m_approachTimeMS)) / (sliderSnakeDuration));
-
-    const i32 reverseArrowFadeInStart =
-        m_clickTimeMS - (cv::snaking_sliders.getBool() ? (m_approachTimeMS - sliderSnakeDuration) : m_approachTimeMS);
-    const i32 reverseArrowFadeInEnd = reverseArrowFadeInStart + cv::slider_reverse_arrow_fadein_duration.getInt();
-    m_reverseArrowAlpha = 1.0f - std::clamp<f32>(((f32)(reverseArrowFadeInEnd - curPosMS) /
-                                                  (f32)(reverseArrowFadeInEnd - reverseArrowFadeInStart)),
-                                                 0.0f, 1.0f);
-    m_reverseArrowAlpha *= cv::slider_reverse_arrow_alpha_multiplier.getFloat();
-
-    m_bodyAlpha = m_alpha;
-    if(flags::has<ModFlags::Hidden>(curIFaceMods)) {  // hidden modifies the body alpha
-        m_bodyAlpha = m_alphaWithoutHidden;           // fade in as usual
-
-        // fade out over the duration of the slider, starting exactly when the default fadein finishes
-        // std::min() ensures that the fade always starts at click_time
-        // (even if the fadeintime is longer than the approachtime)
-        const i32 hiddenSliderBodyFadeOutStart = std::min(visibleTms, visibleTms - m_approachTimeMS + m_fadeInTimeMS);
-        const f32 fade_percent = cv::mod_hd_slider_fade_percent.getFloat();
-        const i32 hiddenSliderBodyFadeOutEnd = m_clickTimeMS + (i32)(fade_percent * m_sliderTimeMS);
-        if(curPosMS >= hiddenSliderBodyFadeOutStart) {
-            m_bodyAlpha = std::clamp<f32>(((f32)(hiddenSliderBodyFadeOutEnd - curPosMS) /
-                                           (f32)(hiddenSliderBodyFadeOutEnd - hiddenSliderBodyFadeOutStart)),
-                                          0.0f, 1.0f);
-            m_bodyAlpha *= m_bodyAlpha;  // quad in body fadeout
-        }
+    if(m_finished) {
+        this->updateTracking();  // (the keys still change)
+        return;
     }
 
-    // if this slider is active, recalculate sliding/curve position and general state
-    if(m_slidePct > 0.0f || m_visible) {
-        // handle reverse sliders
-        m_inReverse = false;
-        m_hideNumberAfterFirstRepeatHit = false;
-        if(m_repeat > 1) {
-            if(m_slidePct > 0.0f && m_startFinished) m_hideNumberAfterFirstRepeatHit = true;
+    const ModFlags curIFaceMods = m_judge->getMods().flags;
 
-            f32 part = 1.0f / (f32)m_repeat;
-            m_curRepeat = (i32)(m_slidePct * m_repeat);
-            f32 baseSlidePercent = part * m_curRepeat;
-            f32 partSlidePercent = (m_slidePct - baseSlidePercent) / part;
-            if(m_curRepeat % 2 == 0) {
-                m_slidePct = partSlidePercent;
-                m_reverseArrowPos = 2;
-            } else {
-                m_slidePct = 1.0f - partSlidePercent;
-                m_reverseArrowPos = 1;
-                m_inReverse = true;
-            }
-
-            // no reverse arrow on the last repeat
-            if(m_curRepeat == m_repeat - 1) m_reverseArrowPos = 0;
-
-            // osu style: immediately show all coming reverse arrows (even on the circle we just started from)
-            if(m_curRepeat < m_repeat - 2 && m_slidePct > 0.0f && m_repeat > 2) m_reverseArrowPos = 3;
-        }
-
-        m_curPointRaw = curvePointAt(m_slidePct);
-        m_curPoint = m_pi->osuCoords2Pixels(m_curPointRaw);
-    } else {
-        m_curPointRaw = curvePointAt(0.0f);
-        m_curPoint = m_pi->osuCoords2Pixels(m_curPointRaw);
-    }
+    this->updateSlideLook(curPosMS, curIFaceMods);
+    m_curPoint = m_judge->osuCoords2Pixels(m_curPointRaw);
 
     // No longer ignore keys that were released since entering the slider
     // see isClickHeldSlider()
-    m_ignoredKeys &= m_pi->getKeys();
+    m_ignoredKeys &= m_judge->getKeys();
 
     // handle dynamic followradius
-    f32 followRadius = m_cursorLeft ? m_pi->fHitcircleDiameter / 2.0f : m_pi->fSliderFollowCircleDiameter / 2.0f;
-    const bool isPlayfieldCursorInside = (vec::length(m_pi->getCursorPos() - m_curPoint) < followRadius);
+    f32 followRadius = m_cursorLeft ? m_judge->fHitcircleDiameter / 2.0f : m_judge->fSliderFollowCircleDiameter / 2.0f;
+    const bool isPlayfieldCursorInside = (vec::length(m_judge->getCursorPos() - m_curPoint) < followRadius);
     const bool isAutoCursorInside =
         ((flags::has<ModFlags::Autoplay>(curIFaceMods)) &&
-         (!cv::auto_cursordance.getBool() || (vec::length(m_pi->getCursorPos() - m_curPoint) < followRadius)));
+         (!cv::auto_cursordance.getBool() || (vec::length(m_judge->getCursorPos() - m_curPoint) < followRadius)));
     m_cursorInside = (isAutoCursorInside || isPlayfieldCursorInside);
     m_cursorLeft = !m_cursorInside;
+    this->updateTracking();
 
     // handle slider start
     if(!m_startFinished) {
         if((flags::has<ModFlags::Autoplay>(curIFaceMods))) {
             if(curPosMS >= m_clickTimeMS) {
                 onHit(LiveHitResult::HIT_300, 0, false);
-                m_pi->holding_slider = true;
+                m_judge->holding_slider = true;
             }
         } else {
             i32 deltaMS = curPosMS - m_clickTimeMS;
 
             if((flags::has<ModFlags::Relax>(curIFaceMods))) {
-                if(curPosMS >= m_clickTimeMS + (i32)cv::relax_offset.getInt() && !m_pi->isPaused() &&
-                   !m_pi->isContinueScheduled()) {
-                    const vec2 pos = m_pi->osuCoords2Pixels(curvePointAt(0.0f));
-                    const f32 cursorDelta = vec::length(m_pi->getCursorPos() - pos);
-                    if((cursorDelta < m_pi->fHitcircleDiameter / 2.0f && (flags::has<ModFlags::Relax>(curIFaceMods)))) {
-                        LiveHitResult result = m_pi->getHitResult(deltaMS);
+                if(curPosMS >= m_clickTimeMS + (i32)cv::relax_offset.getInt() && !m_judge->isPaused() &&
+                   !m_judge->isContinueScheduled()) {
+                    const vec2 pos = m_judge->osuCoords2Pixels(curvePointAt(0.0f));
+                    const f32 cursorDelta = vec::length(m_judge->getCursorPos() - pos);
+                    if((cursorDelta < m_judge->fHitcircleDiameter / 2.0f &&
+                        (flags::has<ModFlags::Relax>(curIFaceMods)))) {
+                        LiveHitResult result = m_judge->getHitResult(deltaMS);
 
                         if(result != LiveHitResult::HIT_NULL) {
-                            const f32 targetDelta = cursorDelta / (m_pi->fHitcircleDiameter / 2.0f);
+                            const f32 targetDelta = cursorDelta / (m_judge->fHitcircleDiameter / 2.0f);
                             const f32 targetAngle = vec::degrees(
-                                std::atan2(m_pi->getCursorPos().y - pos.y, m_pi->getCursorPos().x - pos.x));
+                                std::atan2(m_judge->getCursorPos().y - pos.y, m_judge->getCursorPos().x - pos.x));
 
                             m_startResult = result;
                             onHit(m_startResult, deltaMS, false, targetDelta, targetAngle);
-                            m_pi->holding_slider = true;
+                            m_judge->holding_slider = true;
                         }
                     }
                 }
@@ -1654,10 +1625,10 @@ void Slider::update(i32 curPosMS, f64 frameTimeSecs) {
             // wait for a miss
             if(deltaMS >= 0) {
                 // if this is a miss after waiting
-                if(deltaMS > (i32)m_pi->getHitWindow50()) {
+                if(deltaMS > (i32)m_judge->getHitWindow50()) {
                     m_startResult = LiveHitResult::HIT_MISS;
                     onHit(m_startResult, deltaMS, false);
-                    m_pi->holding_slider = false;
+                    m_judge->holding_slider = false;
                 }
             }
         }
@@ -1755,7 +1726,7 @@ void Slider::update(i32 curPosMS, f64 frameTimeSecs) {
             if(curPosMS >= getEndTime()) {
                 m_heldTillEnd = true;
                 onHit(LiveHitResult::HIT_300, 0, true);
-                m_pi->holding_slider = false;
+                m_judge->holding_slider = false;
             }
         } else {
             if(curPosMS >= getEndTime()) {
@@ -1768,8 +1739,9 @@ void Slider::update(i32 curPosMS, f64 frameTimeSecs) {
 
                         // special case: missing the startcircle drains HIT_MISS_SLIDERBREAK health (and not HIT_MISS
                         // health)
-                        m_pi->addHitResult(this, LiveHitResult::HIT_MISS_SLIDERBREAK, 0, false, true, true, true, true,
-                                           false);  // only decrease health
+                        m_judge->addHitResult(this, LiveHitResult::HIT_MISS_SLIDERBREAK, 0, false, true, true, true,
+                                              true,
+                                              false);  // only decrease health
 
                         m_startResult = LiveHitResult::HIT_MISS;
                     }
@@ -1822,43 +1794,147 @@ void Slider::update(i32 curPosMS, f64 frameTimeSecs) {
                     isEndResultComingFromStrictTrackingMod = true;
 
                 onHit(m_endResult, 0, true, 0.0f, 0.0f, isEndResultComingFromStrictTrackingMod);
-                m_pi->holding_slider = false;
+                m_judge->holding_slider = false;
             }
         }
 
         // handle sliderslide sound
         // TODO @kiwec: move this to draw()
-        if(m_pf != nullptr) {
-            const ModFlags curGameplayFlags = m_pf->getMods().flags;
-
-            const bool sliding = m_startFinished && !m_endFinished && m_cursorInside && m_deltaMS <= 0             //
-                                 && (isClickHeldSlider() || (flags::has<ModFlags::Autoplay>(curGameplayFlags)) ||  //
-                                     (flags::has<ModFlags::Relax>(curGameplayFlags)))                              //
-                                 && !m_pf->isPaused() && !m_pf->isWaiting() && m_pf->isPlaying()                   //
-                                 && !m_pf->bWasSeekFrame;
-
-            if(sliding) {
-                const vec2 osuCoords = m_pf->pixels2OsuCoords(m_pf->osuCoords2Pixels(m_curPointRaw));
-                f32 pan = GameRules::osuCoords2Pan(osuCoords.x);
-                m_lastSliderSampleSets = HitSoundUtils::play(m_pf, m_hitSamples, pan, 0, -1, true);
-            } else if(!m_lastSliderSampleSets.empty()) {
-                // debugLog("not sliding, stopping");
-                // debugLog(
-                //     "bStartFinished {} bEndFinished {} bCursorInside {} iDelta {} "
-                //     "isClickHeldSlider() {} pf->isPaused() {} pf->isWaiting() {} "
-                //     "pf->isPlaying() {} pf->bWasSeekFrame {}",
-                //     !!bStartFinished, !!bEndFinished, !!bCursorInside, iDelta,
-                //     isClickHeldSlider(), pf->isPaused(), pf->isWaiting(), pf->isPlaying(),
-                //     pf->bWasSeekFrame);
-                HitSoundUtils::stopSliderSounds(m_pf, m_lastSliderSampleSets);
-                m_lastSliderSampleSets.clear();
-            }
-        }
+        const ModFlags curGameplayFlags = m_judge->getMods().flags;
+        const bool sliding = m_startFinished && !m_endFinished && m_cursorInside && m_deltaMS <= 0             //
+                             && (isClickHeldSlider() || (flags::has<ModFlags::Autoplay>(curGameplayFlags)) ||  //
+                                 (flags::has<ModFlags::Relax>(curGameplayFlags)))                              //
+                             && !m_judge->isPaused() && !m_judge->isWaiting() && m_judge->isPlaying();
+        m_lastSliderSampleSets =
+            m_judge->updateSliderSlideSounds(sliding, m_hitSamples, m_curPointRaw, m_lastSliderSampleSets);
     }
 }
 
-void Slider::updateAnimations(i32 curPosMS) {
-    f32 animation_multiplier = m_pf->getSpeedAdjustedAnimationSpeed();
+void Slider::pose(i32 timeMS, i32 fadeOutMS) {
+    const ModFlags mods = m_view->getModFlags();
+    const f32 animationSpeed = m_view->getSpeedAdjustedAnimationSpeed();
+    this->updateLook(timeMS, mods, m_view->getApproachTime(), animationSpeed);
+
+    const i32 endTimeMS = this->getEndTime();
+    m_startFinished = timeMS >= m_clickTimeMS;
+    m_endFinished = m_finished = timeMS >= endTimeMS;
+    m_heldTillEnd = true;
+    m_endResult = m_finished ? LiveHitResult::HIT_300 : LiveHitResult::HIT_NULL;
+    for(auto &click : m_clicks) {
+        click.finished = click.successful = timeMS >= click.timeMS;
+    }
+    for(auto &tick : m_ticks) {
+        tick.finished = true;
+    }
+    for(const auto &click : m_clicks) {
+        if(click.type == 1 && !click.finished) m_ticks[click.tickIndex].finished = false;
+    }
+
+    // the slide stops where the end was hit, as in play
+    this->updateSlideLook(std::min(timeMS, endTimeMS), mods);
+    m_tracking = m_startFinished;
+    this->updateAnimations(timeMS, animationSpeed);
+
+    // the head at the start, the repeats at theirs and the tail at the end, as onHit() and onRepeatHit() add them
+    m_clickAnimations.clear();
+    const auto addHitAnimAt = [&](i32 hitTimeMS, u8 typeFlags) {
+        if(timeMS < hitTimeMS || timeMS - hitTimeMS >= fadeOutMS || m_clickAnimations.size() >= 128) return;
+        m_clickAnimations.push_back(HitAnim{.percent{hitAnimationAt(timeMS - hitTimeMS, fadeOutMS)}, .type{typeFlags}});
+    };
+    addHitAnimAt(m_clickTimeMS, HitAnim::HEAD);
+    for(const auto &click : m_clicks) {
+        if(click.type == 0) addHitAnimAt(click.timeMS, click.sliderend ? HitAnim::TAIL : HitAnim::HEAD);
+    }
+    addHitAnimAt(endTimeMS, m_repeat % 2 != 0 ? HitAnim::TAIL : HitAnim::HEAD);
+
+    m_endSliderBodyFadeAnimation =
+        m_finished
+            ? hitAnimationAt(timeMS - endTimeMS, (i32)(fadeOutMS * cv::slider_body_fade_out_time_multiplier.getFloat()))
+            : 0.0f;
+
+    // the follow circle pulses on every tick and repeat
+    i32 lastPulseMS = -1;
+    for(const auto &click : m_clicks) {
+        if(click.finished) lastPulseMS = std::max(lastPulseMS, click.timeMS);
+    }
+    const f32 pulseMS = cv::slider_followcircle_tick_pulse_time.getFloat() * animationSpeed * 1000.0f;
+    m_followCircleTickAnimationScale =
+        lastPulseMS < 0 ? 0.0f : std::clamp<f32>((f32)(timeMS - lastPulseMS) / pulseMS, 0.0f, 1.0f);
+}
+
+void Slider::updateSlideLook(i32 curPosMS, ModFlags mods) {
+    // slider slide percent
+    m_slidePct = 0.0f;
+    if(curPosMS > m_clickTimeMS)
+        m_slidePct = std::clamp<f32>(
+            std::clamp<i32>((curPosMS - (m_clickTimeMS)), 0, (i32)m_sliderTimeMS) / m_sliderTimeMS, 0.0f, 1.0f);
+
+    const i32 visibleTms = flags::has<ModFlags::FreezeFrame>(mods) ? m_comboStartMS : m_clickTimeMS;
+    const f32 sliderSnakeDuration = (1.0f / 3.0f) * m_approachTimeMS * cv::slider_snake_duration_multiplier.getFloat();
+    m_sliderSnakePercent = std::min(1.0f, (curPosMS - (visibleTms - m_approachTimeMS)) / (sliderSnakeDuration));
+
+    const i32 reverseArrowFadeInStart =
+        m_clickTimeMS - (cv::snaking_sliders.getBool() ? (m_approachTimeMS - sliderSnakeDuration) : m_approachTimeMS);
+    const i32 reverseArrowFadeInEnd = reverseArrowFadeInStart + cv::slider_reverse_arrow_fadein_duration.getInt();
+    m_reverseArrowAlpha = 1.0f - std::clamp<f32>(((f32)(reverseArrowFadeInEnd - curPosMS) /
+                                                  (f32)(reverseArrowFadeInEnd - reverseArrowFadeInStart)),
+                                                 0.0f, 1.0f);
+    m_reverseArrowAlpha *= cv::slider_reverse_arrow_alpha_multiplier.getFloat();
+
+    m_bodyAlpha = m_alpha;
+    if(flags::has<ModFlags::Hidden>(mods)) {  // hidden modifies the body alpha
+        m_bodyAlpha = m_alphaWithoutHidden;   // fade in as usual
+
+        // fade out over the duration of the slider, starting exactly when the default fadein finishes
+        // std::min() ensures that the fade always starts at click_time
+        // (even if the fadeintime is longer than the approachtime)
+        const i32 hiddenSliderBodyFadeOutStart = std::min(visibleTms, visibleTms - m_approachTimeMS + m_fadeInTimeMS);
+        const f32 fade_percent = cv::mod_hd_slider_fade_percent.getFloat();
+        const i32 hiddenSliderBodyFadeOutEnd = m_clickTimeMS + (i32)(fade_percent * m_sliderTimeMS);
+        if(curPosMS >= hiddenSliderBodyFadeOutStart) {
+            m_bodyAlpha = std::clamp<f32>(((f32)(hiddenSliderBodyFadeOutEnd - curPosMS) /
+                                           (f32)(hiddenSliderBodyFadeOutEnd - hiddenSliderBodyFadeOutStart)),
+                                          0.0f, 1.0f);
+            m_bodyAlpha *= m_bodyAlpha;  // quad in body fadeout
+        }
+    }
+
+    // if this slider is active, recalculate sliding/curve position and general state
+    if(m_slidePct > 0.0f || m_visible) {
+        // handle reverse sliders
+        m_inReverse = false;
+        m_hideNumberAfterFirstRepeatHit = false;
+        if(m_repeat > 1) {
+            if(m_slidePct > 0.0f && m_startFinished) m_hideNumberAfterFirstRepeatHit = true;
+
+            f32 part = 1.0f / (f32)m_repeat;
+            m_curRepeat = (i32)(m_slidePct * m_repeat);
+            f32 baseSlidePercent = part * m_curRepeat;
+            f32 partSlidePercent = (m_slidePct - baseSlidePercent) / part;
+            if(m_curRepeat % 2 == 0) {
+                m_slidePct = partSlidePercent;
+                m_reverseArrowPos = 2;
+            } else {
+                m_slidePct = 1.0f - partSlidePercent;
+                m_reverseArrowPos = 1;
+                m_inReverse = true;
+            }
+
+            // no reverse arrow on the last repeat
+            if(m_curRepeat == m_repeat - 1) m_reverseArrowPos = 0;
+
+            // osu style: immediately show all coming reverse arrows (even on the circle we just started from)
+            if(m_curRepeat < m_repeat - 2 && m_slidePct > 0.0f && m_repeat > 2) m_reverseArrowPos = 3;
+        }
+
+        m_curPointRaw = curvePointAt(m_slidePct);
+    } else {
+        m_curPointRaw = curvePointAt(0.0f);
+    }
+}
+
+void Slider::updateAnimations(i32 curPosMS, f32 speedAdjustedAnimationSpeed) {
+    f32 animation_multiplier = speedAdjustedAnimationSpeed;
 
     f32 fadein_fade_time = cv::slider_followcircle_fadein_fade_time.getFloat() * animation_multiplier;
     f32 fadeout_fade_time = cv::slider_followcircle_fadeout_fade_time.getFloat() * animation_multiplier;
@@ -1893,9 +1969,8 @@ void Slider::updateAnimations(i32 curPosMS) {
             1.0f - (1.0f - cv::slider_followcircle_fadeout_scale.getFloat()) * m_followCircleAnimationScale;
 }
 
-void Slider::updateStackPosition(f32 stackOffset) {
-    const bool HR = flags::has<ModFlags::HardRock>(m_pi->getMods().flags);
-    m_stackOffset = vec2{m_stackNum * stackOffset, m_stackNum * stackOffset * (HR ? -1.0f : 1.0f)};
+void Slider::updateStackPosition(f32 stackOffset, bool hardRock) {
+    m_stackOffset = vec2{m_stackNum * stackOffset, m_stackNum * stackOffset * (hardRock ? -1.0f : 1.0f)};
 }
 
 void Slider::miss(i32 curPosMS) {
@@ -1907,7 +1982,7 @@ void Slider::miss(i32 curPosMS) {
     if(!m_startFinished) {
         m_startResult = LiveHitResult::HIT_MISS;
         onHit(m_startResult, deltaMS, false);
-        m_pi->holding_slider = false;
+        m_judge->holding_slider = false;
     }
 
     // endcircle, repeats, ticks
@@ -1935,7 +2010,7 @@ void Slider::miss(i32 curPosMS) {
 
             m_endResult = LiveHitResult::HIT_MISS;
             onHit(m_endResult, 0, true);
-            m_pi->holding_slider = false;
+            m_judge->holding_slider = false;
         }
     }
 }
@@ -1976,11 +2051,11 @@ f32 Slider::getT(i32 posMS, bool raw) const {
 
 bool Slider::isClickableFrom(i32 music_pos, vec2 cursor_pos) const {
     if(m_ctrlPoints.size() == 0 || m_startFinished || m_blocked) return false;
-    if(m_pi->getHitResult(music_pos - m_clickTimeMS) == LiveHitResult::HIT_NULL) return false;
+    if(m_judge->getHitResult(music_pos - m_clickTimeMS) == LiveHitResult::HIT_NULL) return false;
 
-    const vec2 pos = m_pi->osuCoords2Pixels(curvePointAt(0.0f));
+    const vec2 pos = m_judge->osuCoords2Pixels(curvePointAt(0.0f));
     const f32 cursorDelta = vec::length(cursor_pos - pos);
-    if(cursorDelta >= m_pi->fHitcircleDiameter / 2.0f) return false;
+    if(cursorDelta >= m_judge->fHitcircleDiameter / 2.0f) return false;
 
     return true;
 }
@@ -1992,21 +2067,21 @@ void Slider::onClickEvent(std::vector<Click> &clicks) {
 
     if(!m_startFinished) {
         const vec2 cursorPos = clicks[0].cursorPos;
-        const vec2 pos = m_pi->osuCoords2Pixels(curvePointAt(0.0f));
+        const vec2 pos = m_judge->osuCoords2Pixels(curvePointAt(0.0f));
         const f32 cursorDelta = vec::length(cursorPos - pos);
 
-        if(cursorDelta < m_pi->fHitcircleDiameter / 2.0f) {
+        if(cursorDelta < m_judge->fHitcircleDiameter / 2.0f) {
             const i32 deltaMS = clicks[0].musicPosMS - m_clickTimeMS;
 
-            LiveHitResult result = m_pi->getHitResult(deltaMS);
+            LiveHitResult result = m_judge->getHitResult(deltaMS);
             if(result != LiveHitResult::HIT_NULL) {
-                const f32 targetDelta = cursorDelta / (m_pi->fHitcircleDiameter / 2.0f);
+                const f32 targetDelta = cursorDelta / (m_judge->fHitcircleDiameter / 2.0f);
                 const f32 targetAngle = vec::degrees(std::atan2(cursorPos.y - pos.y, cursorPos.x - pos.x));
 
                 clicks.erase(clicks.begin());
                 m_startResult = result;
                 onHit(m_startResult, deltaMS, false, targetDelta, targetAngle);
-                m_pi->holding_slider = true;
+                m_judge->holding_slider = true;
             }
         }
     }
@@ -2024,39 +2099,41 @@ void Slider::onHit(LiveHitResult result, i32 delta, bool isEndCircle, f32 target
     {
         if(result == LiveHitResult::HIT_MISS) {
             if(!isEndResultFromStrictTrackingMod) onSliderBreak();
-        } else if(m_pf != nullptr) {
+        } else {
             if(m_edgeSamples.size() > 0) {
-                const vec2 osuCoords = m_pf->pixels2OsuCoords(m_pf->osuCoords2Pixels(m_curPointRaw));
-                const f32 pan = GameRules::osuCoords2Pan(osuCoords.x);
                 if(isEndCircle) {
-                    HitSoundUtils::play(m_pf, m_edgeSamples.back(), pan, delta, getEndTime());
+                    m_judge->playHitSound(m_edgeSamples.back(), m_curPointRaw, delta, getEndTime());
                 } else {
-                    HitSoundUtils::play(m_pf, m_edgeSamples[0], pan, delta, m_clickTimeMS);
+                    m_judge->playHitSound(m_edgeSamples[0], m_curPointRaw, delta, m_clickTimeMS);
                 }
             }
 
-            const f32 fadeoutTimeSecs = GameRules::getFadeOutTime(m_pi->getBaseAnimationSpeed());
+            if(m_view != nullptr) {
+                const f32 fadeoutTimeSecs = GameRules::getFadeOutTime(m_view->getBaseAnimationSpeed());
 
-            if(!isEndCircle) {
-                addHitAnim(HitAnim::HEAD, fadeoutTimeSecs);
-            } else {
-                if(m_repeat % 2 != 0) {
-                    addHitAnim(HitAnim::TAIL, fadeoutTimeSecs);
-                } else {
+                if(!isEndCircle) {
                     addHitAnim(HitAnim::HEAD, fadeoutTimeSecs);
+                } else {
+                    if(m_repeat % 2 != 0) {
+                        addHitAnim(HitAnim::TAIL, fadeoutTimeSecs);
+                    } else {
+                        addHitAnim(HitAnim::HEAD, fadeoutTimeSecs);
+                    }
                 }
             }
         }
 
         // end body fadeout
-        if(m_pf != nullptr && isEndCircle) {
-            m_endSliderBodyFadeAnimation = 0.001f;  // quickfix for 1 frame missing images
-            m_endSliderBodyFadeAnimation.set(1.0f,
-                                             GameRules::getFadeOutTime(m_pi->getBaseAnimationSpeed()) *
-                                                 cv::slider_body_fade_out_time_multiplier.getFloat(),
-                                             anim::QuadOut);
+        if(isEndCircle) {
+            if(m_view != nullptr) {
+                m_endSliderBodyFadeAnimation = 0.001f;  // quickfix for 1 frame missing images
+                m_endSliderBodyFadeAnimation.set(1.0f,
+                                                 GameRules::getFadeOutTime(m_view->getBaseAnimationSpeed()) *
+                                                     cv::slider_body_fade_out_time_multiplier.getFloat(),
+                                                 anim::QuadOut);
+            }
             // debugLog("stopping due to end body fadeout");
-            HitSoundUtils::stopSliderSounds(m_pf, m_lastSliderSampleSets);
+            m_judge->stopSliderSounds(m_lastSliderSampleSets);
         }
     }
 
@@ -2069,29 +2146,30 @@ void Slider::onHit(LiveHitResult result, i32 delta, bool isEndCircle, f32 target
         // ignore all keys that were held prior to entering the slider
         // except the one used to tap the slider head (or, "hold into" the slider)
         // see isClickHeldSlider()
-        m_ignoredKeys = (m_pi->getKeys() & ~m_pi->lastPressedKey);
+        m_ignoredKeys = (m_judge->getKeys() & ~m_judge->lastPressedKey);
+        this->updateTracking();
 
-        if(flags::has<ModFlags::Target>(m_pi->getMods().flags)) {
+        if(flags::has<ModFlags::Target>(m_judge->getMods().flags)) {
             // not end of combo, show in hiterrorbar, use for accuracy, increase combo, increase
             // score, ignore for health, don't add object duration to result anim
             addHitResult(result, delta, false, curvePointAt(0.0f), targetDelta, targetAngle, false, false, true, false);
         } else {
             // not end of combo, show in hiterrorbar, ignore for accuracy, increase combo,
             // don't count towards score, depending on scorev2 ignore for health or not
-            m_pi->addHitResult(this, result, delta, false, false, true, false, true, true);
+            m_judge->addHitResult(this, result, delta, false, false, true, false, true, true);
         }
 
         // add bonus score + health manually
         if(result != LiveHitResult::HIT_MISS) {
             LiveHitResult resultForHealth = LiveHitResult::HIT_SLIDER30;
 
-            m_pi->addHitResult(this, resultForHealth, 0, false, true, true, true, true,
-                               false);  // only increase health
-            m_pi->addScorePoints(30);
+            m_judge->addHitResult(this, resultForHealth, 0, false, true, true, true, true,
+                                  false);  // only increase health
+            m_judge->addScorePoints(30);
         } else {
             // special case: missing the startcircle drains HIT_MISS_SLIDERBREAK health (and not HIT_MISS health)
-            m_pi->addHitResult(this, LiveHitResult::HIT_MISS_SLIDERBREAK, 0, false, true, true, true, true,
-                               false);  // only decrease health
+            m_judge->addHitResult(this, LiveHitResult::HIT_MISS_SLIDERBREAK, 0, false, true, true, true, true,
+                                  false);  // only decrease health
         }
     } else {
         // endcircle
@@ -2111,10 +2189,10 @@ void Slider::onHit(LiveHitResult result, i32 delta, bool isEndCircle, f32 target
             // below gets the combo bonus for it (stable's ScoreV1 multiplies a slider's 300/100/50 by the combo
             // including its tail; judging the slider first was one combo step short on every held slider)
             if(m_heldTillEnd) {
-                m_pi->addHitResult(this, LiveHitResult::HIT_SLIDER30, 0, false, true, true, false, true,
-                                   false);  // not end of combo, ignore in hiterrorbar, ignore for accuracy, increase
-                                            // combo, don't count towards score, increase health
-                m_pi->addScorePoints(30);
+                m_judge->addHitResult(this, LiveHitResult::HIT_SLIDER30, 0, false, true, true, false, true,
+                                      false);  // not end of combo, ignore in hiterrorbar, ignore for accuracy,
+                                               // increase combo, don't count towards score, increase health
+                m_judge->addScorePoints(30);
             }
 
             addHitResult(result, delta, m_endOfCombo, getRawPosAt(getEndTime()), -1.0f, 0.0f, true, true,
@@ -2125,8 +2203,8 @@ void Slider::onHit(LiveHitResult result, i32 delta, bool isEndCircle, f32 target
                 // special case: missing the endcircle drains HIT_MISS_SLIDERBREAK health (and not HIT_MISS health)
                 // NOTE: yes, this will drain twice for the end of a slider (once for the judgement of the whole slider
                 // above, and once for the endcircle here)
-                m_pi->addHitResult(this, LiveHitResult::HIT_MISS_SLIDERBREAK, 0, false, true, true, true, true,
-                                   false);  // only decrease health
+                m_judge->addHitResult(this, LiveHitResult::HIT_MISS_SLIDERBREAK, 0, false, true, true, true, true,
+                                      false);  // only decrease health
             }
         }
     }
@@ -2142,34 +2220,33 @@ void Slider::onRepeatHit(const SLIDERCLICK &click) {
     // sound and hit animation
     if(!click.successful) {
         onSliderBreak();
-    } else if(m_pf != nullptr) {
-        const vec2 osuCoords = m_pf->pixels2OsuCoords(m_pf->osuCoords2Pixels(m_curPointRaw));
-        f32 pan = GameRules::osuCoords2Pan(osuCoords.x);
-
+    } else {
         // Try to play a repeat sample based on what the mapper gave us
         // NOTE: iCurRepeatCounterForHitSounds starts at 1
         const uSz nb_edge_samples = m_edgeSamples.size();
         assert(nb_edge_samples > 0);
         if(std::cmp_less(m_curRepeatCounterForHitSounds + 1, nb_edge_samples)) {
-            HitSoundUtils::play(m_pf, m_edgeSamples[m_curRepeatCounterForHitSounds], pan, 0, click.timeMS);
+            m_judge->playHitSound(m_edgeSamples[m_curRepeatCounterForHitSounds], m_curPointRaw, 0, click.timeMS);
         } else {
             // We have more repeats than edge samples!
             // Just play whatever we can (either the last repeat sample, or the start sample)
-            HitSoundUtils::play(m_pf, m_edgeSamples[nb_edge_samples - 2], pan, 0, click.timeMS);
+            m_judge->playHitSound(m_edgeSamples[nb_edge_samples - 2], m_curPointRaw, 0, click.timeMS);
         }
 
-        f32 animation_multiplier = m_pf->getSpeedAdjustedAnimationSpeed();
-        f32 tick_pulse_time = cv::slider_followcircle_tick_pulse_time.getFloat() * animation_multiplier;
+        if(m_view != nullptr) {
+            f32 animation_multiplier = m_view->getSpeedAdjustedAnimationSpeed();
+            f32 tick_pulse_time = cv::slider_followcircle_tick_pulse_time.getFloat() * animation_multiplier;
 
-        m_followCircleTickAnimationScale = 0.0f;
-        m_followCircleTickAnimationScale.set(1.0f, tick_pulse_time, anim::Linear);
+            m_followCircleTickAnimationScale = 0.0f;
+            m_followCircleTickAnimationScale.set(1.0f, tick_pulse_time, anim::Linear);
 
-        const f32 fadeoutTimeSecs = GameRules::getFadeOutTime(m_pi->getBaseAnimationSpeed());
+            const f32 fadeoutTimeSecs = GameRules::getFadeOutTime(m_view->getBaseAnimationSpeed());
 
-        if(click.sliderend) {
-            addHitAnim(HitAnim::TAIL, fadeoutTimeSecs);
-        } else {
-            addHitAnim(HitAnim::HEAD, fadeoutTimeSecs);
+            if(click.sliderend) {
+                addHitAnim(HitAnim::TAIL, fadeoutTimeSecs);
+            } else {
+                addHitAnim(HitAnim::HEAD, fadeoutTimeSecs);
+            }
         }
     }
 
@@ -2177,15 +2254,15 @@ void Slider::onRepeatHit(const SLIDERCLICK &click) {
     if(!click.successful) {
         // add health manually
         // special case: missing a repeat drains HIT_MISS_SLIDERBREAK health (and not HIT_MISS health)
-        m_pi->addHitResult(this, LiveHitResult::HIT_MISS_SLIDERBREAK, 0, false, true, true, true, true,
-                           false);  // only decrease health
+        m_judge->addHitResult(this, LiveHitResult::HIT_MISS_SLIDERBREAK, 0, false, true, true, true, true,
+                              false);  // only decrease health
     } else {
-        m_pi->addHitResult(this, LiveHitResult::HIT_SLIDER30, 0, false, true, true, false, true,
-                           false);  // not end of combo, ignore in hiterrorbar, ignore for accuracy, increase
-                                    // combo, don't count towards score, increase health
+        m_judge->addHitResult(this, LiveHitResult::HIT_SLIDER30, 0, false, true, true, false, true,
+                              false);  // not end of combo, ignore in hiterrorbar, ignore for accuracy, increase
+                                       // combo, don't count towards score, increase health
 
         // add bonus score manually
-        m_pi->addScorePoints(30);
+        m_judge->addScorePoints(30);
     }
 
     m_curRepeatCounterForHitSounds++;
@@ -2210,76 +2287,44 @@ void Slider::onTickHit(const SLIDERCLICK &click) {
     // sound and hit animation
     if(!click.successful) {
         onSliderBreak();
-    } else if(m_pf != nullptr) {
-        if(const auto *skin = m_pf->getSkin()) {
-            static constexpr std::array SLIDERTICK_SAMPLESET_METHODS{
-                &Skin::s_normal_slidertick,  //
-                &Skin::s_soft_slidertick,    //
-                &Skin::s_drum_slidertick,    //
-            };
+    } else {
+        m_judge->playSliderTickSound(m_hitSamples, m_curPointRaw, click.timeMS);
 
-            const BeatmapDifficulty *beatmap = m_pf->getBeatmap();
-            const auto ti = (click.timeMS != -1 && beatmap) ? beatmap->getTimingInfoForTime(click.timeMS)
-                                                            : m_pf->getCurrentTimingInfo();
-            HitSoundUtils::HitSoundContext ctx{
-                .timingPointSampleSet = ti.sampleSet,
-                .timingPointVolume = ti.volume,
-                .defaultSampleSet = m_pf->getDefaultSampleSet(),
-                .forcedSampleSet = cv::skin_force_hitsound_sample_set.getVal<u8>(),  // unused by sliderticks
-                .layeredHitSounds = false,
-                .ignoreSampleVolume = cv::ignore_beatmap_sample_volume.getBool(),
-                .boostVolume = false,  // unused by sliderticks
-            };
+        if(m_view != nullptr) {
+            f32 animation_multiplier = m_view->getSpeedAdjustedAnimationSpeed();
+            f32 tick_pulse_time = cv::slider_followcircle_tick_pulse_time.getFloat() * animation_multiplier;
 
-            if(const auto tick = HitSoundUtils::resolveSliderTick(m_hitSamples, ctx);
-               tick.set < (i32)SLIDERTICK_SAMPLESET_METHODS.size()) {
-                if(Sound *skin_sound = skin->*SLIDERTICK_SAMPLESET_METHODS[tick.set]) {
-                    const vec2 osuCoords = m_pf->pixels2OsuCoords(m_pf->osuCoords2Pixels(m_curPointRaw));
-                    f32 pan = GameRules::osuCoords2Pan(osuCoords.x);
-                    if(!cv::sound_panning.getBool() ||
-                       (cv::mod_fposu.getBool() && !cv::mod_fposu_sound_panning.getBool()) ||
-                       (cv::mod_fps.getBool() && !cv::mod_fps_sound_panning.getBool())) {
-                        pan = 0.0f;
-                    } else {
-                        pan *= cv::sound_panning_multiplier.getFloat();
-                    }
-                    soundEngine->play(skin_sound, pan, 0.f, tick.volume);
-                }
-            }
+            m_followCircleTickAnimationScale = 0.0f;
+            m_followCircleTickAnimationScale.set(1.0f, tick_pulse_time, anim::Linear);
         }
-
-        f32 animation_multiplier = m_pf->getSpeedAdjustedAnimationSpeed();
-        f32 tick_pulse_time = cv::slider_followcircle_tick_pulse_time.getFloat() * animation_multiplier;
-
-        m_followCircleTickAnimationScale = 0.0f;
-        m_followCircleTickAnimationScale.set(1.0f, tick_pulse_time, anim::Linear);
     }
 
     // add score
     if(!click.successful) {
         // add health manually
         // special case: missing a tick drains HIT_MISS_SLIDERBREAK health (and not HIT_MISS health)
-        m_pi->addHitResult(this, LiveHitResult::HIT_MISS_SLIDERBREAK, 0, false, true, true, true, true,
-                           false);  // only decrease health
+        m_judge->addHitResult(this, LiveHitResult::HIT_MISS_SLIDERBREAK, 0, false, true, true, true, true,
+                              false);  // only decrease health
     } else {
-        m_pi->addHitResult(this, LiveHitResult::HIT_SLIDER10, 0, false, true, true, false, true,
-                           false);  // not end of combo, ignore in hiterrorbar, ignore for accuracy, increase
-                                    // combo, don't count towards score, increase health
+        m_judge->addHitResult(this, LiveHitResult::HIT_SLIDER10, 0, false, true, true, false, true,
+                              false);  // not end of combo, ignore in hiterrorbar, ignore for accuracy, increase
+                                       // combo, don't count towards score, increase health
 
         // add bonus score manually
-        m_pi->addScorePoints(10);
+        m_judge->addScorePoints(10);
     }
 }
 
-void Slider::onSliderBreak() { m_pi->addSliderBreak(); }
+void Slider::onSliderBreak() { m_judge->addSliderBreak(); }
 
 void Slider::onReset(i32 curPosMS) {
     HitObject::onReset(curPosMS);
 
-    if(m_pf != nullptr) {
+    if(m_judge != nullptr) {
         // debugLog("stopping due to onReset");
-        HitSoundUtils::stopSliderSounds(m_pf, m_lastSliderSampleSets);
-
+        m_judge->stopSliderSounds(m_lastSliderSampleSets);
+    }
+    if(m_view != nullptr) {
         m_followCircleTickAnimationScale.stop();
         m_endSliderBodyFadeAnimation.stop();
     }
@@ -2352,21 +2397,22 @@ Slider::HitAnim &Slider::addHitAnim(u8 typeFlags, f32 duration) {
     }
 }
 
-void Slider::rebuildVertexBuffer(bool useRawCoords) {
+void Slider::rebuildVertexBuffer() {
     // base mesh (background) (raw unscaled, size in raw osu coordinates centered at (0, 0, 0))
     // this mesh needs to be scaled and translated appropriately since we are not 1:1 with the playfield
     const auto rawPoints = m_curve.getPoints();
     std::vector<vec2> osuCoordPoints{rawPoints.begin(), rawPoints.end()};
-    if(useRawCoords) {
-        for(auto &p : osuCoordPoints) p -= m_stackOffset;
-    } else {
-        for(auto &p : osuCoordPoints) p = m_pi->osuCoords2LegacyPixels(p - m_stackOffset);
-    }
-    m_mesh = SliderRenderer::generateMesh(osu->getVirtScreenSize(), osuCoordPoints, m_pi->fRawHitcircleDiameter,
+    for(auto &p : osuCoordPoints) p = m_view->osuCoords2LegacyPixels(p - m_stackOffset);
+    m_mesh = SliderRenderer::generateMesh(m_view->getScreenSize(), osuCoordPoints, m_view->getRawHitcircleDiameter(),
                                           /*skipOOBPoints=*/true);
 }
 
 Slider::~Slider() { onReset(0); }
+
+void Slider::updateTracking() {
+    m_tracking = m_cursorInside &&
+                 (isClickHeldSlider() || flags::any<ModFlags::Autoplay | ModFlags::Relax>(m_judge->getMods().flags));
+}
 
 bool Slider::isClickHeldSlider() const {
     // osu! has a weird slider quirk, that I'll explain in detail here.
@@ -2379,15 +2425,15 @@ bool Slider::isClickHeldSlider() const {
     // Note that the restriction only applies to the slider head.
     // Any key pressed *after* entering the slider counts as a hold.
 
-    u8 held_gameplay_keys = m_pi->getKeys() & ~LegacyReplay::Smoke;
+    u8 held_gameplay_keys = m_judge->getKeys() & ~LegacyReplay::Smoke;
     return (held_gameplay_keys & ~m_ignoredKeys);
 }
 
 static CONSTINIT VertexArrayObject spinnerMetreVAO{DrawPrimitive::QUADS};
 
 Spinner::Spinner(vec2 pos, i32 timeMS, DatabaseBeatmapTypes::HITSAMPLE_BITS samples, bool isEndOfCombo, i32 endTimeMS,
-                 AbstractBeatmapInterface *pi)
-    : HitObject(timeMS, samples, -1, isEndOfCombo, -1, -1, pi), m_rawPos(pos), m_originalRawPos(m_rawPos) {
+                 AbstractBeatmapInterface *judge, const PlayfieldView *view)
+    : HitObject(timeMS, samples, -1, isEndOfCombo, -1, -1, judge, view), m_rawPos(pos), m_originalRawPos(m_rawPos) {
     m_type = HitObjectType::SPINNER;
     m_durationMS = endTimeMS - timeMS;
 
@@ -2413,16 +2459,16 @@ void Spinner::draw() {
     HitObject::draw();
     const f32 fadeOutMultiplier = cv::spinner_fade_out_time_multiplier.getFloat();
     const i32 fadeOutTimeMS =
-        (i32)(GameRules::getFadeOutTime(m_pi->getBaseAnimationSpeed()) * 1000.0f * fadeOutMultiplier);
+        (i32)(GameRules::getFadeOutTime(m_view->getBaseAnimationSpeed()) * 1000.0f * fadeOutMultiplier);
     const i32 deltaEnd = m_deltaMS + m_durationMS;
 
-    const Skin *skin = m_pf->getSkin();
-    const vec2 center = m_pf->osuCoords2Pixels(m_rawPos);
+    const Skin *skin = m_view->getSkin();
+    const vec2 center = m_view->osuCoords2Pixels(m_rawPos);
 
     // osu!stable lays the spinner out in its 640x480 window space (with the spinner centered at (320, 248), which is
     // the playfield center), and draws 1x sprites at 0.625x of that space, see
     // https://osu.ppy.sh/wiki/en/Skinning/osu%21#spinner
-    const f32 windowScale = m_pf->getPlayfieldSize().y / (f32)GameRules::OSU_COORD_HEIGHT;
+    const f32 windowScale = m_view->getPlayfieldSize().y / (f32)GameRules::OSU_COORD_HEIGHT;
     const f32 spinnerScale = 0.625f * windowScale;
     const auto windowPos = [&](f32 dx, f32 dy) { return center + vec2{dx, dy} * windowScale; };
     const auto drawSprite = [](const BasicSkinImage &img, vec2 pos, f32 scale, f32 rotationDeg = 0.f,
@@ -2466,7 +2512,7 @@ void Spinner::draw() {
     const f32 finishScale = 0.80f + easeOut(clampedRatio) * 0.20f;
 
     // spun out / autopilot spinners are drawn dimmed
-    const Color tint = flags::any<ModFlags::SpunOut | ModFlags::Autopilot>(m_pi->getMods().flags) ? Color(0xff808080)
+    const Color tint = flags::any<ModFlags::SpunOut | ModFlags::Autopilot>(m_view->getModFlags()) ? Color(0xff808080)
                                                                                                   : Color(0xffffffff);
 
     // "SPIN!" starts fading out on the first (half) spin, but not before 500 ms in, and "CLEAR!" can't show up before
@@ -2484,7 +2530,7 @@ void Spinner::draw() {
     // the approach circle is only shown when the disc is actually skinned (peppy removed it from the default skin:
     // https://osu.ppy.sh/community/forums/topics/100765)
     const auto drawSpinnerApproachCircle = [&](const BasicSkinImage &disc) {
-        if(flags::has<ModFlags::Hidden>(m_pi->getMods().flags) || disc.isFromDefault() ||
+        if(flags::has<ModFlags::Hidden>(m_view->getModFlags()) || disc.isFromDefault() ||
            skin->i_spinner_approach_circle == MISSING_TEXTURE)
             return;
 
@@ -2653,7 +2699,8 @@ void Spinner::draw() {
                 HUD::drawNumberWithSkinDigits({.number = (u64)m_bonusSpins * 1000,
                                                .scale = digitScale,
                                                .combo = false,
-                                               .anchor = AnchorPoint::CENTER});
+                                               .anchor = AnchorPoint::CENTER,
+                                               .skin = skin});
             }
             g->popTransform();
         }
@@ -2676,8 +2723,11 @@ void Spinner::draw() {
         {
             g->scale(digitScale, digitScale);
             g->translate(pos.x, pos.y + (f32)skin->i_scores[0]->getHeight() * digitScale / 2.f);
-            HUD::drawNumberWithSkinDigits(
-                {.number = (u64)std::lround(m_RPM), .scale = digitScale, .combo = false, .anchor = AnchorPoint::RIGHT});
+            HUD::drawNumberWithSkinDigits({.number = (u64)std::lround(m_RPM),
+                                           .scale = digitScale,
+                                           .combo = false,
+                                           .anchor = AnchorPoint::RIGHT,
+                                           .skin = skin});
         }
         g->popTransform();
     } else if(m_deltaMS < 0 && cv::skin_always_draw_spinner_rpm.getBool()) {
@@ -2688,9 +2738,9 @@ void Spinner::draw() {
 
         g->pushTransform();
         {
-            g->translate(
-                (i32)(osu->getVirtScreenWidth() / 2 - stringWidth / 2),
-                (i32)(osu->getVirtScreenHeight() - 5 + (5 + rpmFont->getHeight()) * (1.0f - m_alphaWithoutHidden)));
+            const vec2 screen = m_view->getScreenSize();
+            g->translate((i32)((i32)screen.x / 2 - stringWidth / 2),
+                         (i32)((i32)screen.y - 5 + (5 + rpmFont->getHeight()) * (1.0f - m_alphaWithoutHidden)));
             g->drawString(rpmFont, fmt::format("RPM: {}", (i32)(m_RPM + 0.4f)));
         }
         g->popTransform();
@@ -2701,11 +2751,8 @@ void Spinner::update(i32 curPosMS, f64 frameTimeSecs) {
     HitObject::update(curPosMS, frameTimeSecs);
 
     // stop spinner sound and don't update() while paused
-    if(m_pi->isPaused() || !m_pi->isPlaying() || (m_pf && m_pf->hasFailed())) {
-        const auto spinner_spinsound = m_pf && m_pf->getSkin() ? m_pf->getSkin()->s_spinner_spin : nullptr;
-        if(spinner_spinsound && spinner_spinsound->isPlaying()) {
-            soundEngine->stop(spinner_spinsound);
-        }
+    if(m_judge->isPaused() || !m_judge->isPlaying() || m_judge->hasFailed()) {
+        m_judge->stopSpinnerSpinSound();
         return;
     }
 
@@ -2722,21 +2769,21 @@ void Spinner::update(i32 curPosMS, f64 frameTimeSecs) {
             return;
         }
 
-        m_rotationsNeeded = GameRules::getSpinnerRotationsForSpeedMultiplier(m_pi, m_durationMS);
+        m_rotationsNeeded = GameRules::getSpinnerRotationsForSpeedMultiplier(m_judge, m_durationMS);
 
         const f32 DELTA_UPDATE_TIME_MS = (frameTimeSecs * 1000.0f);
         const f32 AUTO_MULTIPLIER = (1.0f / 20.0f);
 
         // scale percent calculation
         i32 deltaMS = m_clickTimeMS - (i32)curPosMS;
-        m_percent = 1.0f - std::clamp<f32>((f32)deltaMS / -(f32)(m_durationMS), 0.0f, 1.0f);
+        m_percent = this->getTimeLeftPercent(curPosMS);
 
         // handle auto, mouse spinning movement
         f32 angleDiff = 0;
-        if(flags::any<ModFlags::Autoplay | ModFlags::Autopilot | ModFlags::SpunOut>(m_pi->getMods().flags)) {
-            angleDiff = frameTimeSecs * 1000.0f * AUTO_MULTIPLIER * m_pi->getSpeedMultiplier();
+        if(flags::any<ModFlags::Autoplay | ModFlags::Autopilot | ModFlags::SpunOut>(m_judge->getMods().flags)) {
+            angleDiff = frameTimeSecs * 1000.0f * AUTO_MULTIPLIER * m_judge->getSpeedMultiplier();
         } else {  // user spin
-            vec2 mouseDelta = m_pi->getCursorPos() - m_pi->osuCoords2Pixels(m_rawPos);
+            vec2 mouseDelta = m_judge->getCursorPos() - m_judge->osuCoords2Pixels(m_rawPos);
             const auto currentMouseAngle = (f32)std::atan2(mouseDelta.y, mouseDelta.x);
             angleDiff = (currentMouseAngle - m_lastMouseAngle);
 
@@ -2750,8 +2797,8 @@ void Spinner::update(i32 curPosMS, f64 frameTimeSecs) {
         // HACKHACK: rewrite this
         if(deltaMS <= 0) {
             bool isSpinning =
-                m_pi->isClickHeld() ||
-                flags::any<ModFlags::Autoplay | ModFlags::Relax | ModFlags::SpunOut>(m_pi->getMods().flags);
+                m_judge->isClickHeld() ||
+                flags::any<ModFlags::Autoplay | ModFlags::Relax | ModFlags::SpunOut>(m_judge->getMods().flags);
 
             m_deltaOverflowMS += frameTimeSecs * 1000.0f;
 
@@ -2794,15 +2841,34 @@ void Spinner::update(i32 curPosMS, f64 frameTimeSecs) {
     }
 }
 
+void Spinner::pose(i32 timeMS, i32 /*fadeOutMS*/) {
+    this->updateLook(timeMS, m_view->getModFlags(), m_view->getApproachTime(),
+                     m_view->getSpeedAdjustedAnimationSpeed());
+
+    m_finished = timeMS >= this->getEndTime();
+    m_percent = this->getTimeLeftPercent(std::min(timeMS, this->getEndTime()));
+
+    // at rest, without a result
+    m_drawRot = 0.0f;
+    m_rotations = 0.0f;
+    m_ratio = 0.0f;
+    m_RPM = 0.0f;
+    m_completedTimeMS = -1;
+    m_firstSpinTimeMS = -1;
+    m_bonusTimeMS = -1;
+    m_bonusSpins = 0;
+    m_hitSuccess = false;
+}
+
+f32 Spinner::getTimeLeftPercent(i32 curPosMS) const {
+    const i32 deltaMS = m_clickTimeMS - curPosMS;
+    return 1.0f - std::clamp<f32>((f32)deltaMS / -(f32)(m_durationMS), 0.0f, 1.0f);
+}
+
 void Spinner::onReset(i32 curPosMS) {
     HitObject::onReset(curPosMS);
 
-    {
-        const auto spinner_spinsound = m_pf && m_pf->getSkin() ? m_pf->getSkin()->s_spinner_spin : nullptr;
-        if(spinner_spinsound && spinner_spinsound->isPlaying()) {
-            soundEngine->stop(spinner_spinsound);
-        }
-    }
+    if(m_judge != nullptr) m_judge->stopSpinnerSpinSound();
 
     m_RPM = 0.0f;
     m_drawRot = 0.0f;
@@ -2834,7 +2900,7 @@ void Spinner::onReset(i32 curPosMS) {
 void Spinner::onHit() {
     // calculate hit result
     LiveHitResult result = LiveHitResult::HIT_NULL;
-    if(m_ratio >= 1.0f || (flags::has<ModFlags::Autoplay>(m_pi->getMods().flags)))
+    if(m_ratio >= 1.0f || (flags::has<ModFlags::Autoplay>(m_judge->getMods().flags)))
         result = LiveHitResult::HIT_300;
     else if(m_ratio >= 0.9f && !cv::mod_ming3012.getBool() && !cv::mod_no100s.getBool())
         result = LiveHitResult::HIT_100;
@@ -2846,20 +2912,13 @@ void Spinner::onHit() {
     m_hitSuccess = result != LiveHitResult::HIT_MISS;
 
     // sound
-    if(m_pf != nullptr && result != LiveHitResult::HIT_MISS) {
-        const vec2 osuCoords = m_pf->pixels2OsuCoords(m_pf->osuCoords2Pixels(m_rawPos));
-        f32 pan = GameRules::osuCoords2Pan(osuCoords.x);
-        HitSoundUtils::play(m_pf, m_hitSamples, pan, 0);
-    }
+    if(result != LiveHitResult::HIT_MISS) m_judge->playHitSound(m_hitSamples, m_rawPos, 0);
 
     // add it, and we are finished
     addHitResult(result, 0, m_endOfCombo, m_rawPos, -1.0f, 0.f, /*ignoreOnHitErrorBar=*/true);
     m_finished = true;
 
-    const auto spinner_spinsound = m_pf && m_pf->getSkin() ? m_pf->getSkin()->s_spinner_spin : nullptr;
-    if(spinner_spinsound && spinner_spinsound->isPlaying()) {
-        soundEngine->stop(spinner_spinsound);
-    }
+    m_judge->stopSpinnerSpinSound();
 }
 
 void Spinner::rotate(f32 rad) {
@@ -2877,41 +2936,24 @@ void Spinner::rotate(f32 rad) {
             // extra rotations and bonus sound
             m_bonusSpins++;
             m_bonusTimeMS = m_clickTimeMS - m_deltaMS;
-            if(m_pf != nullptr && !m_pf->bWasSeekFrame && m_pf->getSkin()->s_spinner_bonus) {
-                soundEngine->play(m_pf->getSkin()->s_spinner_bonus);
-            }
-            m_pi->addHitResult(this, LiveHitResult::HIT_SPINNERBONUS, 0, false, true, true, true, true,
-                               false);  // only increase health
-            m_pi->addHitResult(this, LiveHitResult::HIT_SPINNERBONUS, 0, false, true, true, true, true,
-                               false);  // HACKHACK: compensating for rotation logic differences
-            m_pi->addScorePoints(1100, true);
+            m_judge->playSpinnerBonusSound();
+            m_judge->addHitResult(this, LiveHitResult::HIT_SPINNERBONUS, 0, false, true, true, true, true,
+                                  false);  // only increase health
+            m_judge->addHitResult(this, LiveHitResult::HIT_SPINNERBONUS, 0, false, true, true, true, true,
+                                  false);  // HACKHACK: compensating for rotation logic differences
+            m_judge->addScorePoints(1100, true);
         } else {
             // normal whole rotation
-            m_pi->addHitResult(this, LiveHitResult::HIT_SPINNERSPIN, 0, false, true, true, true, true,
-                               false);  // only increase health
-            m_pi->addHitResult(this, LiveHitResult::HIT_SPINNERSPIN, 0, false, true, true, true, true,
-                               false);  // HACKHACK: compensating for rotation logic differences
-            m_pi->addScorePoints(100, true);
+            m_judge->addHitResult(this, LiveHitResult::HIT_SPINNERSPIN, 0, false, true, true, true, true,
+                                  false);  // only increase health
+            m_judge->addHitResult(this, LiveHitResult::HIT_SPINNERSPIN, 0, false, true, true, true, true,
+                                  false);  // HACKHACK: compensating for rotation logic differences
+            m_judge->addScorePoints(100, true);
         }
     }
 
     // spinner sound
-    if(m_pf != nullptr && !m_pf->bWasSeekFrame) {
-        const Skin *skin = m_pf->getSkin();
-        Sound *spinner_spinsound = skin ? skin->s_spinner_spin : nullptr;
-        if(spinner_spinsound) {
-            if(!spinner_spinsound->isPlaying()) {
-                soundEngine->play(spinner_spinsound);
-            }
-            if(skin->o_spinner_frequency_modulate) {
-                const f32 frequency = 20000.0f + (i32)(std::clamp<f32>(m_ratio, 0.0f, 2.5f) * 40000.0f);
-                spinner_spinsound->setFrequency(frequency);
-            } else {
-                // sanity reset
-                spinner_spinsound->setFrequency(0);
-            }
-        }
-    }
+    m_judge->playSpinnerSpinSound(m_ratio);
 
     m_rotations = newRotations;
 }
@@ -2926,12 +2968,231 @@ vec2 Spinner::getAutoCursorPos(i32 curPosMS) const {
     else
         deltaMS = curPosMS - m_clickTimeMS;
 
-    vec2 actualPos = m_pi->osuCoords2Pixels(m_rawPos);
+    vec2 actualPos = m_judge->osuCoords2Pixels(m_rawPos);
     const f32 AUTO_MULTIPLIER = (1.0f / 20.0f);
     f32 multiplier =
-        flags::any<ModFlags::Autoplay | ModFlags::Autopilot>(m_pi->getMods().flags) ? AUTO_MULTIPLIER : 1.0f;
+        flags::any<ModFlags::Autoplay | ModFlags::Autopilot>(m_judge->getMods().flags) ? AUTO_MULTIPLIER : 1.0f;
     f32 angle = (deltaMS * multiplier) - PI_F / 2.0f;
     f32 r = GameRules::getPlayfieldSize().y / 10.0f;  // XXX: slow?
     return vec2((f32)(actualPos.x + r * std::cos(angle)), (f32)(actualPos.y + r * std::sin(angle)));
 }
+
+namespace HitObjects {
+
+std::vector<std::unique_ptr<HitObject>> create(const Primitives::PRIMITIVE_CONTAINER &primitives,
+                                               AbstractBeatmapInterface *judge, const PlayfieldView *view) {
+    std::vector<std::unique_ptr<HitObject>> objects;
+    objects.reserve(primitives.hitcircles.size() + primitives.sliders.size() + primitives.spinners.size());
+
+    for(const auto &h : primitives.hitcircles) {
+        objects.emplace_back(
+            new Circle(vec2{h.x, h.y}, h.time, h.samples, h.number, false, h.colorCounter, h.colorOffset, judge, view));
+    }
+    for(const auto &s : primitives.sliders) {
+        objects.emplace_back(new Slider(s.type, s.repeat, s.pixelLength, s.points, s.ticks, s.sliderTime,
+                                        s.sliderTimeWithoutRepeats, s.time, s.hoverSamples, s.edgeSamples, s.number,
+                                        false, s.colorCounter, s.colorOffset, judge, view));
+    }
+    for(const auto &s : primitives.spinners) {
+        objects.emplace_back(new Spinner(vec2{s.x, s.y}, s.time, s.samples, false, s.endTime, judge, view));
+    }
+
+    if(objects.size() > 1) {
+        static constexpr auto hobjsorter =
+            +[](const std::unique_ptr<HitObject> &a, const std::unique_ptr<HitObject> &b) -> bool {
+            return HitObject::sortByStartTimeComp(a.get(), b.get());
+        };
+        srt::pdqsort(objects, hobjsorter);
+    }
+
+    // a combo ends before the next object numbered 1
+    i32 comboStartTime = objects.empty() ? 0 : objects[0]->getClickTime();
+    for(uSz i = 0; i < objects.size(); i++) {
+        HitObject *currentHitObject = objects[i].get();
+        currentHitObject->setComboStartTime(comboStartTime);
+
+        const HitObject *nextHitObject = (i + 1 < objects.size() ? objects[i + 1].get() : nullptr);
+        if(nextHitObject == nullptr || nextHitObject->getComboNumber() == 1) {
+            currentHitObject->setIsEndOfCombo(true);
+            if(nextHitObject != nullptr) {
+                comboStartTime = nextHitObject->getClickTime();
+            }
+        }
+    }
+
+    return objects;
+}
+
+void stack(std::span<const std::unique_ptr<HitObject>> objects, f32 AR, i32 beatmapVersion, f32 stackLeniency,
+           f32 rawHitcircleDiameter, bool hardRock) {
+    // reset
+    for(const auto &hitobject : objects) {
+        hitobject->setStack(0);
+    }
+
+    Primitives::calculateStacks(
+        Primitives::ObjectGetter<HitObject>{[objects](uSz idx) -> HitObject * { return objects[idx].get(); }},
+        objects.size(), AR, beatmapVersion, stackLeniency);
+
+    // update hitobject positions
+    const f32 STACK_OFFSET = 0.05f;
+    const f32 stackOffset = rawHitcircleDiameter * STACK_OFFSET;
+    for(const auto &hitobject : objects) {
+        if(hitobject->getStack() != 0) hitobject->updateStackPosition(stackOffset, hardRock);
+    }
+}
+
+void drawFollowPoints(const PlayfieldView &view, std::span<const std::unique_ptr<HitObject>> objects, uSz firstIndex) {
+    const Skin *skin = view.getSkin();
+
+    const i32 curPos = view.getCurMusicPosWithOffsets();
+
+    // I absolutely hate this, followpoints can be abused for cheesing high AR reading since they always fade in with a
+    // fixed 800 ms custom approach time. Capping it at the current approach rate seems sensible, but unfortunately
+    // that's not what osu is doing. It was non-osu-compliant-clamped since this client existed, but let's see how many
+    // people notice a change after all this time (26.02.2020)
+
+    // 0.7x means animation lasts only 0.7 of it's time
+    const f64 animationMultiplier = view.getSpeedAdjustedAnimationSpeed();
+    const i32 followPointApproachTime =
+        animationMultiplier *
+        (cv::followpoints_clamp.getBool()
+             ? std::min((i32)view.getApproachTime(), (i32)cv::followpoints_approachtime.getFloat())
+             : (i32)cv::followpoints_approachtime.getFloat());
+    const bool followPointsConnectCombos = cv::followpoints_connect_combos.getBool();
+    const bool followPointsConnectSpinners = cv::followpoints_connect_spinners.getBool();
+    const f32 followPointSeparationMultiplier = std::max(cv::followpoints_separation_multiplier.getFloat(), 0.1f);
+    const f32 followPointPrevFadeTime = animationMultiplier * cv::followpoints_prevfadetime.getFloat();
+    const f32 followPointScaleMultiplier = cv::followpoints_scale_multiplier.getFloat();
+    const int screenWidth = (int)view.getScreenSize().x;
+    const int screenHeight = (int)view.getScreenSize().y;
+
+    // include previous object in followpoints
+    int lastObjectIndex = -1;
+
+    for(int index = (int)firstIndex; index < objects.size(); index++) {
+        lastObjectIndex = index - 1;
+
+        // ignore future spinners
+        auto *spinnerPointer = objects[index] && objects[index]->getType() == HitObjectType::SPINNER
+                                   ? static_cast<Spinner *>(objects[index].get())
+                                   : nullptr;
+        if(spinnerPointer != nullptr && !followPointsConnectSpinners)  // if this is a spinner
+        {
+            lastObjectIndex = -1;
+            continue;
+        }
+
+        const bool isCurrentHitObjectNewCombo =
+            (lastObjectIndex >= 0 ? objects[lastObjectIndex]->isEndOfCombo() : false);
+        const bool isCurrentHitObjectSpinner =
+            (lastObjectIndex >= 0 && followPointsConnectSpinners
+                 ? objects[lastObjectIndex] && objects[lastObjectIndex]->getType() == HitObjectType::SPINNER
+                 : false);
+        if(lastObjectIndex >= 0 && (!isCurrentHitObjectNewCombo || followPointsConnectCombos ||
+                                    (isCurrentHitObjectSpinner && followPointsConnectSpinners))) {
+            // ignore previous spinners
+            spinnerPointer = objects[lastObjectIndex] && objects[lastObjectIndex]->getType() == HitObjectType::SPINNER
+                                 ? static_cast<Spinner *>(objects[lastObjectIndex].get())
+                                 : nullptr;
+            if(spinnerPointer != nullptr && !followPointsConnectSpinners)  // if this is a spinner
+            {
+                lastObjectIndex = -1;
+                continue;
+            }
+
+            // get time & pos of the last and current object
+            const i32 lastObjectEndTime =
+                objects[lastObjectIndex]->getClickTime() + objects[lastObjectIndex]->getDuration() + 1;
+            const i32 objectStartTime = objects[index]->getClickTime();
+            const i32 timeDiff = objectStartTime - lastObjectEndTime;
+
+            const vec2 startPointRaw = objects[lastObjectIndex]->getRawPosAt(lastObjectEndTime);
+            const vec2 endPointRaw = objects[index]->getRawPosAt(objectStartTime);
+            const vec2 startPoint = view.osuCoords2Pixels(startPointRaw);
+            const vec2 endPoint = view.osuCoords2Pixels(endPointRaw);
+
+            const f32 xDiff = endPoint.x - startPoint.x;
+            const f32 yDiff = endPoint.y - startPoint.y;
+            const vec2 diff = endPoint - startPoint;
+
+            // NOTE: dist and separation are in osu!pixels, so that followpoint placement is independent of how the
+            // playfield is scaled to the screen (only the final positions are mapped to screen space)
+            const f32 dist = vec::length(endPointRaw - startPointRaw);
+
+            // draw all points between the two objects
+            const int followPointSeparation = 32.0f * followPointSeparationMultiplier;
+            for(int j = (int)(followPointSeparation * 1.5f); j < (dist - followPointSeparation);
+                j += followPointSeparation) {
+                const f32 animRatio = ((f32)j / dist);
+
+                const vec2 animPosStart = startPoint + (animRatio - 0.1f) * diff;
+                const vec2 finalPos = startPoint + animRatio * diff;
+
+                const i32 fadeInTime = (i32)(lastObjectEndTime + animRatio * timeDiff) - followPointApproachTime;
+                const i32 fadeOutTime = (i32)(lastObjectEndTime + animRatio * timeDiff);
+
+                // draw
+                f32 alpha = 1.0f;
+                f32 followAnimPercent =
+                    std::clamp<f32>((f32)(curPos - fadeInTime) / (f32)followPointPrevFadeTime, 0.0f, 1.0f);
+                followAnimPercent = -followAnimPercent * (followAnimPercent - 2.0f);  // quad out
+
+                // NOTE: only internal osu default skin uses scale + move transforms here, it is impossible to achieve
+                // this effect with user skins
+                const f32 scale = cv::followpoints_anim.getBool() ? 1.5f - 0.5f * followAnimPercent : 1.0f;
+                const vec2 followPos = cv::followpoints_anim.getBool()
+                                           ? animPosStart + (finalPos - animPosStart) * followAnimPercent
+                                           : finalPos;
+
+                // bullshit performance optimization: only draw followpoints if within screen bounds (plus a bit of a
+                // margin) there is only one beatmap where this matters currently: https://osu.ppy.sh/b/1145513
+                if(followPos.x < -screenWidth || followPos.x > screenWidth * 2 || followPos.y < -screenHeight ||
+                   followPos.y > screenHeight * 2)
+                    continue;
+
+                // calculate trail alpha
+                if(curPos >= fadeInTime && curPos < fadeOutTime) {
+                    // future trail
+                    const f32 delta = curPos - fadeInTime;
+                    alpha = (f32)delta / (f32)followPointApproachTime;
+                } else if(curPos >= fadeOutTime && curPos < (fadeOutTime + (i32)followPointPrevFadeTime)) {
+                    // previous trail
+                    const i32 delta = curPos - fadeOutTime;
+                    alpha = 1.0f - (f32)delta / (f32)(followPointPrevFadeTime);
+                } else
+                    alpha = 0.0f;
+
+                // draw it
+                g->setColor(Color(0xffffffff).setA(alpha));
+
+                g->pushTransform();
+                {
+                    g->rotate(vec::degrees(std::atan2(yDiff, xDiff)));
+
+                    skin->i_followpoint.setAnimationTimeOffset(skin->anim_speed, fadeInTime);
+
+                    // NOTE: getSizeBaseRaw() depends on the current animation time being set correctly beforehand!
+                    // (otherwise you get incorrect scales, e.g. for animated elements with inconsistent @2x mixed in)
+                    // the followpoints are scaled by one eighth of the hitcirclediameter (not the raw diameter, but the
+                    // scaled diameter)
+                    const f32 followPointImageScale =
+                        ((view.getHitcircleDiameter() / 8.0f) / skin->i_followpoint.getSizeBaseRaw().x) *
+                        followPointScaleMultiplier;
+
+                    skin->i_followpoint.drawRaw(followPos, followPointImageScale * scale);
+                }
+                g->popTransform();
+            }
+        }
+
+        // store current index as previous index
+        lastObjectIndex = index;
+
+        // iterate up until the "nextest" element
+        if(objects[index]->getClickTime() >= curPos + followPointApproachTime) break;
+    }
+}
+
+}  // namespace HitObjects
 }  // namespace neomod

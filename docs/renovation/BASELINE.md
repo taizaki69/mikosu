@@ -90,6 +90,7 @@ Same-day A/B runs against a build of neomod's code (`main` before the rebrand, b
 | Date | Build | Gameplay CPU p99 (GL) | Song select CPU p99, idle / keys / wheel (GL) | Verdict |
 |---|---|---:|---:|---|
 | 2026-10-05 | mikosu `main` after PRs #1–#6 (rebrand, data dirs, replay fixes, ScoreV1, detection) | 0.347 ms vs neomod 0.417 (3 runs each) | 0.378 / 0.501 / 0.390 ms vs neomod 0.418 / 0.518 / 0.434 (10 runs each) | no regression |
+| 2026-10-06 | merge of neomod master `de2a5fdf` (PlayfieldView, MusicTrack, BeatmapFile) | 0.321 ms vs neomod 0.322 (3 runs each) | not re-measured (no song select changes in the merge) | no regression |
 
 - A first 3-run song select pass flagged wheel scrolling at 0.456 vs a 0.454 ms limit. The 10-run re-measure (the rule above) cleared it.
 - An earlier run that day, while the user was playing a game (`hl2_linux` at ≈150% CPU), measured every scene about 2× slower. It's void: **benchmarks need an idle PC.**

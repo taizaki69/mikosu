@@ -1,6 +1,7 @@
 #pragma once
 // Copyright (c)  2026, WH, All rights reserved.
 #include "noinclude.h"
+#include "Registration.h"
 
 #include <string_view>
 
@@ -23,9 +24,11 @@ class UIDebug final {
     void debugAssert(std::string_view args);
     void debugPrompt(std::string_view msg);
     void debugFakeOnline(std::string_view arg);
-    void debugFakeRoom();
+    void debugFakeRoom(std::string_view arg);
     void debugChatMessage(std::string_view args);
+    void debugFocus(std::string_view arg);
 
    private:
     UI* m_ui;
+    Mc::Registration m_prompt;
 };

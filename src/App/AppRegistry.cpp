@@ -12,11 +12,14 @@
 #include "HitSoundTest.h"
 #include "SkinLoadTest.h"
 #include "AsyncPoolTest.h"
+#include "BeatmapFileTest.h"
 #include "ConVarTest.h"
 #include "CryptoTest.h"
+#include "DirectoryWatcherTest.h"
 #include "EmojiRenderTest.h"
 #include "NetworkTest.h"
 #include "PacketTest.h"
+#include "PlayfieldTest.h"
 #include "SliderRenderTest.h"
 
 #include <array>
@@ -30,11 +33,14 @@ static constexpr std::array sDescriptors{
     AppDescriptor{"HitSoundTest", [] -> App * { return new Mc::Tests::HitSoundTest(); }},
     AppDescriptor{"SkinLoadTest", [] -> App * { return new Mc::Tests::SkinLoadTest(); }},
     AppDescriptor{"AsyncPoolTest", [] -> App * { return new Mc::Tests::AsyncPoolTest(); }},
+    AppDescriptor{"BeatmapFileTest", [] -> App * { return new Mc::Tests::BeatmapFileTest(); }},
     AppDescriptor{"ConVarTest", [] -> App * { return new Mc::Tests::ConVarTest(); }},
     AppDescriptor{"CryptoTest", [] -> App * { return new Mc::Tests::CryptoTest(); }},
+    AppDescriptor{"DirectoryWatcherTest", [] -> App * { return new Mc::Tests::DirectoryWatcherTest(); }},
     AppDescriptor{"EmojiRenderTest", [] -> App * { return new Mc::Tests::EmojiRenderTest(); }},
     AppDescriptor{"NetworkTest", [] -> App * { return new Mc::Tests::NetworkTest(); }},
     AppDescriptor{"PacketTest", [] -> App * { return new Mc::Tests::PacketTest(); }},
+    AppDescriptor{"PlayfieldTest", [] -> App * { return new Mc::Tests::PlayfieldTest(); }},
     AppDescriptor{"SliderRenderTest", [] -> App * { return new Mc::Tests::SliderRenderTest(); }},
 };
 

@@ -208,7 +208,6 @@ bool SoLoudSoundEngine::updateExistingSound(SoLoudSound *soloudSound, SOUNDHANDL
         // invalidate caches
         soloudSound->soloud_paused_handle_cache_time = 0.;
         soloudSound->cached_pause_state = false;
-        soloudSound->force_sync_position_next = true;
     }
 
     logIfCV(debug_snd, "handle was already valid, for non-overlayable sound {}", soloudSound->getName());
@@ -259,7 +258,6 @@ bool SoLoudSoundEngine::playSound(SoLoudSound *soloudSound, f32 pan, f32 pitch, 
     // invalidate caches (they still describe the previous voice, also when this one starts paused)
     soloudSound->soloud_paused_handle_cache_time = 0.;
     soloudSound->cached_pause_state = startPaused;
-    soloudSound->force_sync_position_next = true;
 
     PlaybackParams newInstance{.pan = pan, .pitch = pitch, .volume = playVolume};
     soloudSound->addActiveInstance(handle, newInstance);
@@ -320,7 +318,6 @@ void SoLoudSoundEngine::pause(Sound *snd) {
     // invalidate caches
     soloudSound->soloud_paused_handle_cache_time = 0.;
     soloudSound->cached_pause_state = true;
-    soloudSound->force_sync_position_next = true;
 }
 
 void SoLoudSoundEngine::stop(Sound *snd) {
@@ -609,9 +606,6 @@ void SoLoudSoundEngine::allowInternalCallbacks() {
 }
 
 SoLoudSoundEngine::~SoLoudSoundEngine() {
-    if(!!this->restartCBs[0]) {
-        this->restartCBs[0]();
-    }
     if(soloud && this->isReady()) {
         soloud->deinit();
     }
@@ -747,8 +741,7 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
     // (copy, the reference may point into outputDevices which gets rebuilt below)
     OUTPUT_DEVICE desiredDev = device;
 
-    // run callbacks pt. 1
-    if(this->restartCBs[0] != nullptr) this->restartCBs[0]();
+    this->notifyDeviceChange(DeviceChange::BEFORE);
     debugLog("id {} name {}", desiredDev.id, desiredDev.name);
 
     // cleanup potential previous device
@@ -958,10 +951,7 @@ bool SoLoudSoundEngine::initializeOutputDevice(const OUTPUT_DEVICE &device) {
     // init global volume
     this->setMasterVolume(this->fMasterVolume);
 
-    // run callbacks pt. 2
-    if(this->restartCBs[1] != nullptr) {
-        this->restartCBs[1]();
-    }
+    this->notifyDeviceChange(DeviceChange::AFTER);
     return true;
 }
 

@@ -14,6 +14,8 @@
 #include "UI.h"
 #include "SyncMutex.h"
 
+#include <algorithm>
+#include <cassert>
 #include <ranges>
 #include <utility>
 
@@ -67,6 +69,8 @@ NotificationOverlay::NotificationOverlay() : UIScreen(), notifMtx(new Mutex()) {
 NotificationOverlay::~NotificationOverlay() {
     cv::cmd::notify.removeCallback();
     cv::cmd::toast.removeCallback();
+    assert(std::ranges::all_of(this->toastCallbacks, &ToastCallback::detached) &&
+           "a toast callback's Registration outlived the NotificationOverlay");
 }
 
 static constexpr f32 DEF_TOAST_WIDTH{350.0f};
@@ -97,6 +101,7 @@ ToastElement::ToastElement(std::string text, Color borderColor, ToastElement::TY
 }
 
 void ToastElement::freezeTimeout() { this->creation_time += engine->getFrameTime(); }
+void ToastElement::dismiss() { this->creation_time = engine->getTime() - this->timeout; }
 f64 ToastElement::getTimeRemaining() const { return (this->creation_time + this->timeout) - engine->getTime(); }
 bool ToastElement::hasTimedOut() const { return this->getTimeRemaining() <= 0.; }
 
@@ -150,17 +155,14 @@ void NotificationOverlay::tick() {
     UIScreen::tick();
     if(this->toasts.empty()) return;
 
-    const bool chat_toasts_visible = should_chat_toasts_be_visible();
-    const vec2 screen = osu->getVirtScreenSize();
+    this->layoutToasts();
 
+    const bool chat_toasts_visible = should_chat_toasts_be_visible();
     bool a_toast_is_hovered = false;
-    f32 bottom_y = screen.y - TOAST_SCREEN_BOTTOM_MARGIN;
     for(auto rtit = this->toasts.rbegin(); rtit != this->toasts.rend(); ++rtit) {
         const auto &t = *rtit;
         if(t->type == ToastElement::TYPE::CHAT && !chat_toasts_visible) continue;
 
-        bottom_y -= TOAST_OUTER_Y_MARGIN + t->getSize().y;
-        t->setPos(screen.x - (TOAST_SCREEN_RIGHT_MARGIN + TOAST_WIDTH), bottom_y);
         t->tick();
         a_toast_is_hovered |= t->isMouseInside();
     }
@@ -169,6 +171,7 @@ void NotificationOverlay::tick() {
         const auto &t = *tit;
         if(t->hasTimedOut()) {
             // remove timed out toasts
+            if(t->callbackId) std::erase_if(this->toastCallbacks, [&](const auto &c) { return c.id == t->callbackId; });
             tit = this->toasts.erase(tit);
             continue;
         }
@@ -335,22 +338,80 @@ void NotificationOverlay::addNotification(std::string text, Color textColor, boo
     this->updateVisibility();
 }
 
-void NotificationOverlay::addToast(ToastOpts opts) {
+void NotificationOverlay::addToast(std::string text, Color borderColor, ToastElement::TYPE type) {
+    this->addToastElement(std::move(text), borderColor, type, 0);
+}
+
+Mc::Registration NotificationOverlay::addToast(std::string text, Color borderColor, ToastClickCallback callback,
+                                               ToastElement::TYPE type) {
+    Sync::scoped_lock lk(*this->notifMtx);
+    const u64 id = ++this->lastToastCallbackId;
+    this->toastCallbacks.push_back({.id = id, .callback = std::move(callback)});
+    this->addToastElement(std::move(text), borderColor, type, id);
+    return {[](void *self, u64 id, Mc::Registration::End how) {
+                static_cast<NotificationOverlay *>(self)->endToastCallback(id, how);
+            },
+            this, id};
+}
+
+void NotificationOverlay::onToastClicked(u64 callbackId) {
+    ToastClickCallback callback;
+    {
+        Sync::scoped_lock lk(*this->notifMtx);
+        const auto it = std::ranges::find(this->toastCallbacks, callbackId, &ToastCallback::id);
+        if(it == this->toastCallbacks.end()) return;
+        callback = it->callback;
+    }
+    callback();
+}
+
+void NotificationOverlay::endToastCallback(u64 callbackId, Mc::Registration::End how) {
+    Sync::scoped_lock lk(*this->notifMtx);
+    const auto it = std::ranges::find(this->toastCallbacks, callbackId, &ToastCallback::id);
+    if(it == this->toastCallbacks.end()) return;
+    if(how == Mc::Registration::End::DETACH) {
+        it->detached = true;
+        return;
+    }
+    this->toastCallbacks.erase(it);
+    // (it would do nothing on a click now)
+    for(const auto &t : this->toasts) {
+        if(t->callbackId == callbackId) t->dismiss();
+    }
+}
+
+void NotificationOverlay::addToastElement(std::string text, Color borderColor, ToastElement::TYPE type,
+                                          u64 callbackId) {
     Sync::scoped_lock lk(*this->notifMtx);
     if constexpr(Env::cfg(BUILD::DEBUG)) {
         // also log it
         // TODO: debug channels/separate files
-        debugLog(opts.text);
+        debugLog(text);
     }
-    auto toast = std::make_unique<ToastElement>(std::move(opts.text), opts.borderColor, opts.type);
-    toast->setTimeout(opts.timeout);
-
-    if(!!opts.callback) {
-        toast->setClickCallback(std::move(opts.callback));
+    auto toast = std::make_unique<ToastElement>(std::move(text), borderColor, type);
+    if(callbackId) {
+        toast->callbackId = callbackId;
+        toast->setClickCallback([this, callbackId] { this->onToastClicked(callbackId); });
     }
     this->toasts.push_back(std::move(toast));
+    // now rather than at the next tick: a toast added after this frame's tick would be hit-tested and drawn at (0,0)
+    this->layoutToasts();
 
     this->updateVisibility();
+}
+
+void NotificationOverlay::layoutToasts() {
+    const bool chat_toasts_visible = should_chat_toasts_be_visible();
+    const vec2 screen = osu->getVirtScreenSize();
+
+    f32 bottom_y = screen.y - TOAST_SCREEN_BOTTOM_MARGIN;
+    for(auto rtit = this->toasts.rbegin(); rtit != this->toasts.rend(); ++rtit) {
+        const auto &t = *rtit;
+        if(t->type == ToastElement::TYPE::CHAT && !chat_toasts_visible) continue;
+
+        bottom_y -= TOAST_OUTER_Y_MARGIN + t->getSize().y;
+        t->setPos(screen.x - (TOAST_SCREEN_RIGHT_MARGIN + TOAST_WIDTH), bottom_y);
+    }
 }
 
 void NotificationOverlay::stopWaitingForKey(bool stillConsumeNextChar) {

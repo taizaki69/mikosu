@@ -8,19 +8,10 @@
 #include "noinclude.h"
 #include "types.h"
 #include "Vectors.h"
-
-#ifndef BUILD_TOOLS_ONLY
 #include "SyncStoptoken.h"
-#else
-
-#include <stop_token>
-namespace Sync {
-using std::stop_token;
-}
-#endif
-
 #include "StrainComputeState.h"
 #include "StaticPImpl.h"
+#include "BeatmapPrimitives.h"
 
 #include <vector>
 #include <array>
@@ -50,7 +41,7 @@ using DatabaseBeatmapTypes::SLIDER_SCORING_TIME;
 extern const u32 PP_ALGORITHM_VERSION;
 
 // a parsed hitobject plus the per-object difficulty data computed from it by the star calc.
-// the parsed part is filled by DatabaseBeatmap::loadDifficultyHitObjects, the computed part is
+// the parsed part is filled by loadDifficultyHitObjects, the computed part is
 // roughly equivalent to lazer's OsuDifficultyHitObject (+ a per-object slice of the skill state).
 // NOTE: unlike lazer, the first hitobject is included in the objects array (lazer's difficulty
 // hit objects start at the second one), so lazer's Index == index here.
@@ -138,6 +129,46 @@ class DifficultyHitObject {
     // computed by the star calc (calculateStarDiffForHitObjects), never set by the loader/ctor.
     struct Computed;
     StaticPImpl<Computed, 216> c;
+};
+
+struct LOAD_DIFFOBJ_RESULT;
+
+// the objects of a map with the given AR, CS and speed (mods applied) and hardRock's stacking direction; calculates
+// the primitives' slider timing first if that hasn't happened yet
+LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(Primitives::PRIMITIVE_CONTAINER &c, f32 AR, f32 CS, f32 speedMultiplier,
+                                             bool hardRock, const Sync::stop_token &dead = {});
+
+struct LOAD_DIFFOBJ_RESULT final {
+    LOAD_DIFFOBJ_RESULT() = default;
+    ~LOAD_DIFFOBJ_RESULT() = default;
+
+    LOAD_DIFFOBJ_RESULT(const LOAD_DIFFOBJ_RESULT &) = delete;
+    LOAD_DIFFOBJ_RESULT &operator=(const LOAD_DIFFOBJ_RESULT &) = delete;
+    LOAD_DIFFOBJ_RESULT(LOAD_DIFFOBJ_RESULT &&) noexcept = default;
+    LOAD_DIFFOBJ_RESULT &operator=(LOAD_DIFFOBJ_RESULT &&) noexcept = default;
+
+    std::vector<DifficultyHitObject> diffobjects;
+
+    // which parameters the computed (star calc) fields of diffobjects were last fully computed
+    // with, invalid on a fresh load. pass to StarCalcParams::strainState to reuse them.
+    StrainComputeState strainState{};
+
+    u32 totalBreakDuration{0};
+
+    // raw file difficulty values (the scorev1 base multiplier ignores mod-adjusted stats)
+    f32 fileCS{5.f}, fileHP{5.f}, fileOD{5.f};
+
+    Primitives::LoadError error;
+
+    [[nodiscard]] u32 getTotalMaxCombo() const { return maxComboAtIndex.back(); }
+    [[nodiscard]] u32 getMaxComboAtIndex(uSz diffobjIndex) const;
+
+   private:
+    friend LOAD_DIFFOBJ_RESULT loadDifficultyHitObjects(Primitives::PRIMITIVE_CONTAINER &c, f32 AR, f32 CS,
+                                                        f32 speedMultiplier, bool hardRock,
+                                                        const Sync::stop_token &dead);
+    // starts with a single 0 sentinel so getTotalMaxCombo() works pre-fill
+    std::vector<u32> maxComboAtIndex{0};
 };
 
 // This struct is the core data computed by difficulty calculation and used in performance calculation

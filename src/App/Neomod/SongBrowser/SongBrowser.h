@@ -5,6 +5,7 @@
 #include "AnimationHandler.h"
 #include "AsyncCancellable.h"
 #include "AsyncChannel.h"
+#include "Registration.h"
 #include "MapExporter.h"
 #include "MapFetcher.h"
 #include "ScreenBackable.h"
@@ -279,6 +280,9 @@ class SongBrowser final : public ScreenBackable {
    private:
     void initializeGroupingButtons();
     void onDatabaseLoadingFinished(bool isNextScreenSongBrowser);
+    // plays a selected map's music as stable's song select does: the file that was already loaded goes on where it
+    // was (also where a quit play paused it) unless it's nearly at its end, a new one starts at its restart point
+    void playPreviewMusic(DatabaseBeatmap *map);
 
     // returns true if we drew anything
     bool drawBeatmapOrMenuBackground();
@@ -366,6 +370,9 @@ class SongBrowser final : public ScreenBackable {
     class BeatmapLoadingOverlay;
     friend BeatmapLoadingOverlay;
     UIOverlay *loadingOverlay{nullptr};
+
+    // keeps the database in sync with maps/ while it's loaded (a load scans maps/ itself)
+    Mc::Registration mapsWatch;
 
     // to avoid transitive includes
     struct MD5HashMap;

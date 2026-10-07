@@ -3,6 +3,7 @@
 
 #include "CBaseUIScrollView.h"
 #include "MapFetcher.h"
+#include "Registration.h"
 #include "UIScreen.h"
 
 enum class LegacyFlags : u32;
@@ -136,4 +137,7 @@ class RoomScreen final : public UIScreen {
     // map_fetcher drives the install of the host's current pick until it gets there.
     i32 current_map_id{-1};
     MapFetcher map_fetcher;
+    Mc::Registration passwordPrompt;
+    // while the room has a map (the room picks it, nothing else may)
+    Mc::Registration selectionHold;
 };

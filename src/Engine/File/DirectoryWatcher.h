@@ -3,6 +3,7 @@
 
 #include "noinclude.h"
 #include "types.h"
+#include "Registration.h"
 #include "StaticPImpl.h"
 
 #include <functional>
@@ -21,7 +22,6 @@ struct FileChangeEvent {
 };
 
 // Consider this API "temporary" until a better solution is implemented
-// XXX: can't have multiple callbacks per path
 
 using FileChangeCallback = std::function<void(FileChangeEvent)>;
 
@@ -33,8 +33,9 @@ class DirectoryWatcher {
     DirectoryWatcher();
     ~DirectoryWatcher();
 
-    void watch_directory(std::string path, FileChangeCallback cb);
-    void stop_watching(std::string path);
+    // reports changes to the files and direct subdirectories of `path` (not recursive) to `cb`, on the main thread,
+    // for as long as the returned Registration lives. any number of watches can share a directory
+    Mc::Registration watch_directory(std::string path, FileChangeCallback cb);
 
    private:
     friend class Engine;

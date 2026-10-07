@@ -2,6 +2,7 @@
 #include "Osu.h"
 
 #include "BeatmapInstaller.h"
+#include "MusicTrack.h"
 #include "PreviewTrackManager.h"
 #include "ThumbnailManager.h"
 #include "BackgroundImageHandler.h"
@@ -52,6 +53,7 @@
 #include "RankingScreen.h"
 #include "RenderTarget.h"
 #include "ResourceManager.h"
+#include "RichPresence.h"
 #include "RoomScreen.h"
 #include "Shader.h"
 #include "Skin.h"
@@ -127,7 +129,8 @@ Osu::Osu()
     : App(),
       MouseListener(),
       global_osu_(this),
-      map_iface(std::make_unique<BeatmapInterface>()),
+      musicTrack(std::make_unique<MusicTrack>()),
+      map_iface(std::make_unique<BeatmapInterface>(*this->musicTrack)),
       score(std::make_unique<LiveScore>(false)) {
     // global cvar callbacks will be removed in destructor
     cvars().setPolicy({.allowWrite = Osu::globalAllowConVarWrite, .onValueChanged = Osu::globalOnConVarChange});
@@ -424,13 +427,14 @@ void Osu::doDeferredInitTasks() {
             if(extracted) env->deleteFile(path);
         }
 
-        directoryWatcher->watch_directory(Mc::Paths::skins() + "/", [](const FileChangeEvent &ev) -> void {
-            if(ev.type != FileChangeType::CREATED) return;
-            logRaw("[DirectoryWatcher] Importing new skin {}: type {}", ev.path, static_cast<u32>(ev.type));
-            if(env->getFileExtensionFromFilePath(ev.path) != "osk") return;
-            const bool extracted = neomod::handle_osk(ev.path);
-            if(extracted) env->deleteFile(ev.path);
-        });
+        this->skinsWatch =
+            directoryWatcher->watch_directory(Mc::Paths::skins() + "/", [](const FileChangeEvent &ev) -> void {
+                if(ev.type != FileChangeType::CREATED) return;
+                logRaw("[DirectoryWatcher] Importing new skin {}: type {}", ev.path, static_cast<u32>(ev.type));
+                if(env->getFileExtensionFromFilePath(ev.path) != "osk") return;
+                const bool extracted = neomod::handle_osk(ev.path);
+                if(extracted) env->deleteFile(ev.path);
+            });
     }
 }
 
@@ -447,9 +451,8 @@ Osu::~Osu() {
 
     touch->removeListener(this);
 
-    // remove soundengine callbacks (so it doesnt try to call them after we are destroyed)
-    soundEngine->setDeviceChangeBeforeCallback({});
-    soundEngine->setDeviceChangeAfterCallback({});
+    // (so the sound engine doesn't call into what's being destroyed below)
+    this->audioDeviceListener.reset();
 
     BatchDiffCalc::abort_calc();
     AsyncPPC::set_map(nullptr);
@@ -457,10 +460,7 @@ Osu::~Osu() {
     BANCHO::Net::cleanup_networking();
 
     // destroy playing music
-    if(this->map_iface && this->map_iface->getMusic()) {
-        resourceManager->destroyResource(this->map_iface->getMusic(), ResourceDestroyFlags::RDF_FORCE_BLOCKING);
-        this->map_iface.reset();
-    }
+    this->map_iface.reset();
 
     // clear main menu maps early, just in case
     if(this->UIReady()) {
@@ -470,6 +470,8 @@ Osu::~Osu() {
     this->bUILoaded = false;
     this->ui_memb.reset();  // destroy ui layers
     ui = nullptr;
+    // (after the ui, whose screens hold the selection)
+    this->musicTrack.reset();
     // shutdown db
     this->db_memb.reset();  // shutdown db
     db = nullptr;
@@ -619,8 +621,8 @@ void Osu::update() {
 
     this->previewTrackManager->update();
 
-    // does things which needed to wait until loading finished
-    this->map_iface->checkHandleAsyncMusicLoadFinish();
+    // (a finished load may have started the music)
+    if(this->musicTrack->update()) RichPresence::refreshStatus();
 
     if(this->skin.get()) {
         this->skin->update(this->isInPlayMode(), this->map_iface->isPlaying(),
@@ -630,13 +632,6 @@ void Osu::update() {
     this->fposu->update();
 
     ui->update();
-
-    if(this->music_unpause_scheduled && soundEngine->isReady()) {
-        if(Sound *music = this->map_iface->getMusic(); music && !music->isPlaying()) {
-            soundEngine->play(music);
-        }
-        this->music_unpause_scheduled = false;
-    }
 
     // main playfield update
     this->bSeeking = false;
@@ -956,8 +951,8 @@ void Osu::onKeyDown(KeyboardEvent &key) {
         if(env->minimizeWindow()) {
             // (this resumes the music a preview paused, which gets paused again below and comes back with the window)
             this->previewTrackManager->stop();
-            this->bWasBossKeyPaused = this->map_iface->isPreviewMusicPlaying();
-            this->map_iface->pausePreviewMusic(false);
+            this->bWasBossKeyPaused = this->musicTrack->isPlaying();
+            this->musicTrack->pause();
         }
     }
 
@@ -977,7 +972,7 @@ void Osu::onKeyDown(KeyboardEvent &key) {
             score.playerName = BanchoState::get_username();
             score.player_id = std::max(0, BanchoState::get_uid());
 
-            f64 pos_seconds = this->map_iface->getTime() - cv::instant_replay_duration.getFloat();
+            f64 pos_seconds = this->map_iface->getTime() / 1000.0 - cv::instant_replay_duration.getFloat();
             u32 pos_ms = (u32)(std::max(0.0, pos_seconds) * 1000.0);
             this->map_iface->cancelFailing();
             this->map_iface->watch(score, pos_ms);
@@ -1303,23 +1298,25 @@ void Osu::showNotification(const NotificationInfo &info) {
     }
 
     if(info.nclass == NotificationClass::TOAST) {
+        const auto toast = [&](Color color) {
+            if(info.callback) {
+                noverlay->addToast(info.text, color, info.callback).detach();
+            } else {
+                noverlay->addToast(info.text, color);
+            }
+        };
         using enum NotificationPreset;
         switch(info.preset) {
             case CUSTOM:
-                noverlay->addToast(info.text, info.custom_color, info.callback);
-                return;
+                return toast(info.custom_color);
             case INFO:
-                noverlay->addToast(info.text, INFO_TOAST, info.callback);
-                return;
+                return toast(INFO_TOAST);
             case ERROR:
-                noverlay->addToast(info.text, ERROR_TOAST, info.callback);
-                return;
+                return toast(ERROR_TOAST);
             case SUCCESS:
-                noverlay->addToast(info.text, SUCCESS_TOAST, info.callback);
-                return;
+                return toast(SUCCESS_TOAST);
             case STATUS:
-                noverlay->addToast(info.text, STATUS_TOAST, info.callback);
-                return;
+                return toast(STATUS_TOAST);
         }
         std::unreachable();
     } else if(info.nclass == NotificationClass::BANNER) {
@@ -1350,7 +1347,7 @@ void Osu::showNotification(const NotificationInfo &info) {
     return;
 }
 
-void Osu::reloadMapInterface() { this->map_iface = std::make_unique<BeatmapInterface>(); }
+void Osu::reloadMapInterface() { this->map_iface = std::make_unique<BeatmapInterface>(*this->musicTrack); }
 
 void Osu::saveScreenshot() {
     static std::atomic<i32> screenshotNumber{0};
@@ -1471,13 +1468,16 @@ void Osu::saveScreenshot() {
                     notif->addNotification(std::move(error), 0xffff0000, false, 3.0f);
                 } else if constexpr(Env::cfg(OS::WASM)) {
                     const bool copied = cv::screenshot_clipboard.getBool() && env->setClipBoardImage(pngData);
-                    notif->addToast(copied ? _("Screenshot copied to clipboard (click to open in a new tab)")
-                                           : _("Screenshot taken (click to open in a new tab)"),
-                                    CHAT_TOAST, [png = std::move(pngData)] {
-                                        if(!env->openDataInDefaultBrowser(png, "image/png")) {
-                                            debugLog("couldn't open the screenshot in a new tab");
-                                        }
-                                    });
+                    notif
+                        ->addToast(copied ? _("Screenshot copied to clipboard (click to open in a new tab)")
+                                          : _("Screenshot taken (click to open in a new tab)"),
+                                   CHAT_TOAST,
+                                   [png = std::move(pngData)] {
+                                       if(!env->openDataInDefaultBrowser(png, "image/png")) {
+                                           debugLog("couldn't open the screenshot in a new tab");
+                                       }
+                                   })
+                        .detach();
                 } else {
                     std::string toastString;
                     // put it in the clipboard as well
@@ -1487,8 +1487,10 @@ void Osu::saveScreenshot() {
                         toastString = tformat("Screenshot saved to {:s}", screenshotFilename);
                     }
 
-                    notif->addToast(std::move(toastString), CHAT_TOAST,
-                                    [file = std::move(screenshotFilename)] { env->openFileBrowser(file); });
+                    notif
+                        ->addToast(std::move(toastString), CHAT_TOAST,
+                                   [file = std::move(screenshotFilename)] { env->openFileBrowser(file); })
+                        .detach();
                 }
             });
     };
@@ -1824,7 +1826,7 @@ void Osu::doChangeFocus(bool focused) {
     if(focused) {
         if(this->bWasBossKeyPaused) {
             this->bWasBossKeyPaused = false;
-            this->map_iface->pausePreviewMusic();
+            this->musicTrack->togglePause();
         }
 
         this->ui_memb->getVolumeOverlay()->gainFocus();
@@ -1898,8 +1900,10 @@ void Osu::exportSkin(std::string_view name) {
             using enum SkinArchive::ExportResult::Status;
             switch(res.status) {
                 case Exported:
-                    notif->addToast(tformat("Skin exported to {:s}", res.path), SUCCESS_TOAST,
-                                    [path = res.path] { env->openFileBrowser(path); });
+                    notif
+                        ->addToast(tformat("Skin exported to {:s}", res.path), SUCCESS_TOAST,
+                                   [path = res.path] { env->openFileBrowser(path); })
+                        .detach();
                     return;
                 case DefaultSkin:
                     notif->addToast(_("Can't export the default skin."), ERROR_TOAST);
@@ -2243,15 +2247,6 @@ bool Osu::isBleedingEdge() {
 void Osu::audioRestartCallbackBefore() {
     // abort loudness calc (needed especially for BASS since BASS_Free() is global)
     VolNormalization::shutdown();
-
-    Sound *map_music = nullptr;
-    if(this->map_iface && (map_music = this->map_iface->getMusic())) {
-        this->music_was_playing = map_music->isPlaying();
-        this->music_prev_position_ms = map_music->getPositionMS();
-    } else {
-        this->music_was_playing = false;
-        this->music_prev_position_ms = 0;
-    }
 }
 
 // the actual reset will be sandwiched between these during restart
@@ -2262,22 +2257,6 @@ void Osu::audioRestartCallbackAfter() {
         options->onOutputDeviceChange();
         if(this->skin) {
             this->skin->reloadSounds();
-        }
-
-        // start playing music again after audio device changed
-        Sound *map_music = nullptr;
-        if(this->map_iface && (map_music = this->map_iface->getMusic())) {
-            // TODO(spec): is this even right? why do we only unload music after already destroying/restarting soundengine
-            this->map_iface->unloadMusic();
-            this->map_iface->loadMusic();
-            if((map_music = this->map_iface->getMusic())) {  // need to get new music after loading
-                map_music->setLoop(!this->isInPlayMode());
-                map_music->setPositionMS(this->music_prev_position_ms);
-            }
-        }
-
-        if(this->music_was_playing) {
-            this->music_unpause_scheduled = true;
         }
         options->scheduleLayoutUpdate();
     }
@@ -2304,8 +2283,9 @@ void Osu::setupAudio() {
             []() -> void { osu && osu->UIReady() ? ui->getOptionsOverlay()->scheduleLayoutUpdate() : (void)0; });
     }
 
-    soundEngine->setDeviceChangeBeforeCallback(SA::MakeDelegate<&Osu::audioRestartCallbackBefore>(this));
-    soundEngine->setDeviceChangeAfterCallback(SA::MakeDelegate<&Osu::audioRestartCallbackAfter>(this));
+    this->audioDeviceListener =
+        soundEngine->addDeviceChangeListener(SA::MakeDelegate<&Osu::audioRestartCallbackBefore>(this),
+                                             SA::MakeDelegate<&Osu::audioRestartCallbackAfter>(this));
 
     if(Env::cfg(AUD::SOLOUD) && soundEngine->getTypeId() == SoundEngine::SOLOUD) {  // bass works differently
         // this sets convar callbacks for things that require a soundengine reinit, do it

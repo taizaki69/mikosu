@@ -19,6 +19,7 @@
 #include "i18n.h"
 #include "Lobby.h"
 #include "ModFPoSu.h"
+#include "MusicTrack.h"
 #include "Mouse.h"
 #include "Osu.h"
 #include "Font.h"
@@ -890,7 +891,7 @@ void HUD::drawLoadingSmall(std::string_view text) {
 }
 
 void HUD::drawNumberWithSkinDigits(const SkinDigitDrawOpts &opts) {
-    const Skin *skin = osu->getSkin();
+    const Skin *skin = opts.skin ? opts.skin : osu->getSkin();
     u64 number = opts.number;
 
     u64 divisor = 1;
@@ -1799,18 +1800,15 @@ void HUD::drawClock(f32 percent, bool waiting) {
 void HUD::drawStatistics(const HUDStats &s) {
     static const auto getOffsetStatText = []() -> std::string {
         const auto *bmi = osu->getMapInterface();
-        if(!bmi || !bmi->getMusic() || !bmi->getBeatmap()) return "";
+        if(!bmi || !bmi->getBeatmap()) return "";
 
-        const i32 uniScaled =
-            (i32)((cv::universal_offset.getFloat() + cv::universal_offset_hardcoded_blamepeppy.getFloat()) *
-                  bmi->getSpeedMultiplier());
+        const MusicTrack *music = osu->getMusicTrack();
         const i32 uniUnscaled = cv::universal_offset_norate.getInt();
         const i32 local = bmi->getBeatmap()->getLocalOffset();
         const i32 online = bmi->getBeatmap()->getOnlineOffset();
-        const i32 total = uniScaled + uniUnscaled - local - online;
-        return fmt::format("off: {}ms ((({}peppy+{}us)*{:.1f}spd)+{}uu-{}l-{}lo)", total,
+        return fmt::format("off: {}ms ((({}peppy+{}us)*{:.1f}spd)+{}uu-{}l-{}lo)", music->getOffset(bmi->getBeatmap()),
                            cv::universal_offset_hardcoded_blamepeppy.getFloat(), cv::universal_offset.getFloat(),
-                           bmi->getSpeedMultiplier(), uniUnscaled, local, online);
+                           music->getSpeed(), uniUnscaled, local, online);
     };
 
     McFont *font = osu->getTitleFont();
