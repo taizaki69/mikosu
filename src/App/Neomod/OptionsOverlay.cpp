@@ -17,6 +17,7 @@
 #include "Paths.h"
 #include "File.h"
 #include "HitObjects.h"
+#include "PlayfieldView.h"
 #include "HUD.h"
 #include "i18n.h"
 #include "Font.h"
@@ -26,6 +27,7 @@
 #include "BeatmapInterface.h"
 #include "MainMenu.h"
 #include "ModSelector.h"
+#include "MusicTrack.h"
 #include "Osu.h"
 #include "Skin.h"
 #include "SongBrowser/SongBrowser.h"
@@ -273,6 +275,7 @@ struct OptionsOverlayImpl final {
     CBaseUILabel *skinLabel{nullptr};
     UIButton *skinSelectLocalButton{nullptr};
     CBaseUIButton *languageSelectButton{nullptr};
+    Mc::Registration customResolutionPrompt;
     CBaseUIButton *resolutionSelectButton{nullptr};
     CBaseUILabel *resolutionLabel{nullptr};
     CBaseUIButton *outputDeviceSelectButton{nullptr};
@@ -500,12 +503,12 @@ class SkinPreviewElement final : public CBaseUIElement {
     void draw() override {
         if(!this->bVisible) return;
 
-        const Skin *skin = osu->getSkin();
+        // screen pixels from the element's vertical center
+        const PlainPlayfieldView view{osu->getSkin(), this->getPos() + vec2(0, this->getSize().y / 2), 1.f,
+                                      this->getSize().y * 0.5f};
+        const Skin *skin = view.getSkin();
 
-        float hitcircleDiameter = this->getSize().y * 0.5f;
-        float numberScale =
-            (hitcircleDiameter / (160.0f * (skin->i_defaults[1].scale()))) * 1 * cv::number_scale_multiplier.getFloat();
-        float overlapScale = (hitcircleDiameter / (160.0f)) * 1 * cv::number_scale_multiplier.getFloat();
+        const float hitcircleDiameter = view.getHitcircleDiameter();
         float scoreScale = 0.5f;
 
         if(this->iMode == 0) {
@@ -522,21 +525,16 @@ class SkinPreviewElement final : public CBaseUIElement {
             const float colorRGBMultiplier = 1.0f;
             using enum LiveHitResult;
 
-            Circle::drawCircle(
-                skin, this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (1.0f / 5.0f), 0.0f),
-                hitcircleDiameter, numberScale, overlapScale, number, colorCounter, colorOffset, colorRGBMultiplier,
-                approachScale, approachAlpha, approachAlpha, true, false);
+            Circle::drawCircle(view, vec2(this->getSize().x * (1.0f / 5.0f), 0.0f), number, colorCounter, colorOffset,
+                               colorRGBMultiplier, approachScale, approachAlpha, approachAlpha, true, false);
             Circle::drawHitResult(
-                skin, hitcircleDiameter, hitcircleDiameter,
-                this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (2.0f / 5.0f), 0.0f),
+                view, this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (2.0f / 5.0f), 0.0f),
                 HIT_100, 0.45f, 0.33f);
             Circle::drawHitResult(
-                skin, hitcircleDiameter, hitcircleDiameter,
-                this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (3.0f / 5.0f), 0.0f), HIT_50,
-                0.45f, 0.66f);
+                view, this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (3.0f / 5.0f), 0.0f),
+                HIT_50, 0.45f, 0.66f);
             Circle::drawHitResult(
-                skin, hitcircleDiameter, hitcircleDiameter,
-                this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (4.0f / 5.0f), 0.0f),
+                view, this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (4.0f / 5.0f), 0.0f),
                 HIT_MISS, 0.45f, 1.0f);
             Circle::drawApproachCircle(
                 skin, this->getPos() + vec2(0, this->getSize().y / 2) + vec2(this->getSize().x * (1.0f / 5.0f), 0.0f),
@@ -545,7 +543,7 @@ class SkinPreviewElement final : public CBaseUIElement {
         } else if(this->iMode == 1) {
             const int numNumbers = 6;
             for(int i = 1; i < numNumbers + 1; i++) {
-                Circle::drawHitCircleNumber(skin, numberScale, overlapScale,
+                Circle::drawHitCircleNumber(skin, view.getNumberScale(), view.getHitcircleOverlapScale(),
                                             this->getPos() + vec2(0, this->getSize().y / 2) +
                                                 vec2(this->getSize().x * ((float)i / (numNumbers + 1.0f)), 0.0f),
                                             i - 1, 1.0f, 1.0f);
@@ -583,10 +581,9 @@ class SliderPreviewElement final : public CBaseUIElement, public SliderRenderer:
     void draw() override {
         if(!this->bVisible) return;
 
-        const float hitcircleDiameter = this->getHitcircleDiameter();
-        const float numberScale = (hitcircleDiameter / (160.0f * (osu->getSkin()->i_defaults[1].scale()))) * 1 *
-                                  cv::number_scale_multiplier.getFloat();
-        const float overlapScale = (hitcircleDiameter / (160.0f)) * 1 * cv::number_scale_multiplier.getFloat();
+        // screen pixels from the element's position
+        const PlainPlayfieldView view{osu->getSkin(), this->getPos(), 1.f, this->getHitcircleDiameter()};
+        const float hitcircleDiameter = view.getHitcircleDiameter();
 
         const float approachScale = std::clamp<float>(1.0f + 1.5f - fmod(engine->getTime() * 3, 3.0f), 0.0f, 2.5f);
         float approachAlpha = std::clamp<float>(fmod(engine->getTime() * 3, 3.0f) / 1.5f, 0.0f, 1.0f);
@@ -624,8 +621,7 @@ class SliderPreviewElement final : public CBaseUIElement, public SliderRenderer:
                 const int colorOffset = 0;
                 const float colorRGBMultiplier = 1.0f;
 
-                Circle::drawCircle(osu->getSkin(), points[numPoints / 2] + this->getPos(), hitcircleDiameter,
-                                   numberScale, overlapScale, number, colorCounter, colorOffset, colorRGBMultiplier,
+                Circle::drawCircle(view, points[numPoints / 2], number, colorCounter, colorOffset, colorRGBMultiplier,
                                    approachScale, approachAlpha, approachAlpha, true, false);
                 Circle::drawApproachCircle(osu->getSkin(), points[numPoints / 2] + this->getPos(),
                                            osu->getSkin()->getComboColorForCounter(420, 0), hitcircleDiameter,
@@ -658,12 +654,9 @@ class SliderPreviewElement final : public CBaseUIElement, public SliderRenderer:
                 const int colorOffset = 0;
                 const float colorRGBMultiplier = 1.0f;
 
-                Circle::drawSliderStartCircle(osu->getSkin(), points[0] + this->getPos(), hitcircleDiameter,
-                                              numberScale, overlapScale, number, colorCounter, colorOffset,
-                                              colorRGBMultiplier);
-                Circle::drawSliderEndCircle(osu->getSkin(), points.back() + this->getPos(), hitcircleDiameter,
-                                            numberScale, overlapScale, number, colorCounter, colorOffset,
-                                            colorRGBMultiplier, 1.0f, 1.0f, 0.0f, false, false);
+                Circle::drawSliderStartCircle(view, points[0], number, colorCounter, colorOffset, colorRGBMultiplier);
+                Circle::drawSliderEndCircle(view, points.back(), number, colorCounter, colorOffset, colorRGBMultiplier,
+                                            1.0f, 1.0f, 0.0f, false, false);
             }
         }
     }
@@ -1945,7 +1938,8 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
         }
 
         ui->getNotificationOverlay()->addNotification(_("Opening file browser ..."), 0xffffffff, false, 0.75f);
-        env->openFolderWindow([conclude_import](const std::vector<std::string> &paths) {
+        // (only globals in there, so it may answer after the options are gone)
+        Mc::Registration dialog = env->openFolderWindow([conclude_import](const std::vector<std::string> &paths) {
             if(paths.empty()) {
                 ui->getNotificationOverlay()->addToast(_("You must select the McOsu folder to import its settings."),
                                                        ERROR_TOAST);
@@ -1958,6 +1952,7 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
             const bool imported = SettingsImporter::import_from_mcosu(mcosu_path);
             conclude_import(imported);
         });
+        dialog.detach();
     }));
 #endif
 
@@ -3327,8 +3322,10 @@ void OptionsOverlayImpl::onResolutionSelect() {
 
 void OptionsOverlayImpl::onResolutionSelect2(std::string_view resolution, int id) {
     if(id == CUSTOM_RESOLUTION_ID) {
-        ui->getPromptOverlay()->prompt(_("Resolution, width x height (for example 1600x900):"),
-                                       SA::MakeDelegate<&OptionsOverlayImpl::onCustomResolutionEntered>(this));
+        // kept until the options go away (dropping the registration would close the prompt)
+        this->customResolutionPrompt =
+            ui->getPromptOverlay()->prompt(_("Resolution, width x height (for example 1600x900):"),
+                                           SA::MakeDelegate<&OptionsOverlayImpl::onCustomResolutionEntered>(this));
         return;
     }
     const bool win_fs = env->winFullscreened();
@@ -3863,10 +3860,7 @@ void OptionsOverlayImpl::onWASAPIPeriodChange(CBaseUISlider *slider) {
 void OptionsOverlayImpl::onLoudnessNormalizationToggle(CBaseUICheckbox *checkbox) {
     this->onCheckboxChange(checkbox);
 
-    auto music = osu->getMapInterface()->getMusic();
-    if(music != nullptr) {
-        music->setBaseVolume(osu->getMapInterface()->getIdealVolume());
-    }
+    osu->getMusicTrack()->updateVolume();
 
     if(cv::normalize_loudness.getBool()) {
         VolNormalization::start_calc(db->loudness_to_calc);
@@ -4534,11 +4528,12 @@ void OptionsOverlayImpl::save() {
             write_lines.append(fmt::format("{} {}\n", convar->getName(), convar->getClientString()));
         }
 
-        io->write(cfg_name, std::move(write_lines), wr_callback);
+        // (both callbacks only use globals, and the one at exit has to run during the engine's shutdown)
+        io->write(cfg_name, std::move(write_lines), wr_callback).detach();
     };
 
     // let the nested write callback handle any error message
-    io->read(cfg_name, rd_callback);
+    io->read(cfg_name, rd_callback).detach();
 }
 
 void OptionsOverlayImpl::openAndScrollToSkinSection() {

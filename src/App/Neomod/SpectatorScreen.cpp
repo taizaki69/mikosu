@@ -22,10 +22,11 @@
 #include "NotificationOverlay.h"
 #include "PromptOverlay.h"
 #include "RankingScreen.h"
+#include "Registration.h"
 #include "RoomScreen.h"
 #include "Skin.h"
 #include "SongBrowser.h"
-#include "Sound.h"
+#include "MusicTrack.h"
 #include "SoundEngine.h"
 #include "UI.h"
 #include "UIButton.h"
@@ -38,6 +39,8 @@ using namespace Spectating;
 namespace Spectating {
 
 static CONSTINIT MapFetcher map_fetcher;
+// the spectated player picks the map for as long as we spectate
+static Mc::Registration selection_hold;
 
 #define INIT_LABEL(label_name, default_text, is_big)                      \
     do {                                                                  \
@@ -63,6 +66,7 @@ void start(int user_id) {
     BanchoState::spectating = true;
     BanchoState::spectated_player_id = user_id;
     map_fetcher.clear();
+    selection_hold = osu->getMusicTrack()->hold();
 
     if(!db->isFinished() || db->isCancelled()) {
         // TODO: what happens if user cancels db load? probably nothing good...
@@ -85,6 +89,14 @@ void start_by_username(std::string_view username) {
     Spectating::start(user->user_id);
 }
 
+void forget() {
+    BanchoState::fellow_spectators.clear();
+    BanchoState::spectating = false;
+    BanchoState::spectated_player_id = 0;
+    map_fetcher.clear();
+    selection_hold.reset();
+}
+
 void stop() {
     if(!BanchoState::spectating) return;
 
@@ -96,10 +108,7 @@ void stop() {
     auto notif = tformat("Stopped spectating {:s}", user_info->name);
     ui->getNotificationOverlay()->addToast(notif, INFO_TOAST);
 
-    BanchoState::fellow_spectators.clear();
-    BanchoState::spectating = false;
-    BanchoState::spectated_player_id = 0;
-    map_fetcher.clear();
+    forget();
 
     Packet packet;
     packet.id = OUTP_STOP_SPECTATING;
@@ -177,15 +186,15 @@ void SpectatorScreen::controlClientState() {
         i32 leeway = map_iface->getSpectatingLeeway();
         if(map_iface->is_buffering) {
             // make sure music is actually paused
-            if(map_iface->music->isPlaying()) {
-                soundEngine->pause(map_iface->music);
+            if(osu->getMusicTrack()->isPlaying()) {
+                osu->getMusicTrack()->pause();
                 map_iface->bIsPlaying = false;
                 map_iface->bIsPaused = true;
             }
 
             if(leeway >= cv::spec_buffer.getInt()) {
                 debugLog("UNPAUSING: leeway: {:d}, iCurMusicPos: {:d}", leeway, map_iface->iCurMusicPos);
-                soundEngine->play(map_iface->music);
+                osu->getMusicTrack()->play();
                 map_iface->bIsPlaying = true;
                 map_iface->bIsPaused = false;
                 map_iface->is_buffering = false;
@@ -197,7 +206,7 @@ void SpectatorScreen::controlClientState() {
 
             if(leeway <= 0 && !is_finished) {
                 debugLog("PAUSING: leeway: {:d}, iCurMusicPos: {:d}", leeway, map_iface->iCurMusicPos);
-                soundEngine->pause(map_iface->music);
+                osu->getMusicTrack()->pause();
                 map_iface->bIsPlaying = false;
                 map_iface->bIsPaused = true;
                 map_iface->is_buffering = true;

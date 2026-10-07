@@ -5,16 +5,16 @@
 #include "AbstractBeatmapInterface.h"
 #include "AsyncPPCalculator.h"
 #include "LegacyReplay.h"
-#include "PlaybackInterpolator.h"
 #include "score.h"
 #include "LivePPCalc.h"
 #include "Vectors.h"
 #include "DatabaseBeatmapTypes.h"
+#include "PlayfieldView.h"
 
 #include <memory>
 
 class RenderTarget;
-class Sound;
+class MusicTrack;
 class Shader;
 class ConVar;
 struct Skin;
@@ -29,13 +29,7 @@ class SimulatedBeatmapInterface;
 struct LiveReplayFrame;
 struct ScoreFrame;
 
-struct Click {
-    u64 timestampNS;      // Timing::getTicksNS() when the event occurred
-    vec2 cursorPos{0.f};  // cursor position when the click happened
-    i32 musicPosMS;       // current music position when the click happened
-};
-
-class BeatmapInterface final : public AbstractBeatmapInterface {
+class BeatmapInterface final : public AbstractBeatmapInterface, public PlayfieldView {
     NOCOPY_NOMOVE(BeatmapInterface)
    public:
     using DBTimingInfo = neomod::DatabaseBeatmapTypes::TIMING_INFO;
@@ -44,7 +38,8 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     // for handling transition from unloaded database to loaded database
     static inline CONSTINIT MD5Hash loading_reselect_map{};
 
-    BeatmapInterface();
+    // plays the selected map's music on `music`
+    explicit BeatmapInterface(MusicTrack &music);
     ~BeatmapInterface() override;
 
     void draw();
@@ -60,10 +55,6 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     // live (but also on start)
     void onModUpdate(bool rebuildSliderVertexBuffers = true, bool recomputeDrainRate = true);
 
-    // does things which needed to wait until loading finished, even outside of play mode (called by Osu::update)
-    void checkHandleAsyncMusicLoadFinish();
-    [[nodiscard]] inline bool isMusicLoadHandled() const { return this->bIsAsyncMusicLoadHandled; }
-
     // Returns true if we're loading or waiting on other players
     bool isLoading();
 
@@ -75,32 +66,42 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
     [[nodiscard]] vec2 legacyPixels2RawPixels(
         vec2 coords) const;  // only used for bounds calculations atm (just scales, nothing else)
-    [[nodiscard]] vec2 pixels2OsuCoords(vec2 pixelCoords) const override;  // only used for positional audio atm
+    [[nodiscard]] vec2 pixels2OsuCoords(vec2 pixelCoords) const;  // only used for positional audio atm
     [[nodiscard]] vec2 osuCoords2Pixels(
         vec2 coords) const override;  // hitobjects should use this one (includes lots of special behaviour)
-    [[nodiscard]] vec2 osuCoords2RawPixels(vec2 coords)
-        const override;  // raw transform from osu!pixels to absolute screen pixels (without any mods whatsoever)
     [[nodiscard]] vec2 osuCoords2LegacyPixels(vec2 coords)
         const override;  // only applies vanilla osu mods and static mods to the coordinates (used for generating
                          // the static slider mesh) centered at (0, 0, 0)
+    [[nodiscard]] f32 osuAngle2PixelAngle(f32 degrees) const override;
 
     // cursor
     [[nodiscard]] vec2 getMousePos() const;
     [[nodiscard]] vec2 getCursorPos() const override;
-    [[nodiscard]] vec2 getFirstPersonCursorDelta() const;
+
+    [[nodiscard]] const Replay::Mods &getMods() const override;
+    [[nodiscard]] LegacyFlags getModsLegacy() const override;
+    [[nodiscard]] vec2 getFirstPersonCursorDelta() const override;
 
     // playfield
-    [[nodiscard]] inline vec2 getPlayfieldSize() const { return this->vPlayfieldSize; }
-    [[nodiscard]] inline vec2 getPlayfieldCenter() const { return this->vPlayfieldCenter; }
+    [[nodiscard]] inline f32 getPlayfieldScaleFactor() const override { return this->fScaleFactor; }
+    [[nodiscard]] inline vec2 getPlayfieldSize() const override { return this->vPlayfieldSize; }
+    [[nodiscard]] inline vec2 getPlayfieldCenter() const override { return this->vPlayfieldCenter; }
+    [[nodiscard]] vec2 getScreenSize() const override;
     [[nodiscard]] inline f32 getPlayfieldRotation() const { return this->fPlayfieldRotation; }
 
     // hitobjects
     [[nodiscard]] inline f32 getHitcircleXMultiplier() const {
         return this->fXMultiplier;
     }  // multiply osu!pixels with this to get screen pixels
-    [[nodiscard]] inline f32 getNumberScale() const { return this->fNumberScale; }
-    [[nodiscard]] inline f32 getHitcircleOverlapScale() const { return this->fHitcircleOverlapScale; }
-    [[nodiscard]] inline bool isInMafhamRenderChunk() const { return this->bInMafhamRenderChunk; }
+    [[nodiscard]] inline f32 getHitcircleDiameter() const override { return this->fHitcircleDiameter; }
+    [[nodiscard]] inline f32 getRawHitcircleDiameter() const override { return this->fRawHitcircleDiameter; }
+    [[nodiscard]] inline f32 getSliderFollowCircleDiameter() const override {
+        return this->fSliderFollowCircleDiameter;
+    }
+    [[nodiscard]] inline f32 getNumberScale() const override { return this->fNumberScale; }
+    [[nodiscard]] inline f32 getHitcircleOverlapScale() const override { return this->fHitcircleOverlapScale; }
+    [[nodiscard]] inline bool isInMafhamRenderChunk() const override { return this->bInMafhamRenderChunk; }
+    [[nodiscard]] bool slidersRenderDynamically() const override;
 
     // score
     [[nodiscard]] inline int getNumHitObjects() const { return this->hitobjects.size(); }
@@ -134,26 +135,17 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     bool start();
     void restart(bool quick = false);
     void pause(bool quitIfWaiting = true);
-    void pausePreviewMusic(bool toggle = true);
-    bool isPreviewMusicPlaying();
     void stop(bool quit = true);
     void fail(bool force_death = false);
     void cancelFailing();
     void resetScore();
 
-    // music/sound
-    inline void reloadMusicNow() { this->loadMusic(true, false); }
-    void loadMusic(bool reload = false, bool async = false);
-    void unloadMusic();
-
-    [[nodiscard]] f32 getIdealVolume() const;
+    // the speed (and the pitch that goes with it) gameplay plays the music at, or 1 outside of it
     void setMusicSpeed(f32 speed);
-    void setMusicPitch(f32 pitch);
     void seekMS(u32 ms);
     [[nodiscard]] inline DBTimingInfo getCurrentTimingInfo() const { return this->cur_timing_info; }
     [[nodiscard]] inline u8 getDefaultSampleSet() const { return this->default_sample_set; }
 
-    [[nodiscard]] inline Sound *getMusic() const { return this->music; }
     [[nodiscard]] u32 getTime() const;
     [[nodiscard]] u32 getStartTimePlayable() const;
     [[nodiscard]] u32 getLength() const override;
@@ -206,15 +198,18 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     bool player_loaded = false;
 
     // used by HitObject children and ModSelector
-    [[nodiscard]] const Skin *getSkin() const;  // maybe use this for beatmap skins, maybe
+    [[nodiscard]] const Skin *getSkin() const override;  // maybe use this for beatmap skins, maybe
     [[nodiscard]] Skin *getSkinMutable();
 
     // NOTE: these may not be current outside of gameplay!
-    [[nodiscard]] inline i32 getCurMusicPos() const { return this->iCurMusicPos; }
-    [[nodiscard]] inline i32 getCurMusicPosWithOffsets() const { return this->iCurMusicPosWithOffsets; }
-
-    // helper utility to avoid needing to apply convar/beatmap/audio engine related offsets to raw pos manually
-    [[nodiscard]] i32 convertRawToOffsetMusicPos(i32 rawMusicPos) const;
+    [[nodiscard]] inline i32 getCurMusicPos() const override { return this->iCurMusicPos; }
+    [[nodiscard]] inline i32 getCurMusicPosWithOffsets() const override { return this->iCurMusicPosWithOffsets; }
+    [[nodiscard]] inline f32 getBaseAnimationSpeed() const override { return this->fBaseAnimationSpeedFactor; }
+    [[nodiscard]] inline f32 getSpeedAdjustedAnimationSpeed() const override {
+        return this->fSpeedAdjustedAnimationSpeedFactor;
+    }
+    [[nodiscard]] ModFlags getModFlags() const override;
+    [[nodiscard]] Color getComboColor(i32 colorCounter, i32 colorOffset) const override;
 
     [[nodiscard]] f32 getRawAR() const override;
     [[nodiscard]] f32 getAR() const override;
@@ -227,7 +222,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
     // health
     [[nodiscard]] inline f64 getHealth() const { return this->fHealth; }
-    [[nodiscard]] inline bool hasFailed() const { return this->bFailed; }
+    [[nodiscard]] inline bool hasFailed() const override { return this->bFailed; }
 
     // generic state
     [[nodiscard]] u8 getKeys() const override { return this->current_keys; }
@@ -254,8 +249,17 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     void addScorePoints(int points, bool isSpinner = false) override;
     void addHealth(f64 percent, bool isFromHitResult);
 
-    static bool sortHitObjectByStartTimeComp(neomod::HitObject const *a, neomod::HitObject const *b);
-    static bool sortHitObjectByEndTimeComp(neomod::HitObject const *a, neomod::HitObject const *b);
+    void playHitSound(neomod::DatabaseBeatmapTypes::HITSAMPLE_BITS samples, vec2 rawPos, i32 delta,
+                      i32 timeMS) override;
+    void playSliderTickSound(neomod::DatabaseBeatmapTypes::HITSAMPLE_BITS samples, vec2 rawPos, i32 timeMS) override;
+    std::vector<neomod::HitSoundUtils::Set_Slider_Hit> updateSliderSlideSounds(
+        bool sliding, neomod::DatabaseBeatmapTypes::HITSAMPLE_BITS samples, vec2 rawPos,
+        const std::vector<neomod::HitSoundUtils::Set_Slider_Hit> &started) override;
+    void stopSliderSounds(const std::vector<neomod::HitSoundUtils::Set_Slider_Hit> &started) override;
+    void playSpinnerSpinSound(f32 ratio) override;
+    void stopSpinnerSpinSound() override;
+    void playSpinnerBonusSound() override;
+    void addTargetHit(f32 delta, f32 angle) override;
 
     void invalidateWholeMapPPInfo();
     [[nodiscard]] inline f32 live_pp() const { return this->ppv2_calc.get_pp(); }
@@ -273,6 +277,8 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     bool bIsPlaying;
     bool bIsPaused;
     bool bIsWaiting;
+    bool bLeadInStarted{false};
+    i32 iLeadInMS{0};  // the lead-in's length in music time (0: none)
     bool bIsRestartScheduled;
     bool bIsRestartScheduledQuick;
     bool bWasSeekFrame;
@@ -284,35 +290,23 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
     void actualRestart();
 
-    void handlePreviewPlay();
     void unloadObjects();
 
     void resetHitObjects(i32 curPos = 0);
 
     void playMissSound();
 
-    [[nodiscard]] i32 getInterpedMusicPos() const;
-
     bool bIsInSkippableSection;
     bool bShouldFlashWarningArrows;
     f32 fShouldFlashSectionPass;
     f32 fShouldFlashSectionFail;
     bool bContinueScheduled;
-    u32 iContinueMusicPos;
-    f64 fWaitTime{0.f};
     f64 fPrevUnpauseTime{0.f};
 
-    // sound
-    mutable std::unique_ptr<GameplayInterpolator> musicInterp;
-
-    f32 fMusicFrequencyBackup;
     i32 iCurMusicPos;
     i32 iCurMusicPosWithOffsets;
     u64 iLastMusicPosUpdateTime{0};
-    f32 fAfterMusicIsFinishedVirtualAudioTimeStart;
     bool bIsFirstMissSound;
-    bool bIsWaitingForPreview{false};
-    bool bIsAsyncMusicLoadHandled{true};
     DBTimingInfo cur_timing_info{};
     u8 default_sample_set{1};
 
@@ -324,6 +318,9 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
     // drain
     f64 fDrainRate;
+
+    // the map's combo colours
+    std::vector<Color> comboColors;
 
     // breaks
     std::vector<DBBreak> breaks;
@@ -373,7 +370,6 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
 
     FinishedScore saveAndSubmitScore(bool quit);
 
-    void drawFollowPoints();
     void drawHitObjects();
     void drawSmoke();
 
@@ -393,7 +389,7 @@ class BeatmapInterface final : public AbstractBeatmapInterface {
     // beatmap
     bool bIsSpinnerActive;
     vec2 vContinueCursorPoint{0.f};
-    Sound *music;
+    MusicTrack &music;
 
     // playfield
     f32 fPlayfieldRotation;

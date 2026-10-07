@@ -95,7 +95,7 @@ bool SimulatedBeatmapInterface::start() {
     this->updateHitobjectMetrics();
 
     // actually load the difficulty (and the hitobjects)
-    DatabaseBeatmap::LOAD_GAMEPLAY_RESULT result = DatabaseBeatmap::loadGameplay(this->beatmap, this);
+    DatabaseBeatmap::LOAD_GAMEPLAY_RESULT result = DatabaseBeatmap::loadGameplay(this->beatmap, this, nullptr);
     if(result.error.errc) {
         return false;
     }
@@ -110,7 +110,7 @@ bool SimulatedBeatmapInterface::start() {
         this->hitobjectsSortedByEndTime.push_back(unq.get());
     }
 
-    std::ranges::sort(this->hitobjectsSortedByEndTime, BeatmapInterface::sortHitObjectByEndTimeComp);
+    std::ranges::sort(this->hitobjectsSortedByEndTime, HitObject::sortByEndTimeComp);
 
     // after the hitobjects have been loaded we can calculate the stacks
     this->calculateStacks();
@@ -690,8 +690,6 @@ void SimulatedBeatmapInterface::update(f64 frame_time) {
     }
 }
 
-vec2 SimulatedBeatmapInterface::pixels2OsuCoords(vec2 pixelCoords) const { return pixelCoords; }
-
 vec2 SimulatedBeatmapInterface::osuCoords2Pixels(vec2 coords) const {
     if((this->mods.has(ModFlags::HardRock))) coords.y = GameRules::OSU_COORD_HEIGHT - coords.y;
 
@@ -726,18 +724,6 @@ vec2 SimulatedBeatmapInterface::osuCoords2Pixels(vec2 coords) const {
         coords.x = std::clamp<f32>(coords.x, 0.0f, GameRules::OSU_COORD_WIDTH);
         coords.y = std::clamp<f32>(coords.y, 0.0f, GameRules::OSU_COORD_HEIGHT);
     }
-
-    return coords;
-}
-
-vec2 SimulatedBeatmapInterface::osuCoords2RawPixels(vec2 coords) const { return coords; }
-
-vec2 SimulatedBeatmapInterface::osuCoords2LegacyPixels(vec2 coords) const {
-    if((this->mods.has(ModFlags::HardRock))) coords.y = GameRules::OSU_COORD_HEIGHT - coords.y;
-
-    // VR center
-    coords.x -= GameRules::OSU_COORD_WIDTH / 2;
-    coords.y -= GameRules::OSU_COORD_HEIGHT / 2;
 
     return coords;
 }
@@ -809,7 +795,7 @@ void SimulatedBeatmapInterface::updateAutoCursorPos() {
 
         percent = std::clamp<f32>(percent, 0.0f, 1.0f);
 
-        // scaled distance (not osucoords)
+        // osu!px, like the diameter
         f32 distance = vec::length(nextPos - prevPos);
         if(distance > this->fHitcircleDiameter * 1.05f)  // snap only if not in a stream (heuristic)
         {
@@ -829,16 +815,15 @@ void SimulatedBeatmapInterface::updatePlayfieldMetrics() {
 }
 
 void SimulatedBeatmapInterface::updateHitobjectMetrics() {
+    // in osu!px like the positions it's judged against (osuCoords2Pixels and the replay cursor aren't scaled)
     this->fRawHitcircleDiameter = GameRules::getRawHitCircleDiameter(this->getCS());
-    this->fXMultiplier = 1.0f;
     this->fHitcircleDiameter = this->fRawHitcircleDiameter;
 
-    const f32 followcircle_size_multiplier = 2.4f;
     const f32 sliderFollowCircleDiameterMultiplier =
         this->mods.has(ModFlags::PreciseSliders)
             ? (1.0f * (1.0f - this->mods.jigsaw_followcircle_radius_factor) +
-               this->mods.jigsaw_followcircle_radius_factor * followcircle_size_multiplier)
-            : followcircle_size_multiplier;
+               this->mods.jigsaw_followcircle_radius_factor * GameRules::SLIDER_FOLLOW_CIRCLE_MULTIPLIER)
+            : GameRules::SLIDER_FOLLOW_CIRCLE_MULTIPLIER;
     this->fSliderFollowCircleDiameter = this->fHitcircleDiameter * sliderFollowCircleDiameterMultiplier;
 }
 
@@ -848,22 +833,8 @@ void SimulatedBeatmapInterface::calculateStacks() {
 
     debugLog("Beatmap: Calculating stacks ...");
 
-    // reset
-    for(auto &hitobject : this->hitobjects) {
-        hitobject->setStack(0);
-    }
-
-    DatabaseBeatmap::calculateStacks(
-        DatabaseBeatmap::ObjectGetter<HitObject>{
-            [&objs = this->hitobjects](uSz idx) -> HitObject * { return objs[idx].get(); }},
-        this->hitobjects.size(), this->getAR(), this->beatmap->getVersion(), this->beatmap->getStackLeniency());
-
-    // update hitobject positions
-    const f32 STACK_OFFSET = 0.05f;
-    const f32 stackOffset = this->fRawHitcircleDiameter * STACK_OFFSET;
-    for(auto &hitobject : this->hitobjects) {
-        if(hitobject->getStack() != 0) hitobject->updateStackPosition(stackOffset);
-    }
+    HitObjects::stack(this->hitobjects, this->getAR(), this->beatmap->getVersion(), this->beatmap->getStackLeniency(),
+                      this->fRawHitcircleDiameter, flags::has<ModFlags::HardRock>(this->mods.flags));
 }
 
 void SimulatedBeatmapInterface::computeDrainRate() {

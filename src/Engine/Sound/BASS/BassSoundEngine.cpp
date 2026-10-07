@@ -10,7 +10,6 @@
 #include "Engine.h"
 #include "ResourceManager.h"
 #include "Sound.h"
-#include "Timing.h"
 #include "Logging.h"
 #include "App.h"
 
@@ -415,9 +414,6 @@ bool BassSoundEngine::initializeOutputDevice(const SoundEngine::OUTPUT_DEVICE &d
 void BassSoundEngine::restart() { this->setOutputDevice(this->currentOutputDevice); }
 
 void BassSoundEngine::shutdown() {
-    // run pre-restart callback here
-    if(this->restartCBs[0] != nullptr) this->restartCBs[0]();
-
     if(this->currentOutputDevice.driver == OutputDriver::BASS) {
         BASS_SetDevice(this->currentOutputDevice.id);
         BASS_Free();
@@ -569,7 +565,6 @@ void BassSoundEngine::pause(Sound *snd) {
     BASS_Mixer_ChannelFlags(bassSound->srchandle, BASS_MIXER_CHAN_PAUSE, BASS_MIXER_CHAN_PAUSE);
     bassSound->bPaused = true;
     bassSound->paused_position_us = posUS;
-    bassSound->interpolator.reset((f64)posUS / (1000. * 1000.), Timing::getTimeReal(), bassSound->getSpeed());
 }
 
 void BassSoundEngine::stop(Sound *snd) {
@@ -629,9 +624,8 @@ void BassSoundEngine::openDeviceControlPanel() {
 }
 
 void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) {
-    // run callbacks pt. 1
-    // NOTE: moved to shutdown() (called from within initializeOutputDevice), because that's called on engine shutdown as well
-    // if(this->restartCBs[0] != nullptr) this->restartCBs[0]();
+    // (not in initializeOutputDevice(): the app's first init has no device to change from, so nobody hears of it)
+    this->notifyDeviceChange(DeviceChange::BEFORE);
 
     // TODO: This is blocking main thread, can freeze for a long time on some sound cards
     auto previous = this->currentOutputDevice;
@@ -648,8 +642,7 @@ void BassSoundEngine::setOutputDevice(const SoundEngine::OUTPUT_DEVICE &device) 
         }
     }
 
-    // run callbacks pt. 2
-    if(this->restartCBs[1] != nullptr) this->restartCBs[1]();
+    this->notifyDeviceChange(DeviceChange::AFTER);
 }
 
 void BassSoundEngine::setMasterVolume(float volume) {

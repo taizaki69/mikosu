@@ -10,6 +10,7 @@
 #include "SliderRenderer.h"
 
 #include <optional>
+#include <span>
 #include <utility>
 #include <vector>
 #include <memory>
@@ -19,17 +20,21 @@ class ModFPoSu;
 class SkinImage;
 class Image;
 class AbstractBeatmapInterface;
-class BeatmapInterface;
+class PlayfieldView;
 
 struct Click;
 struct Skin;
 
 enum class LiveHitResult : uint8_t;
+enum class ModFlags : u64;
 
 namespace neomod {
 
 namespace HitSoundUtils {
 struct Set_Slider_Hit;
+}
+namespace Primitives {
+struct PRIMITIVE_CONTAINER;
 }
 
 enum class HitObjectType : uint8_t {
@@ -40,20 +45,24 @@ enum class HitObjectType : uint8_t {
 
 class HitObject {
    public:
-    // TEMP constructor helpers (DatabaseBeatmap::loadGameplay)
+    // TEMP constructor helpers (HitObjects::create, DatabaseBeatmap::loadGameplay)
     void setIsEndOfCombo(bool end) { m_endOfCombo = end; }
     void setComboStartTime(i32 tms) { m_comboStartMS = tms; }
     void setComboNumber(i32 comboNumber) { m_comboNumber = comboNumber; }
 
    public:
-    static void drawHitResult(BeatmapInterface *pf, vec2 rawPos, LiveHitResult result, f32 animPercentInv,
+    // pos is on the screen
+    static void drawHitResult(const PlayfieldView &view, vec2 pos, LiveHitResult result, f32 animPercentInv,
                               f32 hitDeltaRangePercent);
-    static void drawHitResult(const Skin *skin, f32 hitcircleDiameter, f32 rawHitcircleDiameter, vec2 rawPos,
-                              LiveHitResult result, f32 animPercentInv, f32 hitDeltaRangePercent);
+
+    // the order objects are played in, and the order they're drawn in (by end time)
+    static bool sortByStartTimeComp(HitObject const *a, HitObject const *b);
+    static bool sortByEndTimeComp(HitObject const *a, HitObject const *b);
 
    protected:  // only constructable through subclasses
+    // judge: what judges it (NULL: never updated), view: what it's drawn on (NULL: never drawn)
     HitObject(i32 timeMS, DatabaseBeatmapTypes::HITSAMPLE_BITS samples, i32 comboNumber, bool isEndOfCombo,
-              i32 colorCounter, i32 colorOffset, AbstractBeatmapInterface *beatmap);
+              i32 colorCounter, i32 colorOffset, AbstractBeatmapInterface *judge, const PlayfieldView *view);
 
    public:
     HitObject() = delete;
@@ -68,8 +77,12 @@ class HitObject {
     virtual void draw2();
     virtual void update(i32 curPosMS, f64 frameTimeMS);
 
-    virtual void updateStackPosition(f32 /*stackOffset*/) {}  // unused by spinners
-    virtual void miss(i32 /*curPos*/) {}                      // only used by notelock
+    // shows the object at timeMS as a perfect play would have left it, without judging it: every part hit at its
+    // time, hit animations timeMS - hit time into fadeOutMS of music time, no hit results; spinners aren't spun
+    virtual void pose(i32 timeMS, i32 fadeOutMS) = 0;
+
+    virtual void updateStackPosition(f32 /*stackOffset*/, bool /*hardRock*/) {}  // unused by spinners
+    virtual void miss(i32 /*curPos*/) {}                                         // only used by notelock
     [[nodiscard]] virtual bool isClickableFrom(i32 /*music_pos*/, vec2 /*cursor_pos*/) const { return false; }
 
     // [[nodiscard]] virtual constexpr forceinline i32 getCombo() const {
@@ -123,7 +136,12 @@ class HitObject {
     virtual void onReset(i32 curPosMS);
 
     // only for sliders
-    virtual void rebuildVertexBuffer(bool /*useRawCoords*/ = false) { ; }
+    virtual void rebuildVertexBuffer() { ; }
+
+   protected:
+    // the fades, approach, Hidden, the hittable dim and visibility at curPosMS (update() passes the view's mods and the
+    // judging interface's timing)
+    void updateLook(i32 curPosMS, ModFlags mods, f32 approachTimeMS, f32 speedAdjustedAnimationSpeed);
 
    private:
     static f32 lerp3f(f32 a, f32 b, f32 c, f32 percent);
@@ -131,6 +149,7 @@ class HitObject {
     struct HITRESULTANIM {
         vec2 rawPos{0.f};
         i32 deltaMS{0};
+        f32 deltaRangePercent{0.f};  // deltaMS within the 50 window, -1 (early) to 1 (late)
         f32 timeSecs{-9999.0f};
         LiveHitResult result{0 /* LiveHitResult::HIT_NULL*/};
         bool addObjectDurationToSkinAnimationTimeStartOffset{false};
@@ -142,8 +161,8 @@ class HitObject {
     HITRESULTANIM m_hitresultanim2;
 
    protected:
-    AbstractBeatmapInterface *m_pi;
-    BeatmapInterface *m_pf;  // NULL when simulating
+    AbstractBeatmapInterface *m_judge;  // the play judging it (NULL: never updated)
+    const PlayfieldView *m_view;        // what it's drawn on (NULL: never drawn, no draw-only animations)
 
     i32 m_comboStartMS{0};  // for freeze time mod
     i32 m_clickTimeMS;
@@ -181,32 +200,21 @@ class HitObject {
 
 class Circle final : public HitObject {
    public:
-    // main
-    static void drawApproachCircle(BeatmapInterface *pf, vec2 rawPos, i32 number, i32 colorCounter, i32 colorOffset,
-                                   f32 colorRGBMultiplier, f32 approachScale, f32 alpha,
+    // main (rawPos in osu!px)
+    static void drawApproachCircle(const PlayfieldView &view, vec2 rawPos, i32 number, i32 colorCounter,
+                                   i32 colorOffset, f32 colorRGBMultiplier, f32 approachScale, f32 alpha,
                                    bool overrideHDApproachCircle = false);
-    static void drawCircle(BeatmapInterface *pf, vec2 rawPos, i32 number, i32 colorCounter, i32 colorOffset,
+    static void drawCircle(const PlayfieldView &view, vec2 rawPos, i32 number, i32 colorCounter, i32 colorOffset,
                            f32 colorRGBMultiplier, f32 approachScale, f32 alpha, f32 numberAlpha,
                            bool drawNumber = true, bool overrideHDApproachCircle = false);
-    static void drawCircle(const Skin *skin, vec2 pos, f32 hitcircleDiameter, f32 numberScale, f32 overlapScale,
-                           i32 number, i32 colorCounter, i32 colorOffset, f32 colorRGBMultiplier, f32 approachScale,
-                           f32 alpha, f32 numberAlpha, bool drawNumber = true, bool overrideHDApproachCircle = false);
     static void drawCircle(const Skin *skin, vec2 pos, f32 hitcircleDiameter, Color color, f32 alpha = 1.0f);
-    static void drawSliderStartCircle(BeatmapInterface *pf, vec2 rawPos, i32 number, i32 colorCounter, i32 colorOffset,
-                                      f32 colorRGBMultiplier, f32 approachScale, f32 alpha, f32 numberAlpha,
-                                      bool drawNumber = true, bool overrideHDApproachCircle = false);
-    static void drawSliderStartCircle(const Skin *skin, vec2 pos, f32 hitcircleDiameter, f32 numberScale,
-                                      f32 hitcircleOverlapScale, i32 number, i32 colorCounter = 0, i32 colorOffset = 0,
-                                      f32 colorRGBMultiplier = 1.0f, f32 approachScale = 1.0f, f32 alpha = 1.0f,
-                                      f32 numberAlpha = 1.0f, bool drawNumber = true,
+    static void drawSliderStartCircle(const PlayfieldView &view, vec2 rawPos, i32 number, i32 colorCounter = 0,
+                                      i32 colorOffset = 0, f32 colorRGBMultiplier = 1.0f, f32 approachScale = 1.0f,
+                                      f32 alpha = 1.0f, f32 numberAlpha = 1.0f, bool drawNumber = true,
                                       bool overrideHDApproachCircle = false);
-    static void drawSliderEndCircle(BeatmapInterface *pf, vec2 rawPos, i32 number, i32 colorCounter, i32 colorOffset,
-                                    f32 colorRGBMultiplier, f32 approachScale, f32 alpha, f32 numberAlpha,
-                                    bool drawNumber = true, bool overrideHDApproachCircle = false);
-    static void drawSliderEndCircle(const Skin *skin, vec2 pos, f32 hitcircleDiameter, f32 numberScale,
-                                    f32 overlapScale, i32 number = 0, i32 colorCounter = 0, i32 colorOffset = 0,
-                                    f32 colorRGBMultiplier = 1.0f, f32 approachScale = 1.0f, f32 alpha = 1.0f,
-                                    f32 numberAlpha = 1.0f, bool drawNumber = true,
+    static void drawSliderEndCircle(const PlayfieldView &view, vec2 rawPos, i32 number = 0, i32 colorCounter = 0,
+                                    i32 colorOffset = 0, f32 colorRGBMultiplier = 1.0f, f32 approachScale = 1.0f,
+                                    f32 alpha = 1.0f, f32 numberAlpha = 1.0f, bool drawNumber = true,
                                     bool overrideHDApproachCircle = false);
 
     // split helper functions
@@ -223,7 +231,7 @@ class Circle final : public HitObject {
     ~Circle() override;
 
     Circle(vec2 pos, i32 timeMS, DatabaseBeatmapTypes::HITSAMPLE_BITS samples, i32 comboNumber, bool isEndOfCombo,
-           i32 colorCounter, i32 colorOffset, AbstractBeatmapInterface *beatmap);
+           i32 colorCounter, i32 colorOffset, AbstractBeatmapInterface *judge, const PlayfieldView *view);
 
     Circle(const Circle &) = delete;
     Circle &operator=(const Circle &) = delete;
@@ -233,8 +241,9 @@ class Circle final : public HitObject {
     void draw() override;
     void draw2() override;
     void update(i32 curPosMS, f64 frameTimeMS) override;
+    void pose(i32 timeMS, i32 fadeOutMS) override;
 
-    void updateStackPosition(f32 stackOffset) override;
+    void updateStackPosition(f32 stackOffset, bool hardRock) override;
     void miss(i32 curPosMS) override;
     [[nodiscard]] bool isClickableFrom(i32 music_pos, vec2 cursor_pos) const override;
 
@@ -280,7 +289,7 @@ class Slider final : public HitObject, public SliderRenderer::BodySource {
            const std::vector<f32> &ticks, f32 sliderTimeMS, f32 sliderTimeMSWithoutRepeats, i32 timeMS,
            DatabaseBeatmapTypes::HITSAMPLE_BITS hoverSamples,
            std::vector<DatabaseBeatmapTypes::HITSAMPLE_BITS> edgeSamples, i32 comboNumber, bool isEndOfCombo,
-           i32 colorCounter, i32 colorOffset, AbstractBeatmapInterface *beatmap);
+           i32 colorCounter, i32 colorOffset, AbstractBeatmapInterface *judge, const PlayfieldView *view);
 
     Slider(const Slider &) = delete;
     Slider &operator=(const Slider &) = delete;
@@ -291,8 +300,9 @@ class Slider final : public HitObject, public SliderRenderer::BodySource {
     inline void draw2() override { draw2(true, false); }
     void draw2(bool drawApproachCircle, bool drawOnlyApproachCircle);
     void update(i32 curPosMS, f64 frameTimeSecs) override;
+    void pose(i32 timeMS, i32 fadeOutMS) override;
 
-    void updateStackPosition(f32 stackOffset) override;
+    void updateStackPosition(f32 stackOffset, bool hardRock) override;
     void miss(i32 curPosMS) override;
     [[nodiscard]] bool isClickableFrom(i32 music_pos, vec2 cursor_pos) const override;
     // [[nodiscard]] constexpr forceinline i32 getCombo() const override {
@@ -306,7 +316,7 @@ class Slider final : public HitObject, public SliderRenderer::BodySource {
     void onClickEvent(std::vector<Click> &clicks) override;
     void onReset(i32 curPosMS) override;
 
-    void rebuildVertexBuffer(bool useRawCoords = false) override;
+    void rebuildVertexBuffer() override;
 
     // the live body, or the one fading out after the end
     [[nodiscard]] std::optional<SliderRenderer::Body> getBody() const override;
@@ -325,7 +335,12 @@ class Slider final : public HitObject, public SliderRenderer::BodySource {
     // the drawn part of the curve while snaking in or shrinking
     [[nodiscard]] std::pair<f32, f32> getSnakeRange() const;
 
-    void updateAnimations(i32 curPosMS);
+    // the slide, snake, reverse arrow, body fade and repeat state at curPosMS
+    void updateSlideLook(i32 curPosMS, ModFlags mods);
+    // the follow circle's fades at curPosMS
+    void updateAnimations(i32 curPosMS, f32 speedAdjustedAnimationSpeed);
+    // whatever changes the cursor's position or the keys that count calls this
+    void updateTracking();
 
     void onHit(LiveHitResult result, i32 hitDeltaMS, bool isEndCircle, f32 targetDelta = 0.0f, f32 targetAngle = 0.0f,
                bool isEndResultFromStrictTrackingMod = false);
@@ -399,6 +414,7 @@ class Slider final : public HitObject, public SliderRenderer::BodySource {
     bool m_endFinished{false};
     bool m_cursorLeft{true};
     bool m_cursorInside{false};
+    bool m_tracking{false};  // inside and held: the follow circle shows
     bool m_heldTillEnd{false};
     bool m_heldTillEndForLenienceHack{false};
     bool m_heldTillEndForLenienceHackCheck{false};
@@ -410,7 +426,7 @@ class Spinner final : public HitObject {
    public:
     Spinner() = delete;
     Spinner(vec2 pos, i32 timeMS, DatabaseBeatmapTypes::HITSAMPLE_BITS samples, bool isEndOfCombo, i32 endTimeMS,
-            AbstractBeatmapInterface *beatmap);
+            AbstractBeatmapInterface *judge, const PlayfieldView *view);
     ~Spinner() override;
 
     Spinner(const Spinner &) = delete;
@@ -420,6 +436,7 @@ class Spinner final : public HitObject {
 
     void draw() override;
     void update(i32 curPosMS, f64 frameTimeSecs) override;
+    void pose(i32 timeMS, i32 fadeOutMS) override;
 
     [[nodiscard]] vec2 getRawPosAt(i32 /*pos*/) const override { return m_rawPos; }
     [[nodiscard]] vec2 getOriginalRawPosAt(i32 /*pos*/) const override { return m_originalRawPos; }
@@ -430,6 +447,8 @@ class Spinner final : public HitObject {
    private:
     void onHit();
     void rotate(f32 rad);
+    // the part of its time left at curPosMS (1 until it starts)
+    [[nodiscard]] f32 getTimeLeftPercent(i32 curPosMS) const;
 
     vec2 m_rawPos;
     vec2 m_originalRawPos;
@@ -461,4 +480,22 @@ class Spinner final : public HitObject {
     i32 m_bonusSpins{0};
     bool m_hitSuccess{false};  // non-miss result ("spinner-osu")
 };
+
+// a map's objects as a whole, sorted by start time
+namespace HitObjects {
+
+// from the map's primitives (with slider times calculated), their combo ends and combo start times set; judged by judge
+// and drawn on view (see HitObject's constructor)
+std::vector<std::unique_ptr<HitObject>> create(const Primitives::PRIMITIVE_CONTAINER &primitives,
+                                               AbstractBeatmapInterface *judge, const PlayfieldView *view);
+
+// osu!'s stacking: moved up and left by a twentieth of the circle diameter per stack level, down and left with Hard Rock
+// (which flips the playfield)
+void stack(std::span<const std::unique_ptr<HitObject>> objects, f32 AR, i32 beatmapVersion, f32 stackLeniency,
+           f32 rawHitcircleDiameter, bool hardRock);
+
+// the follow points between them at the view's time; the ones before firstIndex are gone
+void drawFollowPoints(const PlayfieldView &view, std::span<const std::unique_ptr<HitObject>> objects, uSz firstIndex);
+
+}  // namespace HitObjects
 }  // namespace neomod

@@ -25,6 +25,7 @@
 #include "Graphics.h"
 
 #include "Osu.h"
+#include "MusicTrack.h"
 #include "OsuConVars.h"
 
 #include "BatchDiffCalc.h"
@@ -942,8 +943,12 @@ void SongBrowser::tick() {
 
     // dispatch export notifications
     for(auto &n : this->exportNotifications.drain()) {
-        ui->getNotificationOverlay()->addToast(std::move(n.msg), n.success ? SUCCESS_TOAST : ERROR_TOAST,
-                                               std::move(n.click_cb));
+        const Color color = n.success ? SUCCESS_TOAST : ERROR_TOAST;
+        if(n.click_cb) {
+            ui->getNotificationOverlay()->addToast(std::move(n.msg), color, std::move(n.click_cb)).detach();
+        } else {
+            ui->getNotificationOverlay()->addToast(std::move(n.msg), color);
+        }
     }
 }
 
@@ -1162,6 +1167,7 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
 
         // we have to re-select the current beatmap to start playing music again
         osu->getMapInterface()->selectBeatmap();
+        if(DatabaseBeatmap *map = osu->getMapInterface()->getBeatmapMutable()) this->playPreviewMusic(map);
 
         // update user name/stats
         osu->onUserCardChange(BanchoState::get_username());
@@ -1172,12 +1178,6 @@ CBaseUIContainer *SongBrowser::setVisible(bool visible) {
 
         // Select button matching current song preview
         this->selectSelectedBeatmapSongButton();
-
-        // re-enable looping, since exiting to the main menu disables it
-        if(Sound *music = osu->getMapInterface()->getMusic()) {
-            // make sure we loop the music, since if we're carrying over from main menu it was set to not-loop
-            music->setLoop(cv::beatmap_preview_music_loop.getBool());
-        }
 
         RichPresence::onSongBrowser();
     } else {
@@ -1343,12 +1343,34 @@ void SongBrowser::onSelectionChange(CarouselButton *button, bool rebuild) {
     }
 }
 
+void SongBrowser::playPreviewMusic(DatabaseBeatmap *map) {
+    MusicTrack *music = osu->getMusicTrack();
+    switch(music->load(map, true /*async*/)) {
+        case MusicTrack::Loaded::NO_AUDIO:
+            // (not while the database reloads: its reselection goes on with the music)
+            if(BeatmapInterface::loading_reselect_map.empty()) music->pause();
+            return;
+        case MusicTrack::Loaded::SAME_FILE:
+            if(music->getPositionPct() > 0.95) {
+                music->restart();
+            } else {
+                music->play();
+            }
+            break;
+        case MusicTrack::Loaded::NEW_FILE:
+            music->restart();
+            break;
+    }
+    music->setLoop(cv::beatmap_preview_music_loop.getBool());
+}
+
 void SongBrowser::onDifficultySelected(DatabaseBeatmap *map, bool play) {
     // deselect = unload
     osu->getMapInterface()->deselectBeatmap();
 
     // select = play preview music
     osu->getMapInterface()->selectBeatmap(map);
+    if(map) this->playPreviewMusic(map);
 
     // update song info
     if(map) {
@@ -1479,6 +1501,7 @@ void SongBrowser::refreshBeatmaps(UIScreen *next_screen, bool full_rescan) {
     // clear beatmap interface to lose any potential stale references
     VolNormalization::flush_priority();  // it may be calculating on preloaded maps
     osu->reloadMapInterface();
+    osu->getMusicTrack()->releaseMap();
     ui->getMainMenu()->clearPreloadedMaps();
 
     this->selectedButton = nullptr;
@@ -1535,7 +1558,8 @@ void SongBrowser::refreshBeatmaps(UIScreen *next_screen, bool full_rescan) {
     auto loading_screen = std::make_unique<BeatmapLoadingOverlay>(this, osu->getBackgroundImageHandler(), next_screen);
     this->loadingOverlay = loading_screen.get();
 
-    // start loading
+    // start loading (watching maps/ again once that's done)
+    this->mapsWatch.reset();
     db->load(full_rescan);
 
     // make sure whatever was visible is hidden until loading finishes
@@ -1775,7 +1799,7 @@ void SongBrowser::removeBeatmapSet(const BeatmapSet *set) {
 
     this->unlinkBeatmapSet(set);
     this->rebuildAfterSetChange();
-    if(selected_inside) this->selectRandomBeatmap();
+    if(selected_inside && !osu->getMusicTrack()->isHeld()) this->selectRandomBeatmap();
 }
 
 void SongBrowser::replaceBeatmapSet(const BeatmapSet *old_set, BeatmapSet *new_set) {
@@ -1793,7 +1817,7 @@ void SongBrowser::replaceBeatmapSet(const BeatmapSet *old_set, BeatmapSet *new_s
     if(selected_inside) {
         if(cur->getParentSet() == new_set) {
             this->selectSelectedBeatmapSongButton();
-        } else {
+        } else if(!osu->getMusicTrack()->isHeld()) {
             this->selectBeatmapset(new_set);
         }
     }
@@ -2393,6 +2417,8 @@ void SongBrowser::rebuildScoreButtons() {
     this->localBestContainer->invalidate();
     this->localBestContainer->setVisible(false);
     SAFE_DELETE(this->localBestButton);
+    // (a menu opened from a score button would act on a deleted button, or one that shows another score below)
+    this->contextMenu->setVisible2(false);
 
     auto *map = osu->getMapInterface()->getBeatmap();
     const bool validBeatmap = !!map;
@@ -2668,7 +2694,7 @@ void SongBrowser::onDatabaseLoadingFinished(bool isNextScreenSongBrowser) {
     // maybe not actually resulting in songbrowser being opened after this function is called
     bool wasMusicPausedBeforeSongBrowserLoadAndNextScreenIsntSongbrowser = false;
     if(!isNextScreenSongBrowser) {
-        if(auto *music = resourceManager->getSound("BEATMAP_MUSIC"); music && !music->isPlaying()) {
+        if(!osu->getMusicTrack()->isEmpty() && !osu->getMusicTrack()->isPlaying()) {
             wasMusicPausedBeforeSongBrowserLoadAndNextScreenIsntSongbrowser = true;
         }
     }
@@ -2689,8 +2715,7 @@ void SongBrowser::onDatabaseLoadingFinished(bool isNextScreenSongBrowser) {
         if(reselectMap) {
             this->selectSelectedBeatmapSongButton();
         }
-
-        // the reselect map is cleared when the preview starts playing
+        BeatmapInterface::loading_reselect_map.clear();
     }
 
     // ok, if we still haven't selected a song, do so now
@@ -2698,19 +2723,15 @@ void SongBrowser::onDatabaseLoadingFinished(bool isNextScreenSongBrowser) {
         this->selectRandomBeatmap();
     }
 
-    if(Sound *music = osu->getMapInterface()->getMusic()) {
-        // make sure we loop the music, since if we're carrying over from main menu it was set to not-loop
-        music->setLoop(cv::beatmap_preview_music_loop.getBool());
-        if(wasMusicPausedBeforeSongBrowserLoadAndNextScreenIsntSongbrowser) {
-            soundEngine->pause(music);
-        }
+    if(wasMusicPausedBeforeSongBrowserLoadAndNextScreenIsntSongbrowser) {
+        osu->getMusicTrack()->pause();
     }
 
     t.update();
     debugLog("Took {} seconds.", t.getElapsedTime());
 
     // Watch for new maps now
-    directoryWatcher->watch_directory(Mc::Paths::maps() + "/", [](const FileChangeEvent &ev) {
+    this->mapsWatch = directoryWatcher->watch_directory(Mc::Paths::maps() + "/", [](const FileChangeEvent &ev) {
         // a set folder dropped in (or changed, or removed) while running: the installer syncs the db and the
         // carousel with it like with an import, and tells its own writes (imports, uninstalls) apart from real
         // changes. a deletion can't be stat'ed (so on windows it isn't known to be a folder), reconciling a name

@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cmath>
 
 #include "BassManager.h"
 #include "ConVar.h"
@@ -202,7 +203,6 @@ void BassSound::setPositionUS(u64 us) {
     if(this->bPaused) {
         this->paused_position_us = us;
         logIfCV(debug_snd, "set paused position to {}us", us);
-        this->interpolator.reset(tgtSecs, Timing::getTimeReal(), this->getSpeed());
         return;
     }
 
@@ -237,10 +237,9 @@ void BassSound::setPositionUS(u64 us) {
     }
 
     logIfCV(debug_snd, "set position to actual: {:.4f}s desired: {:.4f}s", actualSecs, tgtSecs);
-    this->interpolator.reset(actualSecs, Timing::getTimeReal(), this->getSpeed());
 }
 
-void BassSound::setSpeed(f32 speed) {
+void BassSound::setSpeed(f32 speed, bool preservePitch) {
     if(!this->isReady()) return;
     assert(this->bStream);  // can't call setSpeed() on a sample
 
@@ -252,7 +251,7 @@ void BassSound::setSpeed(f32 speed) {
     BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO, 1.0f);
     BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_FREQ, freq);
 
-    if(cv::snd_speed_compensate_pitch.getBool()) {
+    if(preservePitch) {
         BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO, (speed - 1.0f) * 100.0f);
     } else {
         BASS_ChannelSetAttribute(this->srchandle, BASS_ATTRIB_TEMPO_FREQ, speed * freq);
@@ -304,8 +303,6 @@ u64 BassSound::getPositionUS() const {
     assert(this->bStream);  // can't call getPositionMS() on a sample
 
     if(this->bPaused) {
-        this->interpolator.reset((f64)this->paused_position_us / (1000. * 1000.), Timing::getTimeReal(),
-                                 this->getSpeed());
         logIf(cv::debug_snd.getInt() > 1, "paused pos {:.4f}s", (f64)this->paused_position_us / (1000. * 1000.));
         return this->paused_position_us;
     }
@@ -322,8 +319,7 @@ u64 BassSound::getPositionUS() const {
     }
 
     const f64 positionInSeconds = BASS_ChannelBytes2Seconds(this->srchandle, positionBytes);
-    const u64 ret = this->interpolator.update(positionInSeconds, Timing::getTimeReal(), this->getSpeed(),
-                                              this->isLooped(), static_cast<u64>(this->lengthUS), this->isPlaying());
+    const u64 ret = static_cast<u64>(std::round(positionInSeconds * 1000. * 1000.));
 
     logIf(cv::debug_snd.getInt() > 1, "pos {:.4f}s", (f64)ret / (1000. * 1000.));
     return ret;

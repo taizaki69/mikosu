@@ -18,6 +18,7 @@
 #include "Paths.h"
 #include "MakeDelegateWrapper.h"
 #include "Database.h"
+#include "BeatmapFile/BeatmapPrimitives.h"
 #include "DatabaseBeatmap.h"
 #include "Downloader.h"
 #include "Engine.h"
@@ -26,6 +27,7 @@
 #include "Font.h"
 #include "Parsing.h"
 #include "Sound.h"
+#include "MusicTrack.h"
 #include "RenderTarget.h"
 #include "HUD.h"
 #include "Icons.h"
@@ -702,8 +704,8 @@ std::pair<bool, float> MainMenu::getTimingpointPulseAmount() {
         return {false, pulse};
     }
 
-    const auto *music = selectedMap->getMusic();
-    if(!music || !music->isPlaying()) {
+    const auto *music = osu->getMusicTrack();
+    if(!music->isPlaying()) {
         return {false, pulse};
     }
 
@@ -713,19 +715,9 @@ std::pair<bool, float> MainMenu::getTimingpointPulseAmount() {
     }
 
     // playing music, get dynamic pulse amount
-    const i32 curMusicPos = selectedMap->convertRawToOffsetMusicPos((i32)music->getPositionMS());
-    DBType::TIMING_INFO t = map->getTimingInfoForTime(curMusicPos);
-
-    if(t.beatLengthBase == 0.0f)  // bah
-        t.beatLengthBase = 1.0f;
-
-    this->animBeatCounter = (curMusicPos - t.offset - (i32)(std::max((i32)t.beatLengthBase, (i32)1) * 0.5f)) /
-                            std::max((i32)t.beatLengthBase, (i32)1);
-
-    pulse = (float)((curMusicPos - t.offset) % std::max((i32)t.beatLengthBase, (i32)1)) /
-            t.beatLengthBase;  // modulo must be >= 1
-    pulse = std::clamp<float>(pulse, -1.0f, 1.0f);
-    if(pulse < 0.0f) pulse = 1.0f - std::abs(pulse);
+    const f64 beat = map->getTimingpoints().getBeat(music->getTime() + music->getOffset(map));
+    this->animBeatCounter = (unsigned int)(i32)std::floor(beat - 0.5);
+    pulse = (float)(beat - std::floor(beat));
 
     return {true, pulse};
 }
@@ -1172,20 +1164,13 @@ void MainMenu::tick() {
             break;
     }
 
-    // shuffle songs
-    if(soundEngine->isReady()) {
+    // shuffle songs (not a held selection)
+    if(auto *music = osu->getMusicTrack(); soundEngine->isReady() && !music->isHeld()) {
         auto *map_iface = osu->getMapInterface();
-        auto *music = map_iface->getMusic();
 
-        // try getting existing playing music track, even if map_iface->getMusic() did not have one
-        if(!music) {
-            music = resourceManager->getSound("BEATMAP_MUSIC");
-        }
-
-        if(!music) {
+        if(music->isEmpty()) {
             this->selectRandomBeatmap();
-        } else if(!resourceManager->isLoadingResource(music) &&
-                  map_iface->isMusicLoadHandled() /* we are still loading */) {
+        } else if(!music->isLoading()) {
             if(!music->isReady() || music->isFinished()) {
                 this->selectRandomBeatmap();
             } else if(music->isPlaying()) {
@@ -1219,12 +1204,13 @@ void MainMenu::tick() {
             auto data = this->serverIconDL.take_data();
             this->serverIconDL.reset();
             if(!data.empty()) {
-                io->write(icon_path, std::move(data), [icon_path](bool success) {
+                Mc::Registration write = io->write(icon_path, std::move(data), [icon_path](bool success) {
                     if(success && !engine->isShuttingDown()) {
                         resourceManager->requestNextLoadAsync();
                         BanchoState::server_icon = resourceManager->loadImageAbs(icon_path, icon_path);
                     }
                 });
+                write.detach();
             }
         }
     }
@@ -1249,6 +1235,7 @@ void MainMenu::updateInput(CBaseUIEventCtx &c) {
 void MainMenu::selectRandomBeatmap() {
     if(db->isFinished() && !db->getBeatmapSets().empty() && !ui->getSongBrowser()->parentButtons.empty()) {
         if(ui->getSongBrowser()->selectRandomBeatmap()) {
+            this->playPickFromStart();
             RichPresence::onMainMenu();
         } else {
             this->restartMusic();
@@ -1317,6 +1304,7 @@ void MainMenu::selectRandomBeatmap() {
 
             if(previous && previous->do_not_store) this->previousPreloadedMaps.push_back(previous);
             ui->getSongBrowser()->onDifficultySelected(candidate_diff, false);
+            this->playPickFromStart();
 
             RichPresence::onMainMenu();
 
@@ -1339,15 +1327,21 @@ void MainMenu::selectPreviousRandomBeatmap() {
         this->restartMusic();
         return;
     }
+    this->playPickFromStart();
     RichPresence::onMainMenu();
 }
 
-void MainMenu::restartMusic() {
-    Sound *music = osu->getMapInterface()->getMusic();
-    if(!music || !music->isReady()) return;
+void MainMenu::playPickFromStart() {
+    if(std::exchange(this->firstPick, false) && cv::start_first_main_menu_song_at_preview_point.getBool()) return;
+    osu->getMusicTrack()->setPosition(0);
+}
 
-    if(!music->isPlaying()) soundEngine->play(music);
-    music->setPositionMS(0);
+void MainMenu::restartMusic() {
+    MusicTrack *music = osu->getMusicTrack();
+    if(!music->isReady()) return;
+
+    if(!music->isPlaying()) music->play();
+    music->setPosition(0);
 }
 
 void MainMenu::onKeyDown(KeyboardEvent &e) {
@@ -1361,14 +1355,14 @@ void MainMenu::onKeyDown(KeyboardEvent &e) {
         if(e == KEY_NEXT || e == KEY_RIGHT || e == KEY_F2) {
             this->selectRandomBeatmap();
         }
-        if(e == KEY_PLAYPAUSE || (e == KEY_PLAY && !osu->getMapInterface()->isPreviewMusicPlaying()) ||
-           (e == KEY_STOP && osu->getMapInterface()->isPreviewMusicPlaying())) {
-            osu->getMapInterface()->pausePreviewMusic();
+        if(e == KEY_PLAYPAUSE || (e == KEY_PLAY && !osu->getMusicTrack()->isPlaying()) ||
+           (e == KEY_STOP && osu->getMusicTrack()->isPlaying())) {
+            osu->getMusicTrack()->togglePause();
         }
     }
 
     if(e == KEY_C || e == KEY_F4) {
-        osu->getMapInterface()->pausePreviewMusic();
+        osu->getMusicTrack()->togglePause();
     }
 
     if(!this->menuElementsVisible) {
@@ -1642,12 +1636,14 @@ void MainMenu::setMenuElementsVisible(bool visible, bool animate) {
 void MainMenu::writeVersionFile() {
     // remember, don't show the notification arrow until the version changes again
     const std::string version_path = Mc::Paths::data() + "/version.txt";
-    io->write(version_path, fmt::format("{}\n{}", cv::version.getString(), cv::build_timestamp.getString()),
-              [version_path](bool success) -> void {
-                  if(!success) {
-                      debugLog("Warning: failed to write new version to {}", version_path);
-                  }
-              });
+    Mc::Registration write =
+        io->write(version_path, fmt::format("{}\n{}", cv::version.getString(), cv::build_timestamp.getString()),
+                  [version_path](bool success) -> void {
+                      if(!success) {
+                          debugLog("Warning: failed to write new version to {}", version_path);
+                      }
+                  });
+    write.detach();
 }
 
 void MainMenu::onCubePressed() {

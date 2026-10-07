@@ -34,7 +34,8 @@ else()
 endif()
 
 add_executable(diffcalc
-    "${NEOMOD_SRC}/App/Neomod/DatabaseBeatmap.cpp"
+    "${NEOMOD_SRC}/App/Neomod/BeatmapFile/BeatmapFile.cpp"
+    "${NEOMOD_SRC}/App/Neomod/BeatmapFile/BeatmapPrimitives.cpp"
     "${NEOMOD_SRC}/App/Neomod/DiffCalc/DifficultyCalculator.cpp"
     "${NEOMOD_SRC}/App/Neomod/GameRules.cpp"
     "${NEOMOD_SRC}/App/Neomod/Replay.cpp"
@@ -50,8 +51,10 @@ target_compile_features(diffcalc PRIVATE cxx_std_23)
 target_compile_definitions(diffcalc PRIVATE BUILD_TOOLS_ONLY)
 target_include_directories(diffcalc PRIVATE
     "${NEOMOD_SRC}/App/Neomod"
+    "${NEOMOD_SRC}/App/Neomod/BeatmapFile"
     "${NEOMOD_SRC}/App/Neomod/DiffCalc"
     "${NEOMOD_SRC}/Util"
+    "${NEOMOD_SRC}/Util/SyncPrimitives"
     "${NEOMOD_LIBS}"
 )
 find_package(Threads REQUIRED)  # batch mode workers

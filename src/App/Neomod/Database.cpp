@@ -3,6 +3,7 @@
 
 #include "AsyncIOHandler.h"
 #include "Bancho.h"
+#include "BeatmapFile.h"
 #include "ConVarHandler.h"
 #include "ContainerRanges.h"
 #include "Parsing.h"
@@ -13,7 +14,6 @@
 #include "OsuConVars.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
-#include "DirectoryWatcher.h"
 #include "BeatmapInstaller.h"
 #include "Engine.h"
 #include "File.h"
@@ -40,8 +40,10 @@
 #include <algorithm>
 #include <cctype>
 #include <cstring>
+#include <span>
 #include <utility>
 #include <variant>
+#include <vector>
 
 using namespace neomod;
 
@@ -371,7 +373,6 @@ void Database::destroyLoader() {
     // beatmap_difficulties wipe in startLoader makes them dangle.
     VolNormalization::flush_priority();
 
-    directoryWatcher->stop_watching(Mc::Paths::maps() + "/");
     this->load_interrupted.store(true, std::memory_order_release);  // for subroutines (loadMaps, etc.)
     this->db_load_handle.cancel();
     if(this->db_load_handle.valid()) this->db_load_handle.wait();
@@ -1208,26 +1209,14 @@ void Database::loadMaps(std::string_view neomod_maps_path, std::string_view pepp
                                 continue;
                             }
                             const std::string osufile_fullpath = mapset_path + osufile_nameonly;
-                            bool inMetadata = false;
                             i32 tempiID = -1;
                             {
+                                std::vector<u8> bytes;
                                 File file(osufile_fullpath);
-                                for(auto line = file.readLine(); !line.empty() || file.canRead();
-                                    line = file.readLine()) {
-                                    if(line.empty() || SString::is_comment(line)) continue;
-                                    if(line.contains("[Metadata]")) {
-                                        inMetadata = true;
-                                        continue;
-                                    }
-                                    if(line.starts_with('[') && inMetadata) {
-                                        break;
-                                    }
-                                    if(inMetadata) {
-                                        if(Parsing::parse(line, "BeatmapID", ':', &tempiID)) {
-                                            break;
-                                        }
-                                        continue;
-                                    }
+                                file.readToVector(bytes);
+                                if(const auto id = BeatmapFile{std::span<const u8>{bytes}}.getValue(
+                                       BeatmapFile::SectionKind::METADATA, "BeatmapID")) {
+                                    Parsing::parse(*id, &tempiID);
                                 }
                             }
                             if(tempiID != -1 && tempiID == iID) {
@@ -2691,7 +2680,7 @@ std::unique_ptr<DiffContainer> Database::parseFolderDiffs(std::string_view folde
     const auto difficultyType = is_peppy ? PEPPY_DIFFICULTY : NEOMOD_DIFFICULTY;
 
     auto diffs = std::make_unique<DiffContainer>();
-    DatabaseBeatmap::LoadError lastError;
+    Primitives::LoadError lastError;
     for(const auto &beatmapFile : env->getFilesInFolder(beatmapPath)) {
         if(!is_osu_file(beatmapFile)) continue;
 

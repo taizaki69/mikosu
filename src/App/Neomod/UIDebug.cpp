@@ -37,6 +37,7 @@ static ConVar ui_prompt_cmd("ui_prompt", CLIENT | NOLOAD | NOSAVE);
 static ConVar debug_fake_online_cmd("debug_fake_online", CLIENT | NOLOAD | NOSAVE);
 static ConVar debug_fake_room_cmd("debug_fake_room", CLIENT | NOLOAD | NOSAVE);
 static ConVar debug_chat_message_cmd("debug_chat_message", CLIENT | NOLOAD | NOSAVE);
+static ConVar debug_focus_cmd("debug_focus", CLIENT | NOLOAD | NOSAVE);
 }  // namespace cv
 
 UIScreen *UIDebug::findScreenByName(std::string_view lowerName) const {
@@ -269,9 +270,9 @@ void UIDebug::debugAssert(std::string_view args) {
 
 void UIDebug::debugPrompt(std::string_view msg) {
     // scripted stand-in for the (online-only) real prompt() callers; logs the response for trace asserts
-    m_ui->promptoverlay->prompt(std::string{msg}, SA::MakeDelegate([](std::string_view response) -> void {
-                                    logRaw("uiprompt response='{}'", response);
-                                }));
+    m_prompt = m_ui->promptoverlay->prompt(std::string{msg}, SA::MakeDelegate([](std::string_view response) -> void {
+                                               logRaw("uiprompt response='{}'", response);
+                                           }));
 }
 
 void UIDebug::debugFakeOnline(std::string_view arg) {
@@ -282,7 +283,16 @@ void UIDebug::debugFakeOnline(std::string_view arg) {
     BanchoState::set_fake_online(a.empty() || a != "0");
 }
 
-void UIDebug::debugFakeRoom() { BanchoState::fake_join_room(); }
+void UIDebug::debugFakeRoom(std::string_view arg) { BanchoState::fake_join_room(arg == "map"); }
+
+void UIDebug::debugFocus(std::string_view arg) {
+    // the window losing ("0") or getting focus, which a headless window never reports
+    if(arg == "0") {
+        osu->onFocusLost();
+    } else {
+        osu->onFocusGained();
+    }
+}
 
 void UIDebug::debugChatMessage(std::string_view args) {
     // debug_chat_message <channel> <author id> <text...>: a message as if received from the server (author 0 = a
@@ -318,6 +328,7 @@ UIDebug::UIDebug(UI *ui_parent) : m_ui(ui_parent) {
     cv::debug_fake_online_cmd.setCallback(SA::MakeDelegate<&UIDebug::debugFakeOnline>(this));
     cv::debug_fake_room_cmd.setCallback(SA::MakeDelegate<&UIDebug::debugFakeRoom>(this));
     cv::debug_chat_message_cmd.setCallback(SA::MakeDelegate<&UIDebug::debugChatMessage>(this));
+    cv::debug_focus_cmd.setCallback(SA::MakeDelegate<&UIDebug::debugFocus>(this));
 }
 
 UIDebug::~UIDebug() {
@@ -328,5 +339,6 @@ UIDebug::~UIDebug() {
     cv::ui_prompt_cmd.removeAllCallbacks();
     cv::debug_fake_online_cmd.removeAllCallbacks();
     cv::debug_fake_room_cmd.removeAllCallbacks();
+    cv::debug_focus_cmd.removeAllCallbacks();
     cv::debug_chat_message_cmd.removeAllCallbacks();
 }

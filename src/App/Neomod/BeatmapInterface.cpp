@@ -2,6 +2,7 @@
 #include "BeatmapInterface.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <limits>
 #include <span>
@@ -25,14 +26,15 @@
 #include "Engine.h"
 #include "GameRules.h"
 #include "HUD.h"
+#include "HitSounds.h"
 #include "HitObjects.h"
 #include "i18n.h"
 #include "LegacyReplay.h"
 #include "Logging.h"
-#include "MainMenu.h"
 #include "ModFPoSu.h"
 #include "ModSelector.h"
 #include "Mouse.h"
+#include "MusicTrack.h"
 #include "NotificationOverlay.h"
 #include "OptionsOverlay.h"
 #include "Osu.h"
@@ -49,8 +51,6 @@
 #include "SkinImage.h"
 #include "SliderRenderer.h"
 #include "AsyncPPCalculator.h"
-#include "SongBrowser/SongBrowser.h"
-#include "SongBrowser/VolNormalization.h"
 #include "SoundEngine.h"
 #include "SpectatorScreen.h"
 #include "UI.h"
@@ -72,7 +72,7 @@ static void end_watched_mod_session() {
     }
 }
 
-BeatmapInterface::BeatmapInterface() : AbstractBeatmapInterface(), ppv2_calc(this) {
+BeatmapInterface::BeatmapInterface(MusicTrack &music) : AbstractBeatmapInterface(), music(music), ppv2_calc(this) {
     // vars
     this->bIsPlaying = false;
     this->bIsPaused = false;
@@ -85,17 +85,12 @@ BeatmapInterface::BeatmapInterface() : AbstractBeatmapInterface(), ppv2_calc(thi
     this->fShouldFlashSectionPass = 0.0f;
     this->fShouldFlashSectionFail = 0.0f;
     this->bContinueScheduled = false;
-    this->iContinueMusicPos = 0;
 
     this->beatmap = nullptr;
 
-    this->music = nullptr;
-
-    this->fMusicFrequencyBackup = 0.f;
     this->iCurMusicPos = 0;
     this->iCurMusicPosWithOffsets = 0;
     this->bWasSeekFrame = false;
-    this->fAfterMusicIsFinishedVirtualAudioTimeStart = -1.0f;
     this->bIsFirstMissSound = true;
 
     this->bFailed = false;
@@ -312,10 +307,10 @@ void BeatmapInterface::skipEmptySection() {
     const i32 nextHitObjectDelta = this->iNextHitObjectTime - (i32)this->iCurMusicPosWithOffsets;
 
     if(!cv::end_skip.getBool() && nextHitObjectDelta < 0) {
-        this->music->setPositionMS(std::max(this->music->getLengthMS(), (u32)1) - 1);
+        this->music.setPosition(std::max(this->music.getLengthMS(), (u32)1) - 1);
         this->bWasSeekFrame = true;
     } else {
-        this->music->setPositionMS(std::max(this->iNextHitObjectTime - (i32)(offset * offsetMultiplier), (i32)0));
+        this->music.setPosition(std::max(this->iNextHitObjectTime - (i32)(offset * offsetMultiplier), (i32)0));
         this->bWasSeekFrame = true;
     }
 
@@ -419,9 +414,6 @@ void BeatmapInterface::selectBeatmap() {
     // sanity
     osu->bIsPlayingASelectedBeatmap = false;
 
-    // if possible, continue playing where we left off
-    if(likely(!!this->music) && (this->music->isPlaying())) this->iContinueMusicPos = this->music->getPositionMS();
-
     this->selectBeatmap(this->beatmap);
 }
 
@@ -432,21 +424,17 @@ void BeatmapInterface::selectBeatmap(DatabaseBeatmap *map) {
         this->beatmap = map;
 
         this->nb_hitobjects = map->getNumObjects();
-
-        // need to recheck/reload the music here since every difficulty might be using a different sound file
-        this->bIsWaitingForPreview = true;
-        this->loadMusic(false /*not reload*/, true /*async*/);
     }
 
     if(cv::beatmap_preview_mods_live.getBool()) {
         this->onModUpdate();
     } else {
         this->invalidateWholeMapPPInfo();  // onModUpdate already calls this
+        this->setMusicSpeed(this->getSpeedMultiplier());
     }
 }
 
 void BeatmapInterface::deselectBeatmap() {
-    this->iContinueMusicPos = 0;
     this->beatmap = nullptr;
     this->unloadObjects();
 }
@@ -617,9 +605,9 @@ bool BeatmapInterface::start() {
 
     // actually load the difficulty (and the hitobjects)
     {
-        DatabaseBeatmap::LOAD_GAMEPLAY_RESULT result = DatabaseBeatmap::loadGameplay(this->beatmap, this);
+        DatabaseBeatmap::LOAD_GAMEPLAY_RESULT result = DatabaseBeatmap::loadGameplay(this->beatmap, this, this);
         if(result.error.errc) {
-            using enum DatabaseBeatmap::LoadError::code;
+            using enum Primitives::LoadError::code;
             std::string errorMessage;
             switch(result.error.errc) {
                 case METADATA:
@@ -670,7 +658,7 @@ bool BeatmapInterface::start() {
         // move temp result data into beatmap
         this->hitobjects = std::move(result.hitobjects);
         this->breaks = std::move(result.breaks);
-        this->getSkinMutable()->setBeatmapComboColors(std::move(result.combocolors));  // update combo colors in skin
+        this->comboColors = std::move(result.combocolors);
 
         this->cur_timing_info = {};
         this->default_sample_set = result.defaultSampleSet;
@@ -688,7 +676,7 @@ bool BeatmapInterface::start() {
         this->hitobjectsSortedByEndTime.push_back(unq.get());
     }
 
-    std::ranges::sort(this->hitobjectsSortedByEndTime, BeatmapInterface::sortHitObjectByEndTimeComp);
+    std::ranges::sort(this->hitobjectsSortedByEndTime, HitObject::sortByEndTimeComp);
 
     // after the hitobjects have been loaded we can calculate the stacks
     this->calculateStacks();
@@ -702,19 +690,21 @@ bool BeatmapInterface::start() {
     this->resetLiveStarsTasks();
 
     // load music
-    this->bIsWaitingForPreview = false;  // cancel pending preview music play
     if(cv::restart_sound_engine_before_playing.getBool()) {
         // HACKHACK: Reload sound engine before starting the song, as it starts lagging after a while
         //           (i haven't figured out the root cause yet)
-        soundEngine->pause(this->music);
+        this->music.pause();
         soundEngine->restart();
 
         // Restarting sound engine already reloads the music
     } else {
-        this->reloadMusicNow();  // need to reload in case of speed/pitch changes (just to be sure)
+        // need to reload in case of speed/pitch changes (just to be sure)
+        this->music.load(this->beatmap, false, true);
     }
 
-    this->music->setLoop(false);
+    // the lead-in before the song and the time after its end
+    this->music.setVirtualTime(true);
+    this->music.setLoop(false);
     this->spectate_pause = false;
     this->bIsPaused = false;
     this->bContinueScheduled = false;
@@ -725,18 +715,18 @@ bool BeatmapInterface::start() {
     this->iPreviousSectionPassFailTime = -1;
     this->fShouldFlashSectionPass = 0.0f;
     this->fShouldFlashSectionFail = 0.0f;
-    this->fAfterMusicIsFinishedVirtualAudioTimeStart = -1.f;
 
-    this->music->setPositionMS(0);
+    this->music.setPosition(0);
     this->iCurMusicPos = 0;
 
     // we are waiting for an asynchronous start of the beatmap in the next update()
     // (from the beginning, even if the last play was quit while waiting for a quick restart)
     this->bIsPlaying = true;
     this->bIsWaiting = true;
+    this->bLeadInStarted = false;
+    this->iLeadInMS = 0;
     this->bIsRestartScheduled = false;
     this->bIsRestartScheduledQuick = false;
-    this->fWaitTime = Timing::getTimeReal<f32>();
 
     if(this->beatmap->getLocalOffset() != 0)
         ui->getNotificationOverlay()->addNotification(
@@ -781,23 +771,16 @@ void BeatmapInterface::actualRestart() {
 
     // we are waiting for an asynchronous start of the beatmap in the next update()
     this->bIsWaiting = true;
-    this->fWaitTime = Timing::getTimeReal<f32>();
-
-    // if the first hitobject starts immediately, add artificial wait time before starting the music
-    if(likely(!this->hitobjects.empty())) {
-        if(this->hitobjects[0]->getClickTime() < cv::early_note_time.getInt()) {
-            this->bIsWaiting = true;
-            this->fWaitTime = Timing::getTimeReal<f32>() + cv::early_note_time.getFloat() / 1000.0f;
-        }
-    }
+    this->bLeadInStarted = false;
+    this->iLeadInMS = 0;
 
     // pause temporarily if playing
-    if(this->music->isPlaying()) soundEngine->pause(this->music);
+    if(this->music.isPlaying()) this->music.pause();
 
     // reset/restore frequency (from potential fail before)
-    this->music->setFrequency(0);
+    this->music.endSlowdown();
 
-    this->music->setLoop(false);
+    this->music.setLoop(false);
     this->bIsPaused = false;
     this->bContinueScheduled = false;
 
@@ -811,7 +794,7 @@ void BeatmapInterface::actualRestart() {
     this->onModUpdate();  // sanity
 
     // reset position
-    this->music->setPositionMS(0);
+    this->music.setPosition(0);
     this->bWasSeekFrame = true;
     this->iCurMusicPos = 0;
 
@@ -828,15 +811,6 @@ void BeatmapInterface::pause(bool quitIfWaiting) {
     }
 
     const bool isFirstPause = !this->bContinueScheduled;
-
-    // NOTE: this assumes that no beatmap ever goes far beyond the end of the music
-    // NOTE: if pure virtual audio time is ever supported (playing without SoundEngine) then this needs to be adapted
-    // fix pausing after music ends breaking beatmap state (by just not allowing it to be paused)
-    if(this->fAfterMusicIsFinishedVirtualAudioTimeStart >= 0.0f) {
-        const f32 delta = Timing::getTimeReal<f32>() - this->fAfterMusicIsFinishedVirtualAudioTimeStart;
-        if(delta < 5.0f)  // WARNING: sanity limit, always allow escaping after 5 seconds of overflow time
-            return;
-    }
 
     if(this->bIsPlaying) {
         if(this->bIsWaiting && quitIfWaiting) {
@@ -855,7 +829,7 @@ void BeatmapInterface::pause(bool quitIfWaiting) {
                cv::end_skip.getBool()) {
                 this->stop(false);
             } else {
-                soundEngine->pause(this->music);
+                this->music.pause();
                 this->bIsPlaying = false;
                 this->bIsPaused = true;
             }
@@ -863,10 +837,8 @@ void BeatmapInterface::pause(bool quitIfWaiting) {
     } else if(this->bIsPaused && !this->bContinueScheduled) {
         // if this is the first time unpausing
         if(osu->getModAuto() || osu->getModAutopilot() || this->bIsInSkippableSection || this->is_watching) {
-            if(!this->bIsWaiting) {
-                // only force play() if we were not early waiting
-                soundEngine->play(this->music);
-            }
+            // (also during the lead-in, which runs on the music's virtual time)
+            this->music.play();
 
             this->bIsPlaying = true;
             this->bIsPaused = false;
@@ -918,23 +890,9 @@ void BeatmapInterface::pause(bool quitIfWaiting) {
     if(this->bFailed) this->fFailAnim.stop();
 }
 
-void BeatmapInterface::pausePreviewMusic(bool toggle) {
-    if(likely(!!this->music)) {
-        if(this->music->isPlaying())
-            soundEngine->pause(this->music);
-        else if(toggle)
-            soundEngine->play(this->music);
-    }
-}
-
-bool BeatmapInterface::isPreviewMusicPlaying() {
-    if(likely(!!this->music)) return this->music->isPlaying();
-
-    return false;
-}
-
 void BeatmapInterface::stop(bool quit) {
     osu->bIsPlayingASelectedBeatmap = false;
+    this->music.setVirtualTime(false);
 
     soundEngine->stop(this->getSkin()->s_fail);
 
@@ -977,7 +935,7 @@ void BeatmapInterface::stop(bool quit) {
     this->score_frames.clear();
     this->sim.reset();
 
-    if(this->bFailed && !!this->music) this->music->setFrequency(0.f);
+    if(this->bFailed) this->music.endSlowdown();
 
     this->unloadObjects();
 
@@ -1044,62 +1002,29 @@ void BeatmapInterface::cancelFailing() {
     this->fFailAnim.stop();
     this->fFailAnim = 1.0f;
 
-    if(likely(!!this->music)) this->music->setFrequency(0.0f);
+    this->music.endSlowdown();
 
     soundEngine->stop(this->getSkin()->s_fail);
 }
 
-f32 BeatmapInterface::getIdealVolume() const {
-    if(unlikely(!this->music)) return 1.f;
-
-    f32 volume = cv::volume_music.getFloat();
-    f32 modifier = 1.f;
-
-    if(cv::normalize_loudness.getBool()) {
-        if(unlikely(!this->beatmap)) return volume;
-        if(this->beatmap->loudness != 0.f) {
-            modifier = std::pow(10, (cv::loudness_target.getFloat() - this->beatmap->loudness) / 20);
-        }
-    }
-
-    return volume * modifier;
-}
-
 void BeatmapInterface::setMusicSpeed(f32 speed) {
-    if(likely(!!this->music)) {
-        if((osu->isInPlayMode() || cv::beatmap_preview_mods_live.getBool())) {
-            this->music->setSpeed(speed);
-        } else {  // reset playback speed
-            this->music->setSpeed(1.f);
-        }
-    }
-
-    // also update music pitch
-    this->setMusicPitch(this->getPitchMultiplier());
-}
-
-void BeatmapInterface::setMusicPitch(f32 pitch) {
-    if(likely(!!this->music)) {
-        if((osu->isInPlayMode() || cv::beatmap_preview_mods_live.getBool())) {
-            this->music->setPitch(pitch);
-        } else {  // reset playback pitch
-            this->music->setPitch(1.f);
-        }
-    }
+    // (outside of play only with beatmap_preview_mods_live)
+    const bool modded = osu->isInPlayMode() || cv::beatmap_preview_mods_live.getBool();
+    this->music.setRate(modded ? speed : 1.f, modded ? this->getPitchMultiplier() : 1.f,
+                        cv::snd_speed_compensate_pitch.getBool());
 }
 
 void BeatmapInterface::seekMS(u32 ms) {
     this->bTempSeekNF = false;
-    if(unlikely(!this->beatmap) || unlikely(!this->music) || this->bFailed) return;
+    if(unlikely(!this->beatmap) || this->music.isEmpty() || this->bFailed) return;
 
     // this->resetScore() resets this->is_submittable
     bool was_submittable = this->is_submittable;
 
     this->bWasSeekFrame = true;
-    this->fWaitTime = 0.0f;
 
-    this->music->setPositionMS(ms);
-    this->music->setBaseVolume(this->getIdealVolume());
+    this->music.setPosition(ms);
+    this->music.updateVolume();
     this->setMusicSpeed(this->getSpeedMultiplier());
 
     this->resetHitObjects(ms);
@@ -1113,7 +1038,7 @@ void BeatmapInterface::seekMS(u32 ms) {
         this->bIsPlaying = true;
         this->bIsRestartScheduledQuick = false;
 
-        soundEngine->play(this->music);
+        this->music.play();
 
         // if there are calculations in there that need the hitobjects to be loaded, also applies speed/pitch
         this->onModUpdate(false, false);
@@ -1142,12 +1067,7 @@ void BeatmapInterface::seekMS(u32 ms) {
     }
 }
 
-u32 BeatmapInterface::getTime() const {
-    if(likely(!!this->music) && this->music->isAsyncReady())
-        return this->music->getPositionMS();
-    else
-        return 0;
-}
+u32 BeatmapInterface::getTime() const { return (u32)std::max(this->music.getTime(), 0); }
 
 u32 BeatmapInterface::getStartTimePlayable() const {
     if(likely(!this->hitobjects.empty()))
@@ -1157,8 +1077,8 @@ u32 BeatmapInterface::getStartTimePlayable() const {
 }
 
 u32 BeatmapInterface::getLength() const {
-    if(likely(!!this->music) && this->music->isAsyncReady())
-        return this->music->getLengthMS();
+    if(this->music.isReady())
+        return this->music.getLengthMS();
     else if(likely(!!this->beatmap))
         return this->beatmap->getLengthMS();
     else
@@ -1181,13 +1101,9 @@ f32 BeatmapInterface::getPercentFinished() const {
 
 f32 BeatmapInterface::getPercentFinishedPlayable() const {
     if(this->bIsWaiting) {
-        // this->fWaitTime is set to the time when the wait time ENDS
-        f32 wait_duration = (cv::early_note_time.getFloat() / 1000.f);
-        if(wait_duration <= 0.f) return 0.f;
-
-        f32 wait_start = this->fWaitTime - wait_duration;
-        f32 wait_percent = (Timing::getTimeReal<f32>() - wait_start) / wait_duration;
-        return std::clamp(wait_percent, 0.f, 1.f);
+        // (through the lead-in)
+        if(this->iLeadInMS <= 0) return 0.f;
+        return std::clamp(1.f + (f32)this->iCurMusicPos / (f32)this->iLeadInMS, 0.f, 1.f);
     } else {
         f32 length_playable = this->getLengthPlayable();
         if(length_playable <= 0.f) return 0.f;
@@ -1199,8 +1115,8 @@ f32 BeatmapInterface::getPercentFinishedPlayable() const {
 
 int BeatmapInterface::getMostCommonBPM() const {
     if(likely(!!this->beatmap)) {
-        if(likely(!!this->music))
-            return (int)(this->beatmap->getMostCommonBPM() * this->music->getSpeed());
+        if(!this->music.isEmpty())
+            return (int)(this->beatmap->getMostCommonBPM() * this->music.getSpeed());
         else
             return (int)(this->beatmap->getMostCommonBPM() * this->getSpeedMultiplier());
     } else
@@ -1232,7 +1148,27 @@ f32 BeatmapInterface::getPitchMultiplier() const {
 
 // currently just a passthrough for the main skin, might return beatmap skins in the future
 const Skin *BeatmapInterface::getSkin() const { return osu->getSkin(); }
+
+const Replay::Mods &BeatmapInterface::getMods() const { return osu->getScore()->mods; }
+LegacyFlags BeatmapInterface::getModsLegacy() const { return osu->getScore()->getModsLegacy(); }
 Skin *BeatmapInterface::getSkinMutable() { return osu->getSkinMutable(); }
+
+ModFlags BeatmapInterface::getModFlags() const {
+    // the experimental mods that change the look are only convars, not part of the play's mods
+    ModFlags flags = this->getMods().flags;
+    if(cv::mod_strict_tracking.getBool()) flags |= ModFlags::StrictTracking;
+    if(cv::mod_approach_different.getBool()) flags |= ModFlags::ApproachDifferent;
+    if(cv::mod_fps.getBool()) flags |= ModFlags::FPS;
+    return flags;
+}
+
+Color BeatmapInterface::getComboColor(i32 colorCounter, i32 colorOffset) const {
+    return this->getSkin()->getComboColorForCounter(colorCounter, colorOffset, this->comboColors);
+}
+
+bool BeatmapInterface::slidersRenderDynamically() const { return osu->slidersRenderDynamically(); }
+
+vec2 BeatmapInterface::getScreenSize() const { return osu->getVirtScreenSize(); }
 
 f32 BeatmapInterface::getRawAR() const {
     if(unlikely(!this->beatmap)) return 5.0f;
@@ -1454,6 +1390,100 @@ void BeatmapInterface::addSliderBreak() {
 
 void BeatmapInterface::addScorePoints(int points, bool isSpinner) { osu->getScore()->addPoints(points, isSpinner); }
 
+namespace {
+// a sound's panning from where it happens on the playfield as drawn (mirrors, rotation, mods), as played
+f32 soundPanAt(const BeatmapInterface &play, vec2 rawPos) {
+    return HitSoundUtils::playedPan(GameRules::osuCoords2Pan(play.pixels2OsuCoords(play.osuCoords2Pixels(rawPos)).x));
+}
+
+// the context of a hitsound at `timeMS` (-1: now)
+HitSoundUtils::HitSoundContext hitSoundContext(const BeatmapInterface &play, const Skin &skin, i32 timeMS) {
+    const DatabaseBeatmap *map = play.getBeatmap();
+    return HitSoundUtils::makeContext(
+        (timeMS != -1 && map) ? HitSoundUtils::samplesAt(map->getTimingpoints(), timeMS) : play.getCurrentTimingInfo(),
+        play.getDefaultSampleSet(), skin.o_layered_hitsounds);
+}
+}  // namespace
+
+void BeatmapInterface::playHitSound(DatabaseBeatmapTypes::HITSAMPLE_BITS samples, vec2 rawPos, i32 delta, i32 timeMS) {
+    // Don't play hitsounds when seeking
+    const Skin *skin = this->getSkin();
+    if(this->bWasSeekFrame || !skin) return;
+
+    f32 pitch = 0.f;
+    if(cv::snd_pitch_hitsounds.getBool()) {
+        // don't change pitch for 300s if delta is within 300 hitwindow
+        // (see AbstractBeatmapInterface.cpp for weird math justification)
+        if(!cv::snd_pitch_hitsounds_ignore_300s.getBool() ||
+           (f32)std::abs(delta) >= (std::floor(this->getHitWindow300()) - 0.5f)) {
+            pitch = (f32)delta / this->getHitWindow100() * cv::snd_pitch_hitsounds_factor.getFloat();
+        }
+    }
+
+    HitSoundUtils::play(*skin, HitSoundUtils::resolve(samples, hitSoundContext(*this, *skin, timeMS), false),
+                        soundPanAt(*this, rawPos), pitch);
+}
+
+void BeatmapInterface::playSliderTickSound(DatabaseBeatmapTypes::HITSAMPLE_BITS samples, vec2 rawPos, i32 timeMS) {
+    const Skin *skin = this->getSkin();
+    if(!skin) return;
+    HitSoundUtils::playSliderTick(*skin,
+                                  HitSoundUtils::resolveSliderTick(samples, hitSoundContext(*this, *skin, timeMS)),
+                                  soundPanAt(*this, rawPos));
+}
+
+std::vector<HitSoundUtils::Set_Slider_Hit> BeatmapInterface::updateSliderSlideSounds(
+    bool sliding, DatabaseBeatmapTypes::HITSAMPLE_BITS samples, vec2 rawPos,
+    const std::vector<HitSoundUtils::Set_Slider_Hit> &started) {
+    const Skin *skin = this->getSkin();
+    if(!skin) return {};
+    if(sliding && !this->bWasSeekFrame) {
+        return HitSoundUtils::play(*skin, HitSoundUtils::resolve(samples, hitSoundContext(*this, *skin, -1), true),
+                                   soundPanAt(*this, rawPos), 0.f);
+    }
+
+    // debugLog("not sliding, stopping");
+    if(!started.empty()) HitSoundUtils::stopSliderSounds(*skin, started);
+    return {};
+}
+
+void BeatmapInterface::stopSliderSounds(const std::vector<HitSoundUtils::Set_Slider_Hit> &started) {
+    if(const Skin *skin = this->getSkin()) HitSoundUtils::stopSliderSounds(*skin, started);
+}
+
+void BeatmapInterface::playSpinnerSpinSound(f32 ratio) {
+    if(this->bWasSeekFrame) return;
+
+    const Skin *skin = this->getSkin();
+    Sound *spinner_spinsound = skin ? skin->s_spinner_spin : nullptr;
+    if(spinner_spinsound) {
+        if(!spinner_spinsound->isPlaying()) {
+            soundEngine->play(spinner_spinsound);
+        }
+        if(skin->o_spinner_frequency_modulate) {
+            const f32 frequency = 20000.0f + (i32)(std::clamp<f32>(ratio, 0.0f, 2.5f) * 40000.0f);
+            spinner_spinsound->setFrequency(frequency);
+        } else {
+            // sanity reset
+            spinner_spinsound->setFrequency(0);
+        }
+    }
+}
+
+void BeatmapInterface::stopSpinnerSpinSound() {
+    const Skin *skin = this->getSkin();
+    Sound *spinner_spinsound = skin ? skin->s_spinner_spin : nullptr;
+    if(spinner_spinsound && spinner_spinsound->isPlaying()) {
+        soundEngine->stop(spinner_spinsound);
+    }
+}
+
+void BeatmapInterface::playSpinnerBonusSound() {
+    if(!this->bWasSeekFrame && this->getSkin()->s_spinner_bonus) soundEngine->play(this->getSkin()->s_spinner_bonus);
+}
+
+void BeatmapInterface::addTargetHit(f32 delta, f32 angle) { ui->getHUD()->addTarget(delta, angle); }
+
 void BeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
     // never drain before first hitobject (or if drain is disabled)
     if(this->bTempSeekNF || cv::drain_disabled.getBool() || osu->getScore()->mods.has(ModFlags::NoHP) ||
@@ -1500,204 +1530,12 @@ void BeatmapInterface::addHealth(f64 percent, bool isFromHitResult) {
     }
 }
 
-bool BeatmapInterface::sortHitObjectByStartTimeComp(HitObject const *a, HitObject const *b) {
-    if(a == b) return false;
-
-    if((a->getClickTime()) != (b->getClickTime())) return (a->getClickTime()) < (b->getClickTime());
-
-    if(a->getType() != b->getType()) return static_cast<int>(a->getType()) < static_cast<int>(b->getType());
-    if(a->getComboNumber() != b->getComboNumber()) return a->getComboNumber() < b->getComboNumber();
-
-    auto aPosAtStartTime = a->getRawPosAt(a->getClickTime()), bPosAtClickTime = b->getRawPosAt(b->getClickTime());
-    if(aPosAtStartTime != bPosAtClickTime) return vec::all(vec::lessThan(aPosAtStartTime, bPosAtClickTime));
-
-    return false;  // equivalent
-}
-
-bool BeatmapInterface::sortHitObjectByEndTimeComp(HitObject const *a, HitObject const *b) {
-    if(a == b) return false;
-
-    if((a->getEndTime()) != (b->getEndTime())) return (a->getEndTime()) < (b->getEndTime());
-
-    if(a->getType() != b->getType()) return static_cast<int>(a->getType()) < static_cast<int>(b->getType());
-    if(a->getComboNumber() != b->getComboNumber()) return a->getComboNumber() < b->getComboNumber();
-
-    auto aPosAtEndTime = a->getRawPosAt(a->getEndTime()), bPosAtClickTime = b->getRawPosAt(b->getEndTime());
-    if(aPosAtEndTime != bPosAtClickTime) return vec::all(vec::lessThan(aPosAtEndTime, bPosAtClickTime));
-
-    return false;  // equivalent
-}
-
 bool BeatmapInterface::canDraw() {
     if(!this->bIsPlaying && !this->bIsPaused && !this->bContinueScheduled && !this->bIsWaiting) return false;
-    if(unlikely(!this->beatmap) || unlikely(!this->music))  // sanity check
+    if(unlikely(!this->beatmap) || this->music.isEmpty())  // sanity check
         return false;
 
     return true;
-}
-
-void BeatmapInterface::handlePreviewPlay() {
-    if(unlikely(!this->music)) return;
-
-    if(!ui->getMainMenu()->isVisible() && loading_reselect_map != MD5Hash{}) {
-        // if we are waiting to reselect a main menu beatmap after loading song browser, don't seek at all
-        this->music->setLoop(cv::beatmap_preview_music_loop.getBool());
-        if(this->music->isPlaying()) {
-            return;
-        }
-    }
-
-    bool almost_finished = false;
-    if((!this->music->isPlaying() || (almost_finished = this->music->getPositionPct() > 0.95f)) &&
-       likely(!!this->beatmap)) {
-        // soundEngine->stop(this->music);
-
-        if(soundEngine->play(this->music)) {
-            // this is an assumption, but should be good enough for most songs
-            // reset playback position when the song has nearly reached the end (when the user switches back to the results
-            // screen or the songbrowser after playing)
-            // (check again after restarting due to async)
-            if(almost_finished || this->music->getPositionPct() > 0.95f) this->iContinueMusicPos = 0;
-
-            if(this->music->getFrequency() < this->fMusicFrequencyBackup)  // player has died, reset frequency
-                this->music->setFrequency(0.f);
-
-            // When neomod is initialized, it starts playing a random song in the main menu.
-            // Users can set a convar to make it start at its preview point instead.
-            // The next songs will start at the beginning regardless.
-            static bool should_start_song_at_preview_point = cv::start_first_main_menu_song_at_preview_point.getBool();
-            const bool start_at_song_beginning = ui->getMainMenu()->isVisible() && !should_start_song_at_preview_point;
-            should_start_song_at_preview_point = false;
-
-            if(start_at_song_beginning) {
-                this->iContinueMusicPos = 0;
-            }
-
-            const u32 position_to_set =
-                (this->iContinueMusicPos != 0 || start_at_song_beginning)
-                    ? this->iContinueMusicPos
-                    : (this->beatmap->getPreviewTime() < 0 ? (u32)(this->music->getLengthMS() * 0.40f)
-                                                           : this->beatmap->getPreviewTime());
-
-            this->music->setPositionMS(position_to_set);
-            this->bWasSeekFrame = true;
-
-            this->music->setBaseVolume(this->getIdealVolume());
-            this->setMusicSpeed(this->getSpeedMultiplier());
-        }
-    }
-
-    // always loop during preview
-    this->music->setLoop(cv::beatmap_preview_music_loop.getBool());
-}
-
-void BeatmapInterface::loadMusic(bool reload, bool async) {
-    const std::string beatmapSoundPath = this->beatmap ? this->beatmap->getFullSoundFilePath() : "";
-    if(beatmapSoundPath.empty()) {
-        if(this->beatmap) {
-            debugLog("no music file for {}!", this->beatmap->getFilePath());
-        }
-        // pause previously playing music, if any
-        // only if we are not waiting for reload
-        if(loading_reselect_map.empty()) {
-            soundEngine->pause(this->music);
-        }
-        return;
-    }
-
-    // try getting existing sound resource first and rebuilding with a new path
-    if(!this->music) {
-        this->music = resourceManager->getSound("BEATMAP_MUSIC");
-    }
-
-    const std::string &newPath = beatmapSoundPath;
-
-    const bool haveExistingMusic = !!this->music;
-    const bool musicAlreadyLoadedSuccessfully = haveExistingMusic && this->music->isReady();
-
-    // we can skip if we already loaded this path (a load in flight only shows its path in getFilePath() once done)
-    const bool skipLoading = !reload && musicAlreadyLoadedSuccessfully && newPath == this->music->getFilePath();
-
-    logIf(cv::debug_osu.getBool() || cv::debug_snd.getBool(),
-          "reload: {} async: {} existing music: {} existing music loaded successfully: {} skipping: {}", reload, async,
-          haveExistingMusic, musicAlreadyLoadedSuccessfully, skipLoading);
-
-    // the music is handed over to the selected map by checkHandleAsyncMusicLoadFinish(), even if the file doesn't need
-    // loading: the map can still be missing its loudness (e.g. the db's copy of a preloaded main menu map)
-    this->bIsAsyncMusicLoadHandled = false;
-
-    // if normalization is enabled and we don't yet have loudness for this map, kick off a
-    // priority calc in parallel with the audio decode. checkHandleAsyncMusicLoadFinish() will
-    // hold off the music handoff until loudness lands, avoiding an audible volume snap.
-    if(this->beatmap && cv::normalize_loudness.getBool() &&
-       this->beatmap->loudness.load(std::memory_order_acquire) == 0.f) {
-        VolNormalization::request_priority(this->beatmap);
-    }
-
-    if(!skipLoading) {
-        // load the song (again)
-        if(haveExistingMusic) {
-            // rebuild with new path
-            this->music->rebuild(newPath, async);
-        } else {
-            // fresh load
-            if(async) resourceManager->requestNextLoadAsync();
-            this->music = resourceManager->loadSoundAbs(newPath, "BEATMAP_MUSIC", true /* stream */, false, false);
-        }
-    }
-
-    // for sync load (or when nothing needed loading) it should be ready now (otherwise Osu::update will call checkHandleAsyncMusicLoadFinish during update() until it is loaded)
-    if(!async || skipLoading) {
-        this->checkHandleAsyncMusicLoadFinish();
-    }
-
-    // TODO: load custom hitsounds
-    // TODO: load custom skin elements
-}
-
-void BeatmapInterface::checkHandleAsyncMusicLoadFinish() {
-    if(this->bIsAsyncMusicLoadHandled || unlikely(!this->music)) return;
-    if(resourceManager->isLoadingResource(this->music)) return;
-
-    // hold off until loudness has landed if normalization is currently enabled, so the song
-    // doesn't briefly play at unnormalized volume. fallback_loudness is non-zero, so this
-    // never hangs: the priority worker always writes a non-zero value (real or fallback).
-    // re-checked each frame: toggling normalization off while waiting lets playback proceed.
-    if(this->beatmap && cv::normalize_loudness.getBool() &&
-       this->beatmap->loudness.load(std::memory_order_acquire) == 0.f) {
-        return;
-    }
-
-    this->bIsAsyncMusicLoadHandled = true;
-
-    // (a file that didn't need loading can still be playing, and BASS refuses to enqueue a playing stream)
-    if(!this->music->isReady() || (!this->music->isPlaying() && !soundEngine->enqueue(this->music))) {
-        logIf(cv::debug_osu.getBool() || cv::debug_snd.getBool(), "failed to enqueue music at {}",
-              this->music->getFilePath());
-    } else {
-        // ready and enqueued (or still playing)
-        this->music->setBaseVolume(this->getIdealVolume());
-        this->fMusicFrequencyBackup = this->music->getFrequency();
-        this->setMusicSpeed(this->getSpeedMultiplier());
-        if(this->bIsWaitingForPreview) {
-            this->bIsWaitingForPreview = false;
-            this->handlePreviewPlay();
-            if(!ui->getMainMenu()->isVisible() && db->isFinished()) {
-                loading_reselect_map.clear();
-            }
-        }
-        RichPresence::refreshStatus();
-    }
-}
-
-void BeatmapInterface::unloadMusic() {
-    if(this->music) {
-        resourceManager->destroyResource(this->music);
-        this->music = nullptr;
-    }
-
-    // TODO: unload custom hitsounds
-    // TODO: unload custom skin elements
 }
 
 void BeatmapInterface::unloadObjects() {
@@ -1842,7 +1680,8 @@ void BeatmapInterface::draw() {
     }
 
     // draw followpoints
-    if(cv::draw_followpoints.getBool() && !cv::mod_mafham.getBool()) this->drawFollowPoints();
+    if(cv::draw_followpoints.getBool() && !cv::mod_mafham.getBool())
+        HitObjects::drawFollowPoints(*this, this->hitobjects, (uSz)std::max(0, this->iPreviousFollowPointObjectIndex));
 
     // draw all hitobjects in reverse
     if(cv::draw_hitobjects.getBool()) this->drawHitObjects();
@@ -2073,158 +1912,6 @@ void BeatmapInterface::drawContinue() {
     g->popTransform();
 }
 
-void BeatmapInterface::drawFollowPoints() {
-    const auto &skin = this->getSkin();
-
-    const i32 curPos = this->iCurMusicPosWithOffsets;
-
-    // I absolutely hate this, followpoints can be abused for cheesing high AR reading since they always fade in with a
-    // fixed 800 ms custom approach time. Capping it at the current approach rate seems sensible, but unfortunately
-    // that's not what osu is doing. It was non-osu-compliant-clamped since this client existed, but let's see how many
-    // people notice a change after all this time (26.02.2020)
-
-    // 0.7x means animation lasts only 0.7 of it's time
-    const f64 animationMultiplier = this->getSpeedAdjustedAnimationSpeed();
-    const i32 followPointApproachTime =
-        animationMultiplier *
-        (cv::followpoints_clamp.getBool()
-             ? std::min((i32)this->fCachedApproachTimeForUpdate, (i32)cv::followpoints_approachtime.getFloat())
-             : (i32)cv::followpoints_approachtime.getFloat());
-    const bool followPointsConnectCombos = cv::followpoints_connect_combos.getBool();
-    const bool followPointsConnectSpinners = cv::followpoints_connect_spinners.getBool();
-    const f32 followPointSeparationMultiplier = std::max(cv::followpoints_separation_multiplier.getFloat(), 0.1f);
-    const f32 followPointPrevFadeTime = animationMultiplier * cv::followpoints_prevfadetime.getFloat();
-    const f32 followPointScaleMultiplier = cv::followpoints_scale_multiplier.getFloat();
-
-    // include previous object in followpoints
-    int lastObjectIndex = -1;
-
-    for(int index = this->iPreviousFollowPointObjectIndex; index < this->hitobjects.size(); index++) {
-        lastObjectIndex = index - 1;
-
-        // ignore future spinners
-        auto *spinnerPointer = this->hitobjects[index] && this->hitobjects[index]->getType() == HitObjectType::SPINNER
-                                   ? static_cast<Spinner *>(this->hitobjects[index].get())
-                                   : nullptr;
-        if(spinnerPointer != nullptr && !followPointsConnectSpinners)  // if this is a spinner
-        {
-            lastObjectIndex = -1;
-            continue;
-        }
-
-        const bool isCurrentHitObjectNewCombo =
-            (lastObjectIndex >= 0 ? this->hitobjects[lastObjectIndex]->isEndOfCombo() : false);
-        const bool isCurrentHitObjectSpinner =
-            (lastObjectIndex >= 0 && followPointsConnectSpinners
-                 ? this->hitobjects[lastObjectIndex] &&
-                       this->hitobjects[lastObjectIndex]->getType() == HitObjectType::SPINNER
-                 : false);
-        if(lastObjectIndex >= 0 && (!isCurrentHitObjectNewCombo || followPointsConnectCombos ||
-                                    (isCurrentHitObjectSpinner && followPointsConnectSpinners))) {
-            // ignore previous spinners
-            spinnerPointer = this->hitobjects[lastObjectIndex] &&
-                                     this->hitobjects[lastObjectIndex]->getType() == HitObjectType::SPINNER
-                                 ? static_cast<Spinner *>(this->hitobjects[lastObjectIndex].get())
-                                 : nullptr;
-            if(spinnerPointer != nullptr && !followPointsConnectSpinners)  // if this is a spinner
-            {
-                lastObjectIndex = -1;
-                continue;
-            }
-
-            // get time & pos of the last and current object
-            const i32 lastObjectEndTime = this->hitobjects[lastObjectIndex]->getClickTime() +
-                                          this->hitobjects[lastObjectIndex]->getDuration() + 1;
-            const i32 objectStartTime = this->hitobjects[index]->getClickTime();
-            const i32 timeDiff = objectStartTime - lastObjectEndTime;
-
-            const vec2 startPointRaw = this->hitobjects[lastObjectIndex]->getRawPosAt(lastObjectEndTime);
-            const vec2 endPointRaw = this->hitobjects[index]->getRawPosAt(objectStartTime);
-            const vec2 startPoint = this->osuCoords2Pixels(startPointRaw);
-            const vec2 endPoint = this->osuCoords2Pixels(endPointRaw);
-
-            const f32 xDiff = endPoint.x - startPoint.x;
-            const f32 yDiff = endPoint.y - startPoint.y;
-            const vec2 diff = endPoint - startPoint;
-
-            // NOTE: dist and separation are in osu!pixels, so that followpoint placement is independent of how the
-            // playfield is scaled to the screen (only the final positions are mapped to screen space)
-            const f32 dist = vec::length(endPointRaw - startPointRaw);
-
-            // draw all points between the two objects
-            const int followPointSeparation = 32.0f * followPointSeparationMultiplier;
-            for(int j = (int)(followPointSeparation * 1.5f); j < (dist - followPointSeparation);
-                j += followPointSeparation) {
-                const f32 animRatio = ((f32)j / dist);
-
-                const vec2 animPosStart = startPoint + (animRatio - 0.1f) * diff;
-                const vec2 finalPos = startPoint + animRatio * diff;
-
-                const i32 fadeInTime = (i32)(lastObjectEndTime + animRatio * timeDiff) - followPointApproachTime;
-                const i32 fadeOutTime = (i32)(lastObjectEndTime + animRatio * timeDiff);
-
-                // draw
-                f32 alpha = 1.0f;
-                f32 followAnimPercent =
-                    std::clamp<f32>((f32)(curPos - fadeInTime) / (f32)followPointPrevFadeTime, 0.0f, 1.0f);
-                followAnimPercent = -followAnimPercent * (followAnimPercent - 2.0f);  // quad out
-
-                // NOTE: only internal osu default skin uses scale + move transforms here, it is impossible to achieve
-                // this effect with user skins
-                const f32 scale = cv::followpoints_anim.getBool() ? 1.5f - 0.5f * followAnimPercent : 1.0f;
-                const vec2 followPos = cv::followpoints_anim.getBool()
-                                           ? animPosStart + (finalPos - animPosStart) * followAnimPercent
-                                           : finalPos;
-
-                // bullshit performance optimization: only draw followpoints if within screen bounds (plus a bit of a
-                // margin) there is only one beatmap where this matters currently: https://osu.ppy.sh/b/1145513
-                if(followPos.x < -osu->getVirtScreenWidth() || followPos.x > osu->getVirtScreenWidth() * 2 ||
-                   followPos.y < -osu->getVirtScreenHeight() || followPos.y > osu->getVirtScreenHeight() * 2)
-                    continue;
-
-                // calculate trail alpha
-                if(curPos >= fadeInTime && curPos < fadeOutTime) {
-                    // future trail
-                    const f32 delta = curPos - fadeInTime;
-                    alpha = (f32)delta / (f32)followPointApproachTime;
-                } else if(curPos >= fadeOutTime && curPos < (fadeOutTime + (i32)followPointPrevFadeTime)) {
-                    // previous trail
-                    const i32 delta = curPos - fadeOutTime;
-                    alpha = 1.0f - (f32)delta / (f32)(followPointPrevFadeTime);
-                } else
-                    alpha = 0.0f;
-
-                // draw it
-                g->setColor(Color(0xffffffff).setA(alpha));
-
-                g->pushTransform();
-                {
-                    g->rotate(vec::degrees(std::atan2(yDiff, xDiff)));
-
-                    skin->i_followpoint.setAnimationTimeOffset(skin->anim_speed, fadeInTime);
-
-                    // NOTE: getSizeBaseRaw() depends on the current animation time being set correctly beforehand!
-                    // (otherwise you get incorrect scales, e.g. for animated elements with inconsistent @2x mixed in)
-                    // the followpoints are scaled by one eighth of the hitcirclediameter (not the raw diameter, but the
-                    // scaled diameter)
-                    const f32 followPointImageScale =
-                        ((this->fHitcircleDiameter / 8.0f) / skin->i_followpoint.getSizeBaseRaw().x) *
-                        followPointScaleMultiplier;
-
-                    skin->i_followpoint.drawRaw(followPos, followPointImageScale * scale);
-                }
-                g->popTransform();
-            }
-        }
-
-        // store current index as previous index
-        lastObjectIndex = index;
-
-        // iterate up until the "nextest" element
-        if(this->hitobjects[index]->getClickTime() >= curPos + followPointApproachTime) break;
-    }
-}
-
 void BeatmapInterface::drawHitObjects() {
     const i32 curPos = this->iCurMusicPosWithOffsets;
     const i32 pvs = this->getPVS();
@@ -2372,7 +2059,9 @@ void BeatmapInterface::drawHitObjects() {
         }
 
         // draw followpoints
-        if(cv::draw_followpoints.getBool()) this->drawFollowPoints();
+        if(cv::draw_followpoints.getBool())
+            HitObjects::drawFollowPoints(*this, this->hitobjects,
+                                         (uSz)std::max(0, this->iPreviousFollowPointObjectIndex));
 
         // draw live hitobjects (also, code duplication yay)
         {
@@ -2519,77 +2208,9 @@ void BeatmapInterface::update() {
     }
 }
 
-i32 BeatmapInterface::convertRawToOffsetMusicPos(i32 rawPos) const {
-    i32 ret = rawPos;
-    ret += (i32)((cv::universal_offset.getFloat() + cv::universal_offset_hardcoded_blamepeppy.getFloat()) *
-                 this->getSpeedMultiplier());
-    ret += cv::universal_offset_norate.getInt();
-    if(this->beatmap) {
-        ret -= this->beatmap->getLocalOffset();
-        ret -= this->beatmap->getOnlineOffset();
-        if(this->beatmap->getVersion() < 5) {
-            ret -= cv::old_beatmap_offset.getInt();
-        }
-    }
-    return ret;
-}
-
-i32 BeatmapInterface::getInterpedMusicPos() const {
-    const auto currentTime = Timing::getTimeReal<f64>();
-
-    const int interpCV = cv::interpolate_music_pos.getInt();
-    const bool useMcOsuInterp = interpCV == 2;
-    const bool useLazerInterp = !useMcOsuInterp && interpCV == 3;
-
-    // lazy switch on convar change
-    if(useMcOsuInterp && (!this->musicInterp || this->musicInterp->getType() != 2)) {
-        this->musicInterp = std::make_unique<McOsuInterpolator>();
-    } else if(useLazerInterp && (!this->musicInterp || this->musicInterp->getType() != 3)) {
-        this->musicInterp = std::make_unique<TachyonInterpolator>();
-    }
-
-    i64 realMusicPos = -1000;
-    i64 returnPos = -1000;
-    if(this->isActuallyLoading()) {
-        // fake negative start
-        if(useMcOsuInterp || useLazerInterp) {
-            this->musicInterp->update(0.0, currentTime, 0.0, false, 0.0, false);
-        }
-        // otherwise don't do anything (default interpolator is embedded in stream playback position)
-    } else {
-        if(useMcOsuInterp || useLazerInterp) {
-            returnPos = (i32)this->musicInterp->update(
-                (f64)(realMusicPos = (i64)this->music->getPositionMS()), currentTime, this->music->getSpeed(), false,
-                this->music->getLengthMS(), this->music->isPlaying() && !this->bWasSeekFrame);
-        } else {
-            returnPos = (i32)(realMusicPos = (i64)this->music->getPositionMS());
-        }
-
-        if(this->music->getSpeed() < 1.0f && cv::compensate_music_speed.getBool() &&
-           cv::snd_speed_compensate_pitch.getBool())
-            returnPos += (i64)(((1.0f - this->music->getSpeed()) / 0.75f) * 5);  // osu (new)
-    }
-
-    if(cv::debug_snd.getInt() > 1) {
-        const std::string logString = fmt::format(
-            R"(==== MUSIC POSITION DEBUG ====
-real time: {}
-interpolator type: {}
-music->getPositionMS(): {}
-iCurMusicPos: {}
-==== END MUSIC POSITION DEBUG ====)",
-            currentTime, cv::interpolate_music_pos.getInt(), realMusicPos, returnPos);
-
-        logRaw(logString);
-    }
-
-    return (i32)returnPos;
-}
-
 void BeatmapInterface::update2() {
     if(this->bContinueScheduled) {
-        // If we paused while m_bIsWaiting (green progressbar), then we have to let the 'if (this->bIsWaiting)' block
-        // handle the sound play() call
+        // (a pause while waiting (green progressbar) continues without the continue click)
         bool isEarlyNoteContinue = (!this->bIsPaused && this->bIsWaiting);
         if(this->bClickedContinue || isEarlyNoteContinue) {
             this->bClickedContinue = false;
@@ -2600,9 +2221,7 @@ void BeatmapInterface::update2() {
             // (for allowing consolebox optionsmenu chat etc. text input in the continue screen)
             osu->updateWindowsKeyDisable();
 
-            if(!isEarlyNoteContinue) {
-                soundEngine->play(this->music);
-            }
+            this->music.play();
 
             this->bIsPlaying = true;  // usually this should be checked with the result of the above play() call, but
                                       // since we are continuing we can assume that everything works
@@ -2621,9 +2240,9 @@ void BeatmapInterface::update2() {
 
     const bool isIdlePaused = this->isActuallyPausedAndNotSpectating();
 
-    // update current music position (this variable does not include any offsets!)
-    this->iCurMusicPos = this->getInterpedMusicPos();
-    this->iContinueMusicPos = this->iCurMusicPos < 0 ? 0 : this->iCurMusicPos;
+    // update current music position (this variable does not include any offsets!), with a fake negative start while
+    // loading
+    this->iCurMusicPos = this->isActuallyLoading() ? -1000 : this->music.getTime();
 
     const bool wasSeekFrame = this->bWasSeekFrame;
     this->bWasSeekFrame = false;
@@ -2645,57 +2264,47 @@ void BeatmapInterface::update2() {
     // hoist this call out (it's constant throughout an update iteration)
     const f64 current_frametime = engine->getFrameTime();
 
-    // HACKHACK: clean this mess up
-    // waiting to start (file loading, retry)
-    // NOTE: this is dependent on being here AFTER m_iCurMusicPos has been set above, because it modifies it to fake a
-    // negative start (else everything would just freeze for the waiting period)
+    // waiting to start: the load, then the lead-in, which is the music track's virtual time before the song
     if(this->bIsWaiting) {
-        if(this->isLoading()) {
-            this->fWaitTime = Timing::getTimeReal<f32>();
+        if(!this->isLoading() && !this->bLeadInStarted && !this->bIsPaused) {
+            this->bLeadInStarted = true;
+            this->bIsPlaying = true;
 
-            // if the first hitobject starts immediately, add artificial wait time before starting the music
-            if(!this->bIsRestartScheduledQuick && likely(!this->hitobjects.empty())) {
-                if(this->hitobjects[0]->getClickTime() < cv::early_note_time.getInt()) {
-                    this->fWaitTime = Timing::getTimeReal<f32>() + cv::early_note_time.getFloat() / 1000.0f;
+            // a quick restart starts just before the first hitobject (even if there is a long waiting period at the
+            // beginning with nothing etc.); from the song's start, a first hitobject that starts immediately gets
+            // early_note_time of lead-in
+            i32 start_ms = 0;
+            if(this->bIsRestartScheduledQuick) {
+                if(likely(!this->hitobjects.empty())) {
+                    const i32 retry_time = std::max(0, cv::quick_retry_time.getInt());
+                    start_ms = std::max(this->hitobjects[0]->getClickTime() - retry_time, 0);
                 }
+                this->bIsRestartScheduledQuick = false;
             }
-        } else {
-            if(Timing::getTimeReal<f32>() > this->fWaitTime) {
-                if(!this->bIsPaused) {
-                    this->bIsWaiting = false;
-                    this->bIsPlaying = true;
-
-                    i64 start_ms = 0;
-
-                    // if we are quick restarting, jump just before the first hitobject (even if there is a long waiting
-                    // period at the beginning with nothing etc.)
-                    if(this->bIsRestartScheduledQuick) {
-                        if(likely(!this->hitobjects.empty())) {
-                            i64 retry_time = std::max(0, cv::quick_retry_time.getInt());
-                            start_ms = this->hitobjects[0]->getClickTime() - retry_time;
-                            if(start_ms < 0) start_ms = 0;
-                        }
-                        this->bIsRestartScheduledQuick = false;
-                    }
-
-                    soundEngine->play(this->music);
-                    this->music->setLoop(false);
-                    this->music->setPositionMS(start_ms);
-                    this->bWasSeekFrame = true;
-                    this->music->setBaseVolume(this->getIdealVolume());
-
-                    // if there are calculations in there that need the hitobjects to be loaded, also applies
-                    // speed/pitch
-                    this->onModUpdate(false, false);
-                }
-            } else {
-                this->iCurMusicPos =
-                    (Timing::getTimeReal<f32>() - this->fWaitTime) * 1000.0f * this->getSpeedMultiplier();
+            if(start_ms == 0 && likely(!this->hitobjects.empty()) &&
+               this->hitobjects[0]->getClickTime() < cv::early_note_time.getInt()) {
+                start_ms = -(i32)(cv::early_note_time.getFloat() * this->getSpeedMultiplier());
             }
+            this->iLeadInMS = -std::min(start_ms, 0);
+            // (without a lead-in the waiting ends with the start)
+            this->bIsWaiting = start_ms < 0;
+
+            this->music.setLoop(false);
+            this->music.setPosition(start_ms);
+            this->music.play();
+            // (the time was read before this seek, and the rest of the frame plays from the start point)
+            this->iCurMusicPos = this->music.getTime();
+            this->bWasSeekFrame = true;
+            this->music.updateVolume();
+
+            // if there are calculations in there that need the hitobjects to be loaded, also applies speed/pitch
+            this->onModUpdate(false, false);
+        } else if(this->bLeadInStarted && this->iCurMusicPos >= 0) {
+            this->bIsWaiting = false;
         }
 
         // ugh. force update all hitobjects while waiting (necessary because of pvs optimization)
-        i32 curPos = this->convertRawToOffsetMusicPos(this->iCurMusicPos);
+        i32 curPos = this->iCurMusicPos + this->music.getOffset(this->beatmap);
         if(curPos > -1)  // otherwise auto would already click elements that start at exactly 0 (while the map has not
                          // even started)
             curPos = -1;
@@ -2709,30 +2318,16 @@ void BeatmapInterface::update2() {
     if(this->isLoading()) return;
 
     // handle music loading fail
-    if(!this->music->isReady()) {
+    if(!this->music.isReady()) {
         ui->getNotificationOverlay()->addToast("Couldn't load music file :(", ERROR_TOAST);
         this->stop(true);
         return;
     }
 
-    // detect and handle music end
-    if(!this->bIsWaiting && this->music->isReady()) {
-        const bool isMusicFinished = this->music->isFinished();
-
-        // trigger virtual audio time after music finishes
-        if(!isMusicFinished)
-            this->fAfterMusicIsFinishedVirtualAudioTimeStart = -1.0f;
-        else if(this->fAfterMusicIsFinishedVirtualAudioTimeStart < 0.0f)
-            this->fAfterMusicIsFinishedVirtualAudioTimeStart = Timing::getTimeReal<f32>();
-
-        if(isMusicFinished) {
-            // continue with virtual audio time until the last hitobject is done (plus sanity offset given via
-            // osu_end_delay_time) because some beatmaps have hitobjects going until >= the exact end of the music ffs
-            // NOTE: this overwrites m_iCurMusicPos for the rest of the update loop
-            this->iCurMusicPos =
-                (i32)this->music->getLengthMS() +
-                (i32)((Timing::getTimeReal<f32>() - this->fAfterMusicIsFinishedVirtualAudioTimeStart) * 1000.0f);
-        }
+    // detect and handle music end (the music track's virtual time goes on past it until the last hitobject is done, plus
+    // end_delay_time, because some beatmaps have hitobjects going until >= the exact end of the music ffs)
+    if(!this->bIsWaiting && this->music.isReady()) {
+        const bool isMusicFinished = this->music.isFinished();
 
         const bool hasAnyHitObjects = (likely(!this->hitobjects.empty()));
         const bool isTimePastLastHitObjectPlusLenience =
@@ -2750,7 +2345,7 @@ void BeatmapInterface::update2() {
     }
 
     // update timing (with offsets)
-    this->iCurMusicPosWithOffsets = this->convertRawToOffsetMusicPos(this->iCurMusicPos);
+    this->iCurMusicPosWithOffsets = this->iCurMusicPos + this->music.getOffset(this->beatmap);
 
     // get timestamp from the previous update cycle
     const u64 lastUpdateTime = this->iLastMusicPosUpdateTime;
@@ -2762,7 +2357,7 @@ void BeatmapInterface::update2() {
     // update current timingpoint
     if(this->iCurMusicPosWithOffsets >= 0) {
         this->cur_timing_info =
-            this->beatmap->getTimingInfoForTime(this->iCurMusicPosWithOffsets + cv::timingpoints_offset.getInt());
+            HitSoundUtils::samplesAt(this->beatmap->getTimingpoints(), this->iCurMusicPosWithOffsets);
     }
 
     // interpolate clicks that occurred between the last update and now
@@ -3385,8 +2980,8 @@ void BeatmapInterface::update2() {
     // handle fail animation
     if(this->bFailed) {
         if(this->fFailAnim <= 0.0f) {
-            if(this->music->isPlaying() || !ui->getPauseOverlay()->isVisible()) {
-                soundEngine->pause(this->music);
+            if(this->music.isPlaying() || !ui->getPauseOverlay()->isVisible()) {
+                this->music.pause();
                 this->bIsPaused = true;
 
                 if(BanchoState::spectating) {
@@ -3398,9 +2993,7 @@ void BeatmapInterface::update2() {
                 }
             }
         } else {
-            this->music->setFrequency(this->fMusicFrequencyBackup * this->fFailAnim > 100
-                                          ? this->fMusicFrequencyBackup * this->fFailAnim
-                                          : 100);
+            this->music.setSlowdown(this->fFailAnim);
         }
     }
 
@@ -3635,9 +3228,8 @@ bool BeatmapInterface::isLoading() {
 }
 
 bool BeatmapInterface::isActuallyLoading() const {
-    // (the music handoff can still be waiting for the map's loudness, see checkHandleAsyncMusicLoadFinish())
-    return (!soundEngine->isReady() || !this->music->isAsyncReady() || !this->bIsAsyncMusicLoadHandled ||
-            this->bIsPreLoading);
+    // (the track can still be waiting for the map's loudness, see MusicTrack::load())
+    return !soundEngine->isReady() || this->music.isLoading() || this->bIsPreLoading;
 }
 
 vec2 BeatmapInterface::legacyPixels2RawPixels(vec2 coords) const {
@@ -3751,14 +3343,6 @@ vec2 BeatmapInterface::osuCoords2Pixels(vec2 coords) const {
     return coords;
 }
 
-vec2 BeatmapInterface::osuCoords2RawPixels(vec2 coords) const {
-    // scale and offset
-    coords *= this->fScaleFactor;
-    coords += this->vPlayfieldOffset;  // the offset is already scaled, just add it
-
-    return coords;
-}
-
 vec2 BeatmapInterface::osuCoords2LegacyPixels(vec2 coords) const {
     if(osu->getModHR()) coords.y = GameRules::OSU_COORD_HEIGHT - coords.y;
     if(cv::playfield_mirror_horizontal.getBool()) coords.y = GameRules::OSU_COORD_HEIGHT - coords.y;
@@ -3786,6 +3370,14 @@ vec2 BeatmapInterface::osuCoords2LegacyPixels(vec2 coords) const {
     coords.y -= GameRules::OSU_COORD_HEIGHT / 2;
 
     return coords;
+}
+
+f32 BeatmapInterface::osuAngle2PixelAngle(f32 degrees) const {
+    f32 rotation = degrees - cv::playfield_rotation.getFloat() - this->fPlayfieldRotation;
+    if(flags::has<ModFlags::HardRock>(this->getMods().flags)) rotation = 360.0f - rotation;
+    if(cv::playfield_mirror_horizontal.getBool()) rotation = 360.0f - rotation;
+    if(cv::playfield_mirror_vertical.getBool()) rotation = 180.0f - rotation;
+    return rotation;
 }
 
 vec2 BeatmapInterface::getMousePos() const {
@@ -4209,18 +3801,15 @@ void BeatmapInterface::updateHitobjectMetrics() {
     this->fXMultiplier = GameRules::getHitCircleXMultiplier();
     this->fHitcircleDiameter = GameRules::getRawHitCircleDiameter(this->getCS()) * GameRules::getHitCircleXMultiplier();
 
-    const f32 osuCoordScaleMultiplier = (this->fHitcircleDiameter / this->fRawHitcircleDiameter);
-    this->fNumberScale = (this->fRawHitcircleDiameter / (160.0f * (skin->i_defaults[1].scale()))) *
-                         osuCoordScaleMultiplier * cv::number_scale_multiplier.getFloat();
+    this->fNumberScale = PlayfieldView::numberScale(skin, this->fRawHitcircleDiameter, this->fHitcircleDiameter);
     this->fHitcircleOverlapScale =
-        (this->fRawHitcircleDiameter / (160.0f)) * osuCoordScaleMultiplier * cv::number_scale_multiplier.getFloat();
+        PlayfieldView::hitcircleOverlapScale(this->fRawHitcircleDiameter, this->fHitcircleDiameter);
 
-    const f32 followcircle_size_multiplier = 2.4f;
     const f32 sliderFollowCircleDiameterMultiplier =
         cv::mod_jigsaw2.getBool()
             ? (1.0f * (1.0f - cv::mod_jigsaw_followcircle_radius_factor.getFloat()) +
-               cv::mod_jigsaw_followcircle_radius_factor.getFloat() * followcircle_size_multiplier)
-            : followcircle_size_multiplier;
+               cv::mod_jigsaw_followcircle_radius_factor.getFloat() * GameRules::SLIDER_FOLLOW_CIRCLE_MULTIPLIER)
+            : GameRules::SLIDER_FOLLOW_CIRCLE_MULTIPLIER;
     this->fSliderFollowCircleDiameter = this->fHitcircleDiameter * sliderFollowCircleDiameterMultiplier;
 }
 
@@ -4245,22 +3834,8 @@ void BeatmapInterface::calculateStacks() {
 
     debugLog("Beatmap: Calculating stacks ...");
 
-    // reset
-    for(auto &hitobject : this->hitobjects) {
-        hitobject->setStack(0);
-    }
-
-    DatabaseBeatmap::calculateStacks(
-        DatabaseBeatmap::ObjectGetter<HitObject>{
-            [&objs = this->hitobjects](uSz idx) -> HitObject * { return objs[idx].get(); }},
-        this->hitobjects.size(), this->getAR(), this->beatmap->getVersion(), this->beatmap->getStackLeniency());
-
-    // update hitobject positions
-    const f32 STACK_OFFSET = 0.05f;
-    const f32 stackOffset = this->fRawHitcircleDiameter * STACK_OFFSET;
-    for(auto &hitobject : this->hitobjects) {
-        if(hitobject->getStack() != 0) hitobject->updateStackPosition(stackOffset);
-    }
+    HitObjects::stack(this->hitobjects, this->getAR(), this->beatmap->getVersion(), this->beatmap->getStackLeniency(),
+                      this->fRawHitcircleDiameter, flags::has<ModFlags::HardRock>(this->getMods().flags));
 }
 
 void BeatmapInterface::computeDrainRate() {
@@ -4502,6 +4077,6 @@ bool BeatmapInterface::isActuallyPausedAndNotSpectating() const {
     if(BanchoState::spectating) return false;
 
     return (this->isPaused() && ui->getPauseOverlay()->isVisible())  //
-           && (this->music && !this->music->isPlaying())             //
+           && !this->music.isPlaying()                               //
            && !(this->bIsWaiting || this->isActuallyLoading());
 }

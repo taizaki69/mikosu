@@ -7,7 +7,7 @@
 #include "DiffCalcTool.h"
 #endif
 
-#include "DatabaseBeatmap.h"
+#include "BeatmapPrimitives.h"
 #include "DiffCalcToolShared.h"
 #include "DifficultyCalculator.h"
 #include "ModFlags.h"
@@ -495,7 +495,7 @@ std::pair<ModFlags, float> modStringToModFlag(std::string_view CSVs) {
     return {retFlags, retSpeed};
 }
 
-OneMapResult::ErrorStage loadPrimitivesFromPath(std::string_view path, DatabaseBeatmap::PRIMITIVE_CONTAINER &out,
+OneMapResult::ErrorStage loadPrimitivesFromPath(std::string_view path, Primitives::PRIMITIVE_CONTAINER &out,
                                                 std::string &error) {
     std::vector<uint8_t> fileBuffer;
     {
@@ -508,7 +508,7 @@ OneMapResult::ErrorStage loadPrimitivesFromPath(std::string_view path, DatabaseB
         // don't need to keep the file open anymore
     }
 
-    out = DatabaseBeatmap::loadPrimitiveObjectsFromData(fileBuffer, path);
+    out = Primitives::loadPrimitiveObjectsFromData(fileBuffer, {});
     if(out.error.errc) {
         error = out.error.error_string();
         return OneMapResult::ErrorStage::PRIMITIVES;
@@ -518,7 +518,7 @@ OneMapResult::ErrorStage loadPrimitivesFromPath(std::string_view path, DatabaseB
 
 // star calc + pp for one already-loaded map with one (mods, speed) config. the container can be
 // reused across configs (slider times are only computed once), same as the game's mod sweeps.
-OneMapResult computeOneConfig(DatabaseBeatmap::PRIMITIVE_CONTAINER &primitives, std::string_view mapIdentity,
+OneMapResult computeOneConfig(Primitives::PRIMITIVE_CONTAINER &primitives, std::string_view mapIdentity,
                               ModFlags modFlags, float speedMultiplier) {
     OneMapResult r{};
     r.map = mapIdentity;
@@ -541,7 +541,7 @@ OneMapResult computeOneConfig(DatabaseBeatmap::PRIMITIVE_CONTAINER &primitives, 
     r.numObjects = primitives.getNumObjects();
 
     // load difficulty hitobjects for star calculation
-    DatabaseBeatmap::LOAD_DIFFOBJ_RESULT diffResult = DatabaseBeatmap::loadDifficultyHitObjects(
+    DiffCalc::LOAD_DIFFOBJ_RESULT diffResult = DiffCalc::loadDifficultyHitObjects(
         primitives, r.AR, r.CS, speedMultiplier, flags::has<ModFlags::HardRock>(modFlags));
 
     if(diffResult.error.errc) {
@@ -640,7 +640,7 @@ OneMapResult computeOneConfig(DatabaseBeatmap::PRIMITIVE_CONTAINER &primitives, 
 }
 
 OneMapResult computeOneMap(std::string_view osuFilePath, ModFlags modFlags, float speedMultiplier) {
-    DatabaseBeatmap::PRIMITIVE_CONTAINER primitives;
+    Primitives::PRIMITIVE_CONTAINER primitives;
     std::string error;
     const OneMapResult::ErrorStage errorStage = loadPrimitivesFromPath(osuFilePath, primitives, error);
     if(errorStage != OneMapResult::ErrorStage::NONE) {
@@ -763,7 +763,7 @@ std::string writeJsonLine(const OneMapResult &r, bool dumpStrains) {
 // path, the test suite passes the bare filename so goldens are location independent).
 std::string processMapForBatch(std::string_view path, std::string_view identity,
                                const std::vector<BatchConfig> &configs) {
-    DatabaseBeatmap::PRIMITIVE_CONTAINER primitives;
+    Primitives::PRIMITIVE_CONTAINER primitives;
     std::string error;
     const OneMapResult::ErrorStage errorStage = loadPrimitivesFromPath(path, primitives, error);
 

@@ -4,7 +4,7 @@
 
 #include "Archival.h"
 #include "AsyncPool.h"
-#include "Bancho.h"
+#include "BeatmapFile.h"
 #include "BeatmapInterface.h"
 #include "Database.h"
 #include "DatabaseBeatmap.h"
@@ -16,6 +16,7 @@
 #include "File.h"
 #include "i18n.h"
 #include "Logging.h"
+#include "MusicTrack.h"
 #include "NotificationOverlay.h"
 #include "Osu.h"
 #include "OsuConVars.h"
@@ -116,10 +117,8 @@ void on_done(const ReconcileResult& r, const Entry& e) {
         toasts->addToast(tformat("Downloaded beatmapset #{:d}", e.set_id), SUCCESS_TOAST);
     }
 
-    // a multiplayer room's map and a spectated player's stay selected (their screens select those themselves)
-    const bool selection_taken =
-        BanchoState::spectating || (BanchoState::is_in_a_multi_room() && BanchoState::room.map_id > 0);
-    if(e.auto_select && set && !selection_taken) {
+    // a held selection stays (e.g. a multiplayer room's map, a spectated player's: their screens select those)
+    if(e.auto_select && set && !osu->getMusicTrack()->isHeld()) {
         const auto& diffs = set->getDifficulties();
         assert(!diffs.empty());
 
@@ -155,23 +154,13 @@ struct OszMeta {
 
 // the [Metadata] of one .osu: enough to know the set and to name its folder
 OszMeta parse_osz_meta(std::string_view file) {
+    using neomod::BeatmapFile;
+    using enum BeatmapFile::SectionKind;
+    const BeatmapFile parsed{file};
     OszMeta meta;
-    bool inMetadata = false;
-
-    for(const auto line : SString::split_newlines(file)) {
-        if(line.empty() || SString::is_comment(line)) continue;
-        if(line.contains("[Metadata]")) {
-            inMetadata = true;
-            continue;
-        }
-        if(!inMetadata) continue;
-        if(line.starts_with('[')) break;
-
-        if(Parsing::parse(line, "Artist", ':', &meta.artist)) continue;
-        if(Parsing::parse(line, "Title", ':', &meta.title)) continue;
-        Parsing::parse(line, "BeatmapSetID", ':', &meta.set_id);
-    }
-
+    meta.artist = parsed.getValue(METADATA, "Artist").value_or("");
+    meta.title = parsed.getValue(METADATA, "Title").value_or("");
+    if(const auto setId = parsed.getValue(METADATA, "BeatmapSetID")) Parsing::parse(*setId, &meta.set_id);
     return meta;
 }
 
@@ -512,7 +501,7 @@ void BeatmapInstaller::uninstall(const DatabaseBeatmap* map, bool whole_set) {
     // the preview music streams from the folder, and an open file can't be deleted on windows
     auto* iface = osu->getMapInterface();
     if(whole_set && iface->getBeatmap() && (iface->getBeatmap() == set || iface->getBeatmap()->getParentSet() == set)) {
-        iface->unloadMusic();
+        osu->getMusicTrack()->unload();
     }
 
     if(whole_set) {
