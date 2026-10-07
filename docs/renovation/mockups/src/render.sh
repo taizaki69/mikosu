@@ -11,7 +11,8 @@ trap 'rm -rf "$profile"' EXIT
 # round 3: SCREENS="mainmenu3 songselect3" VARIANTS="lazer tinted upright"
 # round 4: SCREENS="mainmenu4 songselect4" VARIANTS="dusk stable moon day" (dusk is the default theme)
 # round 5: SCREENS="mainmenu5 songselect5" VARIANTS="dark light" (minimal; dark is the default)
-for screen in ${SCREENS:-mainmenu5 songselect5}; do
+# round 6: SCREENS="mainmenu6 songselect6" VARIANTS="dark light" (round 5, bigger, with osu!'s feel)
+for screen in ${SCREENS:-mainmenu6 songselect6}; do
   for v in ${VARIANTS:-dark light}; do
     out="$here/../$screen-$v.png"
     rm -f "$out"

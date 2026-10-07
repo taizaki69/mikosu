@@ -8,7 +8,8 @@ Every round keeps osu!stable's layout and shows three treatments of it, each as 
 | 2 | `{mainmenu2,songselect2}-*.jpg` | `all`, `controls`, `accents` (slanted, flat) |
 | 3 | `{mainmenu3,songselect3}-*.jpg` | `lazer`, `tinted`, `upright` (almost lazer's styling) |
 | 4 | `{mainmenu4,songselect4}-*.jpg` | `dusk` (the default), `stable`, `moon`, `day` (stable's soul, modern glass; art from `make_art4.py`) |
-| 5 (chosen) | `{mainmenu5,songselect5}-*.jpg` | `dark` (the default), `light`: minimal, text on scrims, few surfaces, the selection in white (Inter; `?font=outfit` compares) |
+| 5 | `{mainmenu5,songselect5}-*.jpg` | `dark` (the default), `light`: minimal, text on scrims, few surfaces, the selection in white (Inter; `?font=outfit` compares) |
+| 6 (chosen) | `{mainmenu6,songselect6}-*.jpg` | `dark` (the default), `light`: round 5 bigger, with osu!'s feel (stable's violet menu bars, pink back button and white selection; lazer's sheared buttons, star-rating pills and triangles); Outfit |
 
 - Round 1 comparison page: https://claude.ai/artifact/WPKRiAu87RZV2pKhaAQncj
 - The spec that comes out of the decision: `../DESIGN.md`
@@ -25,6 +26,6 @@ python3 make_art4.py      # rounds 4-5: the sky-and-sea background, its blurred 
 ../../../../tools/dev/guarded --mem 6G -- ./render.sh     # headless Firefox -> ../<screen>-<variant>.jpg
 ```
 
-One page per screen and round (`mainmenu.html`, `songselect2.html`, `mainmenu3.html`, …). `?v=` picks the treatment. Shared styles are in `mockup.css` (round 1), `modern.css` (round 2), `round3.css`, `round4.css` and `round5.css`; icons and helpers in `icons.js`, `round3.js` and `round4.js`. `render.sh` renders round 5 by default; its header lists the `SCREENS`/`VARIANTS` for the earlier rounds.
+One page per screen and round (`mainmenu.html`, `songselect2.html`, `mainmenu3.html`, …). `?v=` picks the treatment. Shared styles are in `mockup.css` (round 1), `modern.css` (round 2), `round3.css`, `round4.css`, `round5.css` and `round6.css`; icons and helpers in `icons.js`, `round3.js`, `round4.js` and `round6.js`. `render.sh` renders round 6 by default; its header lists the `SCREENS`/`VARIANTS` for the earlier rounds.
 
 The "today" references are in `../screens/before/`, captured from neomod with `tools/screens/capture_before.py`, using the same generated maps and art.

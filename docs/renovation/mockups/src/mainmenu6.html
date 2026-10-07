@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mikosu main menu mockup, round 6</title>
+<link rel="stylesheet" href="round6.css">
+</head>
+<body class="mm">
+<div class="bg"></div>
+<div class="scrim"></div>
+<canvas class="viz" id="viz" width="1920" height="1080"></canvas>
+
+<nav class="mbs" id="mbs"></nav>
+<div class="logo" id="logo"></div>
+
+<section class="topl" id="user"></section>
+<section class="topr" id="np"></section>
+<div class="foot-l"><b>mikosu</b> 0.1 &nbsp;·&nbsp; 7,514 maps</div>
+<div class="foot-c"><span class="tag">TIP</span><span>Press <b>F2</b> in song select for a random map, <b>Shift+F2</b> to go back</span></div>
+<div class="foot-r" id="links"></div>
+
+<script src="icons.js"></script>
+<script src="round3.js"></script>
+<script src="round6.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+const v = q.get("v") || "dark";
+document.body.classList.add("v-" + v);
+const light = v === "light";
+
+// stable's arrangement: the logo left of centre, the buttons sliding out from behind it
+const CX = 560, CY = 540, R = 270;
+const logo = document.getElementById("logo");
+logo.style.cssText = `left:${CX - R}px;top:${CY - R}px;width:${2 * R}px;height:${2 * R}px`;
+logo.innerHTML = logo6("mm", { light });
+visualiser6(document.getElementById("viz"), CX, CY, R * 0.93, light ? "rgba(120,80,200,.28)" : "rgba(255,255,255,.4)", 5, { width: 5, max: 140 });
+
+const B = [["play", "Singleplayer"], ["users", "Multiplayer"], ["options", "Options"], ["exit", "Exit"]];
+document.getElementById("mbs").innerHTML = B.map(([ic, label], i) => `
+  <div class="mb${i === 0 ? " on" : ""}">${triangles(20 + i, 760, 90, { count: 7, size: 80, stroke: 1.6, opacity: i === 0 ? 0.3 : 0.16 })}<div class="in">${icon(ic)}<b>${label}</b></div></div>`).join("");
+
+document.getElementById("user").innerHTML = `<div class="av">T</div><div><b>taizaki</b><small>4,218pp &nbsp;·&nbsp; #48,213 &nbsp;·&nbsp; 97.84%</small>
+  <div class="lvr">Lv92<div class="lv"><i></i></div></div></div>`;
+const cb = (ic, on) => `<span class="${on ? "on" : ""}">${icon(ic)}</span>`;
+document.getElementById("np").innerHTML = `<div class="caps">${icon("music")}Now playing</div>
+  <div class="song">Lanternfall<small>Aurora Drift</small></div>
+  <div class="row"><div class="btns">${cb("prev")}${cb("pause", 1)}${cb("stop")}${cb("next")}</div><span class="tm">1:24</span><div class="bar"><i></i></div><span class="tm">3:42</span></div>`;
+document.getElementById("links").innerHTML = `<span>${icon("download")}Online maps</span><span>${icon("info")}Report a problem</span><span>${icon("globe")}GitHub</span>`;
+</script>
+</body>
+</html>
