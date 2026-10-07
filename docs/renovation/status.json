@@ -1,14 +1,23 @@
 {
-  "updated": "2026-10-05",
-  "phase": "1 foundation: done; M1 play-tested (gameplay same as neomod), 4 reported issues fixed, awaiting re-test",
+  "updated": "2026-10-06",
+  "phase": "4 visual renovation started: song select and main menu redesigned in-game (Dusk default, Stable/Moon/Day themes); phases 2-3 continue in parallel",
   "upstream": {
     "remote": "neomodnet/neomod",
     "fork_point": "0fedcafb3515c86d8be8ee736c76bce19d0198d3",
-    "reviewed_through": "0fedcafb3515c86d8be8ee736c76bce19d0198d3"
+    "reviewed_through": "de2a5fdf (merged 2026-10-06, PR #11)"
   },
   "builds": {
-    "linux_x64": {"local": "ok", "command": "tools/build.sh linux", "sanity_test": "pass (gl, sdlgpu)"},
-    "windows_x64": {"local": "cross-build via llvm-mingw 20260908", "command": "tools/build.sh windows", "smoke_test_wine": "pass (default, dx11; opengl unsupported headless)", "wine_command": "tools/dev/wine-smoke"},
+    "linux_x64": {
+      "local": "ok",
+      "command": "tools/build.sh linux",
+      "sanity_test": "pass (gl, sdlgpu)"
+    },
+    "windows_x64": {
+      "local": "cross-build via llvm-mingw 20260908",
+      "command": "tools/build.sh windows",
+      "smoke_test_wine": "pass (default, dx11; opengl unsupported headless)",
+      "wine_command": "tools/dev/wine-smoke"
+    },
     "ci": ".github/workflows/ci.yml: Linux + Windows x64 builds, smoke tests (Linux GL; Windows SDL_gpu and D3D11), diffcalc golden tests; green on PRs #1-#6"
   },
   "parity": {
@@ -16,43 +25,171 @@
     "algorithm": "PP_ALGORITHM_VERSION 20261005 (exact object times)",
     "corpus_cases": 300,
     "corpus_tool": "tools/parity/sr_corpus.py (300 local difficulties, mods NM HD HR DT EZ)",
-    "sr_within_1e-4": {"NM": 189, "HD": 181, "HR": 152, "DT": 160, "EZ": 193},
-    "sr_median_abs_diff": {"NM": 5.9e-05, "HD": 5.5e-05, "HR": 9.8e-05, "DT": 8.1e-05, "EZ": 3.6e-05},
+    "sr_within_1e-4": {
+      "NM": 189,
+      "HD": 181,
+      "HR": 152,
+      "DT": 160,
+      "EZ": 193
+    },
+    "sr_median_abs_diff": {
+      "NM": 5.9e-05,
+      "HD": 5.5e-05,
+      "HR": 9.8e-05,
+      "DT": 8.1e-05,
+      "EZ": 3.6e-05
+    },
     "sr_worst_known": "Risshuu feat. Choko - Take [Gust's Insane]: +0.010 NM, +0.027 HR",
     "sr_within_1e-4_rate": null,
     "pp_within_0.01_rate": null,
     "spot_checks": [
-      {"map": "tools/diffcalc/tests/maps/2785319.osu", "mods": "NM", "rate": 1.0,
-       "neomod_sr": 6.0042720531632305, "oracle_sr": 6.004027372552197, "abs_diff": 0.000245,
-       "neomod_reading": 0.8291758532814358, "oracle_reading": 0.8229208521405954}
+      {
+        "map": "tools/diffcalc/tests/maps/2785319.osu",
+        "mods": "NM",
+        "rate": 1.0,
+        "neomod_sr": 6.0042720531632305,
+        "oracle_sr": 6.004027372552197,
+        "abs_diff": 0.000245,
+        "neomod_reading": 0.8291758532814358,
+        "oracle_reading": 0.8229208521405954
+      }
     ]
   },
-  "replay_parity": {"tool": "tools/runner/replay_runner.py (replay_run console command)", "stable": {"replays": 84, "exact_counts": 63, "exact_max_combo": 68, "exact_score": 36, "known_gaps": ["spinner spin counting (all 14 replays with spinners)", "7 no-spinner replays score slightly high"]}, "lazer": null, "lazer_classic": null, "inputs_available": {"stable_replays": 86}},
+  "replay_parity": {
+    "tool": "tools/runner/replay_runner.py (replay_run console command)",
+    "stable": {
+      "replays": 84,
+      "exact_counts": 63,
+      "exact_max_combo": 68,
+      "exact_score": 36,
+      "known_gaps": [
+        "spinner spin counting (all 14 replays with spinners)",
+        "7 no-spinner replays score slightly high"
+      ]
+    },
+    "lazer": null,
+    "lazer_classic": null,
+    "inputs_available": {
+      "stable_replays": 86
+    }
+  },
   "performance": {
     "reference_machine": "i5-13400F, RTX 4070 SUPER (610.57.04), Linux Mint 22.3, kernel 7.0.0-38",
     "method": "tools/bench/bench.py, headless offscreen on the real GPU, 2560x1440, uncapped, median of 3 runs",
-    "baseline_files": ["docs/renovation/bench/baseline-neomod-0fedcafb-gl.json", "docs/renovation/bench/baseline-neomod-0fedcafb-sdlgpu.json"],
+    "baseline_files": [
+      "docs/renovation/bench/baseline-neomod-0fedcafb-gl.json",
+      "docs/renovation/bench/baseline-neomod-0fedcafb-sdlgpu.json"
+    ],
     "gl": {
-      "gameplay_cpu_ms": {"p50": 0.160, "p99": 0.448, "max": 2.41}, "gameplay_gpu_ms": {"p50": 0.068, "p99": 0.104},
-      "gameplay_input_to_present_ms": {"p50": 0.349, "p99": 0.875},
-      "songselect_idle_cpu_ms": {"p50": 0.222, "p99": 0.709}, "songselect_scroll_cpu_ms": {"p50": 0.252, "p99": 0.712, "max": 7.64},
-      "startup_first_frame_ms": 144, "startup_ready_ms": 134, "peak_rss_mb_gameplay": 489, "peak_rss_mb_songselect": 565,
+      "gameplay_cpu_ms": {
+        "p50": 0.16,
+        "p99": 0.448,
+        "max": 2.41
+      },
+      "gameplay_gpu_ms": {
+        "p50": 0.068,
+        "p99": 0.104
+      },
+      "gameplay_input_to_present_ms": {
+        "p50": 0.349,
+        "p99": 0.875
+      },
+      "songselect_idle_cpu_ms": {
+        "p50": 0.222,
+        "p99": 0.709
+      },
+      "songselect_scroll_cpu_ms": {
+        "p50": 0.252,
+        "p99": 0.712,
+        "max": 7.64
+      },
+      "startup_first_frame_ms": 144,
+      "startup_ready_ms": 134,
+      "peak_rss_mb_gameplay": 489,
+      "peak_rss_mb_songselect": 565,
       "library_import_s": 0.22
     },
     "sdlgpu": {
-      "gameplay_cpu_ms": {"p50": 0.094, "p99": 0.466, "max": 2.31},
-      "gameplay_input_to_present_ms": {"p50": 0.234, "p99": 0.822},
-      "songselect_idle_cpu_ms": {"p50": 0.135, "p99": 0.477}, "songselect_scroll_cpu_ms": {"p50": 0.144, "p99": 0.556, "max": 2.05},
-      "startup_first_frame_ms": 432, "startup_ready_ms": 424, "peak_rss_mb_gameplay": 617, "peak_rss_mb_songselect": 722,
+      "gameplay_cpu_ms": {
+        "p50": 0.094,
+        "p99": 0.466,
+        "max": 2.31
+      },
+      "gameplay_input_to_present_ms": {
+        "p50": 0.234,
+        "p99": 0.822
+      },
+      "songselect_idle_cpu_ms": {
+        "p50": 0.135,
+        "p99": 0.477
+      },
+      "songselect_scroll_cpu_ms": {
+        "p50": 0.144,
+        "p99": 0.556,
+        "max": 2.05
+      },
+      "startup_first_frame_ms": 432,
+      "startup_ready_ms": 424,
+      "peak_rss_mb_gameplay": 617,
+      "peak_rss_mb_songselect": 722,
       "library_import_s": 0.44
     },
-    "menu_budget_ms": {"cpu_p99": 1.5, "gpu_p99": 1.5, "worst_frame_scrolling": 8.0},
-    "checks": [{"date": "2026-10-05", "build": "main after PRs #1-#6", "method": "same-day A/B vs neomod code build", "gameplay_cpu_p99_ms": [0.347, 0.417], "songselect_cpu_p99_ms_idle_keys_wheel": [[0.378, 0.501, 0.390], [0.418, 0.518, 0.434]], "verdict": "no regression"}],
+    "menu_budget_ms": {
+      "cpu_p99": 1.5,
+      "gpu_p99": 1.5,
+      "worst_frame_scrolling": 8.0
+    },
+    "checks": [
+      {
+        "date": "2026-10-05",
+        "build": "main after PRs #1-#6",
+        "method": "same-day A/B vs neomod code build",
+        "gameplay_cpu_p99_ms": [
+          0.347,
+          0.417
+        ],
+        "songselect_cpu_p99_ms_idle_keys_wheel": [
+          [
+            0.378,
+            0.501,
+            0.39
+          ],
+          [
+            0.418,
+            0.518,
+            0.434
+          ]
+        ],
+        "verdict": "no regression"
+      },
+      {
+        "date": "2026-10-06",
+        "build": "merge of neomod de2a5fdf",
+        "method": "same-day A/B vs neomod code build",
+        "gameplay_cpu_p99_ms": [
+          0.321,
+          0.322
+        ],
+        "verdict": "no regression"
+      },
+      {
+        "date": "2026-10-06",
+        "build": "redesign ui-glass (Dusk) on the merged base",
+        "method": "3 runs, menu budget",
+        "songselect_cpu_p99_ms_idle_keys_wheel": [
+          0.511,
+          0.661,
+          0.538
+        ],
+        "songselect_gpu_p99_ms_max": 0.289,
+        "verdict": "within budget"
+      }
+    ],
     "gameplay_regression_rule": "median-of-runs CPU p99 must not exceed max(1.05 x baseline median, slowest baseline run)"
   },
   "screens": {
-    "main_menu": "mockups done (3 directions)",
-    "song_select": "mockups done (3 directions)",
+    "main_menu": "redesigned in-game (logo, buttons, music player); visualiser and user card pending",
+    "song_select": "redesigned in-game (header, info, controls, search, carousel, leaderboard, bottom bar, user card)",
     "mod_select": "not started",
     "options": "not started",
     "results": "not started",
@@ -68,9 +205,18 @@
     "stable_linux_copy": "~/.local/share/osu-stable",
     "lazer": "<windows drive>/Users/<windows user>/AppData/Roaming/osu",
     "mcosu": "~/.local/share/Steam/steamapps/common/McOsu",
-    "library": {"osu_db_version": 20260711, "difficulties": 7514, "folders": 1354, "skins": 13, "stable_scores": 84, "stable_scores_with_online_id": 54, "replays_data_r": 86, "collections": 1}
+    "library": {
+      "osu_db_version": 20260711,
+      "difficulties": 7514,
+      "folders": 1354,
+      "skins": 13,
+      "stable_scores": 84,
+      "stable_scores_with_online_id": 54,
+      "replays_data_r": 86,
+      "collections": 1
+    }
   },
   "decisions_waiting": [],
-  "design_direction": "round 2 option 2: slanted controls (stable layout, Outfit, flat dark panels, accent from background)",
+  "design_direction": "round 4: stable's layout and soul made modern (matte frosted glass, thin glowing lines); Dusk default, Stable/Moon/Day themes; type-to-search",
   "repo": "https://github.com/taizaki69/mikosu"
 }

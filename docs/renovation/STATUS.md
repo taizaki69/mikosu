@@ -1,10 +1,10 @@
 # mikosu status
 
-*Last updated: 2026-10-05*
+*Last updated: 2026-10-06*
 
 ## Where things stand
 
-mikosu now has its own name and identity. Under the hood it is still neomod, the newest descendant of McOsu. The look hasn't changed yet: the redesign you picked ("Slanted controls") starts after the first play-test.
+The new look you chose is going into the game. **Dusk** (between Moon and Day) is the default, and **Stable, Moon and Day** are themes you can switch to in Options → Skin → Theme. Song select and the main menu are done; the other screens follow one by one. I also merged neomod's 71 new commits (more on that below).
 
 **What works today**
 - The game builds on Linux and Windows with one command. GitHub also builds and tests both automatically every time something changes.
@@ -29,34 +29,33 @@ mikosu now has its own name and identity. Under the hood it is still neomod, the
 
 ## Waiting on you
 
-**A quick re-test of the four things you reported**, whenever you play next (same command as before; rebuild not needed, it's already built):
-1. Keyboard in the menus: arrows, Enter, Escape, F1 and typing in song select should all respond every time now.
-2. Alt-tab out of fullscreen and back: it should come back fullscreen, at your custom resolution, every time.
-3. Options → Graphics → Select Resolution → "Custom...": type any resolution, like 1600x900.
-4. Options → Graphics → FPS Limiter: now goes up to 4000.
+**Try the new look** when you next play (the commands are in my message). Things to check:
+1. Song select and the main menu in Dusk. Do they feel like stable, just nicer?
+2. Options → Skin → Theme → Look: switch between Dusk, Stable, Moon and Day (and Classic, the old neomod look).
+3. With your Aristia skin, song select's carousel panels, bottom buttons and back button come from the skin (as in stable). Should the new look win over your skin for those pieces? I'd add a setting for that; for now the skin wins.
 
-If something still misbehaves, tell me what you did and what happened.
+If something looks off, a screenshot plus a sentence is perfect.
 
 ## Done since last time
 
-- **DT/NC like stable:** click DT once for DT, twice for NC, a third time to turn it off (HT does the same with Daycore). The old "Prefer Nightcore" setting is gone, since it isn't needed any more.
-- **Star rating with DT is now right.** mikosu's DT star ratings were off from the official ones by about 0.01 stars on a typical map, up to 0.2. Now they match to about 0.0001, like no-mod ratings, which also got closer. The first time you open song select after updating, mikosu recalculates the star ratings of your maps once, in the background.
-
-- **First play-test:** you found gameplay the same as neomod.
-- **Fixed from your report:**
-  - Menu keys were going missing because of the Linux input-method system (IBus). mikosu now skips it unless you turn it on (Options → Input → Typing; only needed for typing Japanese, Chinese and similar). Accented letters (´ + e = é) now work too.
-  - Alt-tab out of fullscreen used to get stuck or lose your resolution. It now just switches windows and comes back as it was.
-  - A "Custom..." resolution option in-game, no file editing.
-  - FPS limiters up to 4000.
+- **The redesign is chosen:** round 4 with Dusk as the default, after your feedback on rounds 3 and 4: no Frutiger Aero, sharper main-menu buttons, less see-through panels. Typing in song select still goes straight into the search.
+- **Built into the game:**
+  - **song select:** the frosted header with stable's stepped edge, the map info, the search, the carousel, the leaderboard, the bottom bar and your user card;
+  - **main menu:** the flat logo, the four buttons, the music player.
+  - It's light on the PC: about half a millisecond per frame in song select, well under the limit I set for the remastered menus.
+- **neomod's new work is in:** 71 commits.
+  - A more accurate .osu reader: exact timing points, plus several file-format fixes.
+  - A rebuilt music clock.
+  - Gameplay drawing and judging refactors.
+  - I checked that nothing you'd feel changed: star ratings, your 84 replays and gameplay speed all came out exactly as before.
+- Play-test fixes and the DT star-rating fix are merged.
 
 ## What's next
 
-1. Your play-test feedback, then fixes for anything you find.
-2. Then, in parallel:
-   - spinners and the last few score differences;
-   - exact star rating and pp;
-   - start building the new look ("Slanted controls").
+1. Finish merging (neomod first, then the new look).
+2. The remaining screens in the new look: mod select, options, results, then pause, fail and loading screens.
+3. In parallel: spinners and the last score differences; exact star rating and pp.
 
 ## Things to try
 
-The play-test above.
+The new look, above.
