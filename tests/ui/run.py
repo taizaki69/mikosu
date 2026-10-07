@@ -251,7 +251,8 @@ def run_one(name, binary, bindir, datadir, record):
         # force_oauth: the scripts were recorded against neomod's default server, whose compact OAuth login form sets
         # the options layout they click into; mikosu's server address is empty by default, which shows the taller
         # username/password form instead. force_oauth gives the compact form without naming any server
-        input="ui_validate_ticks 1\nforce_oauth 1\n" + text,
+        # ui_theme classic: the scripts check behaviour, and their pixel probes were recorded on neomod's look
+        input="ui_validate_ticks 1\nforce_oauth 1\nui_theme classic\n" + text,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,

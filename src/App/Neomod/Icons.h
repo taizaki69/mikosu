@@ -38,6 +38,26 @@ inline constexpr char32_t STEP_BACKWARD{0xf048};
 inline constexpr char32_t STEP_FORWARD{0xf051};
 inline constexpr char32_t MUSIC{0xf001};
 inline constexpr char32_t THUMB_TACK{0xf08d};
+// the redesign's bottom bar, menu and search (Fork Awesome codepoints)
+inline constexpr char32_t CHEVRON_LEFT{0xf053};
+inline constexpr char32_t PLUS{0xf067};
+inline constexpr char32_t RANDOM{0xf074};
+inline constexpr char32_t BARS{0xf0c9};
+inline constexpr char32_t SEARCH{0xf002};
+inline constexpr char32_t DOWNLOAD{0xf019};
+inline constexpr char32_t SIGN_OUT{0xf08b};
+inline constexpr char32_t DOT_CIRCLE_O{0xf192};
+inline constexpr char32_t INFO_CIRCLE{0xf05a};
+inline constexpr char32_t STAR{0xf005};
+inline constexpr char32_t CHECK{0xf00c};
+inline constexpr char32_t ANGLE_DOWN{0xf107};
+// round 6: map details and the multiplayer button
+inline constexpr char32_t CLOCK_O{0xf017};
+inline constexpr char32_t HEARTBEAT{0xf21e};
+inline constexpr char32_t CIRCLE_O{0xf10c};
+inline constexpr char32_t ARROWS_H{0xf07e};
+inline constexpr char32_t REFRESH{0xf021};
+inline constexpr char32_t USERS{0xf0c0};
 
 inline constexpr const std::array icons{
     Z_UNKNOWN_CHAR,   //
@@ -72,6 +92,23 @@ inline constexpr const std::array icons{
     STEP_FORWARD,     //
     MUSIC,            //
     THUMB_TACK,       //
+    CHEVRON_LEFT,     //
+    PLUS,             //
+    RANDOM,           //
+    BARS,             //
+    SEARCH,           //
+    DOWNLOAD,         //
+    SIGN_OUT,         //
+    DOT_CIRCLE_O,     //
+    INFO_CIRCLE,      //
+    STAR,             //
+    CHECK,            //
+    ANGLE_DOWN,       //
+    CLOCK_O,          //
+    HEARTBEAT,        //
+    ARROWS_H,         //
+    REFRESH,          //
+    USERS,            //
 };
 
 };  // namespace Icons

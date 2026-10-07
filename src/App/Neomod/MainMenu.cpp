@@ -1,5 +1,9 @@
 // Copyright (c) 2015, PG, All rights reserved.
 #include "MainMenu.h"
+#include "UIDraw.h"
+#include "UITheme.h"
+#include "UIType.h"
+#include "UserCard.h"
 
 #include "AboutScreen.h"
 #include "AsyncPool.h"
@@ -363,6 +367,21 @@ MainMenu::MainMenu() : UIScreen() {
         auto add_main_menu_button = [this](std::string text, std::string name, SubButtonType type) -> MainButton * {
             auto *button = new MainButton(this, this->vSize.x, 0, 1, 1, std::move(name), std::move(text), type);
             button->setFont(osu->getSubTitleFont());
+            // the redesign's bars: play pink, multiplayer blue, options lavender, exit coral
+            switch(type) {
+                case SubButtonType::Singleplayer:
+                    button->setThemed(UIButtonRounded::Themed::MENU)->setThemedAccent(0, Icons::PLAY);
+                    break;
+                case SubButtonType::Multiplayer:
+                    button->setThemed(UIButtonRounded::Themed::MENU)->setThemedAccent(1, Icons::USERS);
+                    break;
+                case SubButtonType::Options:
+                    button->setThemed(UIButtonRounded::Themed::MENU)->setThemedAccent(2, Icons::GEAR);
+                    break;
+                default:
+                    button->setThemed(UIButtonRounded::Themed::MENU)->setThemedAccent(3, Icons::SIGN_OUT);
+                    break;
+            }
             button->setVisible(false);
 
             this->menuElements.push_back(button);
@@ -394,6 +413,10 @@ MainMenu::MainMenu() : UIScreen() {
     this->discordButton = new UIButtonWithIcon(PACKAGE_NAME " on GitHub", Icons::GLOBE);
     this->discordButton->setClickCallback([]() { env->openURLInDefaultBrowser(BRAND_REPO_URL); });
     this->addBaseUIElement(this->discordButton);
+
+    this->onlineMapsLink = new UIButtonWithIcon(_("Online maps"), Icons::DOWNLOAD);
+    this->onlineMapsLink->setClickCallback([this]() { this->onOnlineBeatmapsButtonPressed(); });
+    this->addBaseUIElement(this->onlineMapsLink);
 
     this->twitterButton = new UIButtonWithIcon("Report a problem", Icons::WRENCH);
     this->twitterButton->setClickCallback([]() { env->openURLInDefaultBrowser(BRAND_ISSUES_URL); });
@@ -722,18 +745,106 @@ std::pair<bool, float> MainMenu::getTimingpointPulseAmount() {
     return {true, pulse};
 }
 
+// the placeholder logo (not the osu! cookie), flat and matte: a frosted disc inside a thin approach ring in the theme's
+// line colours, the hit dot on the ring, and the wordmark (docs/renovation/DESIGN.md)
+void MainMenu::drawLogoRedesigned(const McRect &rect) {
+    // round 6 (docs/renovation/mockups/mainmenu6.html): the placeholder logo, not the osu! cookie: a dark disc inside a
+    // thick ring graded pink, violet and sky, the white hit dot on the ring, the wordmark and faint drifting triangles.
+    // Flat and matte; it pulses with the beat through the rect's size.
+    const auto &theme = UITheme::current();
+    const f32 d = std::min(rect.getWidth(), rect.getHeight());
+    if(d <= 1.f) return;
+    const vec2 c = rect.getCenter();
+    const f32 outer = d * 0.5f;
+    const f32 ringW = outer * (14.f / 107.f);
+    const f32 ringR = outer - ringW * 0.5f;
+    const f32 discR = outer * (93.f / 107.f);
+
+    const McRect discRect{c.x - discR, c.y - discR, discR * 2.f, discR * 2.f};
+    const UIDraw::Shape disc = UIDraw::Shape::rounded(discRect, discR);
+    UIDraw::Shape shadow = UIDraw::Shape::rounded(McRect{c.x - outer, c.y - outer + d * 0.03f, d, d}, outer);
+    UIDraw::glow(shadow, d * 0.06f, argb(0.35f, 0.f, 0.f, 0.f));
+    UIDraw::fill(disc, theme.logoDisc1);
+    // the disc lit from the top left
+    const f32 hiR = discR * 0.55f;
+    const vec2 hi = c + vec2{-0.28f, -0.4f} * discR;
+    UIDraw::Shape light = UIDraw::Shape::rounded(McRect{hi.x - hiR, hi.y - hiR, hiR * 2.f, hiR * 2.f}, hiR);
+    light.softness = discR * 0.9f;
+    UIDraw::fill(light, UITheme::fade(theme.logoDisc0, 0.9f));
+    UIDraw::triangles(disc, 91u, 9, discR * 0.75f, std::max(1.f, d * 0.006f), argb(0.1f, 1.f, 1.f, 1.f),
+                      (f32)engine->getTime());
+
+    UIDraw::Shape ring = UIDraw::Shape::rounded(McRect{c.x - outer, c.y - outer, d, d}, outer);
+    ring.border = ringW;
+    UIDraw::fill(ring, theme.logoRing[0], theme.logoRing[1], theme.logoRing[2], 0.55f);
+
+    const vec2 dot = c + vec2{-0.866f, -0.5f} * ringR;
+    const f32 dotR = outer * (8.f / 107.f);
+    const UIDraw::Shape hit = UIDraw::Shape::rounded(McRect{dot.x - dotR, dot.y - dotR, dotR * 2.f, dotR * 2.f}, dotR);
+    UIDraw::glow(hit, dotR * 1.2f, argb(0.35f, 1.f, 1.f, 1.f));
+    UIDraw::fill(hit, 0xffffffff);
+
+    // the wordmark, made for a 462px logo at 1080p, follows the logo's size (it pulses with it)
+    const std::string_view word{"mikosu"};
+    const f32 scale = d / UIType::px(462.f);
+    const f32 w = UIType::width(UIType::Style::LOGO, word) * scale;
+    UIType::drawScaled(UIType::Style::LOGO, word,
+                       {c.x - w * 0.5f, c.y + UIType::capHeight(UIType::Style::LOGO) * scale * 0.5f}, scale,
+                       0xffffffff);
+}
+
+McRect MainMenu::logoRect() {
+    const auto [haveTimingpoints, pulse] = this->getTimingpointPulseAmount();
+    vec2 size = this->vSize;
+    size -= size * (0.05f * pulse);
+    size += size * (f32)this->sizeAddAnim;
+    size *= (f32)this->startupAnim;
+    return {this->vCenter.x - size.x / 2.0f - this->centerOffsetAnim, this->vCenter.y - size.y / 2.0f, size.x, size.y};
+}
+
+void MainMenu::updateVisualiser() {
+    // like lazer's logo visualisation (ppy/osu, MIT): every 50 ms each bar jumps up to the spectrum's band under it
+    // (the bands shift round by 5 each time, so the bass doesn't sit in one place), and between updates they fall
+    const f32 dtMs = (f32)engine->getFrameTime() * 1000.f;
+    for(f32 &a : this->vizAmp) a = std::max(0.f, a - dtMs * 0.0024f * (a + 0.03f));
+
+    const f64 now = engine->getTime();
+    if(now < this->vizNextUpdate) return;
+    this->vizNextUpdate = now + 0.05;
+    std::array<f32, 256> spectrum{};
+    if(!soundEngine->getSpectrum(spectrum)) return;
+    const size_t n = this->vizAmp.size();
+    for(size_t i = 0; i < n; i++) {
+        // SoLoud's magnitudes: quiet music sits around 1-10, loud bass reaches 50 and more
+        const f32 target = std::clamp(std::sqrt(std::max(spectrum[(i + (size_t)this->vizOffset) % n], 0.f)) / 7.f, 0.f, 1.f);
+        this->vizAmp[i] = std::max(this->vizAmp[i], target);
+    }
+    this->vizOffset = (this->vizOffset + 5) % (int)n;
+}
+
+void MainMenu::drawVisualiser(const McRect &logo) {
+    const f32 d = std::min(logo.getWidth(), logo.getHeight());
+    if(d <= 1.f) return;
+    std::array<f32, 200> lengths{};
+    const f32 maxLen = d * 0.36f;
+    for(size_t i = 0; i < lengths.size(); i++) lengths[i] = this->vizAmp[i] * maxLen;
+    const auto &theme = UITheme::current();
+    const Color colour = theme.light ? UITheme::fade(theme.ink, 0.22f) : argb(0.38f, 1.f, 1.f, 1.f);
+    UIDraw::radialBars(logo.getCenter(), d * 0.5f * 0.94f, lengths, std::max(1.f, d * (5.f / 462.f)), colour,
+                       -1.5707963f, 5);
+}
+
 // the cube
 void MainMenu::drawMainButton() {
     const auto [haveTimingpoints, pulse] = this->getTimingpointPulseAmount();
+    const McRect mainButtonRect = this->logoRect();
 
-    vec2 size = this->vSize;
-    const float pulseSub = 0.05f * pulse;
-    size -= size * pulseSub;
-    size += size * (f32)this->sizeAddAnim;
-    size *= (f32)this->startupAnim;
-
-    const McRect mainButtonRect{this->vCenter.x - size.x / 2.0f - this->centerOffsetAnim,
-                                this->vCenter.y - size.y / 2.0f, size.x, size.y};
+    if(!UITheme::classic()) {
+        // the redesign's flat logo in place of the cube (still pulsing with the beat)
+        this->drawLogoRedesigned(mainButtonRect);
+        if(this->friendAnimPercent > 0.0f) this->drawFriend(mainButtonRect, pulse, haveTimingpoints);
+        return;
+    }
 
     // draw main button cube
     bool drawing_full_cube =
@@ -950,6 +1061,17 @@ void MainMenu::draw() {
         }
     }
 
+    if(!UITheme::classic()) {
+        // soft scrims top and bottom so the corners' text reads over any background
+        const auto &theme = UITheme::current();
+        const f32 w = (f32)osu->getVirtScreenWidth(), h = (f32)osu->getVirtScreenHeight();
+        UIDraw::fillVertical(McRect{0.f, 0.f, w, UIType::px(260.f)}, UITheme::fade(theme.scrim, 0.72f),
+                             UITheme::fade(theme.scrim, 0.f));
+        UIDraw::fillVertical(McRect{0.f, h - UIType::px(220.f), w, UIType::px(220.f)}, UITheme::fade(theme.scrim, 0.f),
+                             UITheme::fade(theme.scrim, 0.72f));
+        osu->getUserButton()->draw();
+    }
+
     // draw notification arrow for changelog (version button)
     if(this->drawVersionNotificationArrow) {
         float animation = std::fmod((float)(engine->getTime()) * 3.2f, 2.0f);
@@ -986,6 +1108,9 @@ void MainMenu::draw() {
         g->popTransform();
     }
 
+    // the visualiser, behind the menu bars and the logo
+    if(!UITheme::classic()) this->drawVisualiser(this->logoRect());
+
     // draw container
     UIScreen::draw();
 
@@ -1013,7 +1138,23 @@ void MainMenu::tick() {
     UIScreen::tick();
     this->updateAvailableButton->tick();
 
+    // the sound engine only computes a spectrum while the visualiser is on screen
+    if(const bool want = this->bVisible && !UITheme::classic(); want != this->vizEnabled) {
+        soundEngine->setSpectrumEnabled(want);
+        this->vizEnabled = want;
+        if(!want) this->vizAmp.fill(0.f);
+    }
+
     if(!this->bVisible) return;
+    if(this->vizEnabled) this->updateVisualiser();
+
+    if(!UITheme::classic()) {
+        // the redesign shows the player's card in the top left, as stable does (song select moves it to its footer)
+        UserCard *card = osu->getUserButton();
+        card->setSize(UIType::px(470.f), UIType::px(84.f));
+        card->setPos(UIType::px(44.f), UIType::px(34.f));
+        card->tick();
+    }
 
     {
         // Check if we need to update the background
@@ -1226,6 +1367,8 @@ void MainMenu::tick() {
 void MainMenu::updateInput(CBaseUIEventCtx &c) {
     if(!this->bVisible) return;
 
+    if(!UITheme::classic()) osu->getUserButton()->updateInput(c);
+
     // update and focus handling
     UIScreen::updateInput(c);
 
@@ -1410,6 +1553,13 @@ CBaseUIContainer *MainMenu::setVisible(bool visible) {
     const bool changed = this->bVisible != visible;
     this->bVisible = visible;
 
+    // leaving the menu switches the visualiser's spectrum off right away (tick() may not run while hidden)
+    if(!visible && this->vizEnabled) {
+        soundEngine->setSpectrumEnabled(false);
+        this->vizEnabled = false;
+        this->vizAmp.fill(0.f);
+    }
+
     if(visible) {
         if(changed) {
             // move to next tip
@@ -1461,7 +1611,8 @@ void MainMenu::updateLayout() {
 
     const vec2 screenSize = osu->getVirtScreenSize();
     this->vCenter = screenSize / 2.0f;
-    const float size = Osu::getUIScale(324.0f);
+    // the redesign's logo is 462px on a 1080-high screen (round 6); the cube is stable's size
+    const float size = UITheme::classic() ? Osu::getUIScale(324.0f) : UIType::px(462.f);
     this->vSize = vec2(size, size);
 
     this->cube->setRelPos(this->vCenter - this->vSize / 2.0f - vec2((f32)this->centerOffsetAnim, 0.0f));
@@ -1507,6 +1658,59 @@ void MainMenu::updateLayout() {
         this->twitterButton->onResized();
         ads_y -= this->twitterButton->getSize().y + margin;
         this->twitterButton->setRelPos(screenSize.x - this->twitterButton->getSize().x, ads_y);
+    }
+
+    if(!UITheme::classic()) {
+        // round 6's corners: the player top right, the version bottom left, the tip at the bottom's centre
+        auto D = [](f32 v) { return UIType::px(v); };
+        this->nowPlaying->setRelPos(screenSize.x - this->nowPlaying->getSize().x - D(44.f), D(34.f));
+        this->versionButton->setFont(UIType::font(UIType::Style::NOTE));
+        this->versionButton->onResized();
+        this->versionButton->setSizeToContent(D(8.f), D(8.f));
+        this->versionButton->setRelPos(D(36.f), screenSize.y - this->versionButton->getSize().y - D(26.f));
+        this->tipLabel->setFont(UIType::font(UIType::Style::SMALL));
+        this->tipLabel->setSizeX(screenSize.x * 0.5f);
+        this->tipLabel->setText(mainmenu::getCurrentTip());
+        this->tipLabel->setRelPos((screenSize.x - this->tipLabel->getSize().x) / 2.f,
+                                  screenSize.y - this->tipLabel->getSize().y - D(30.f));
+
+        // the links in a row at the bottom right; the online beatmaps are one of them instead of a side tab
+        this->onlineBeatmapsButton->setVisible(false);
+        this->onlineMapsLink->setVisible(true);
+        f32 x = screenSize.x - D(44.f);
+        for(UIButtonWithIcon *link : {this->discordButton, this->twitterButton, this->onlineMapsLink}) {
+            link->onResized();
+            if(!link->isVisible()) continue;
+            x -= link->getSize().x;
+            link->setRelPos(x, screenSize.y - link->getSize().y - D(28.f));
+            x -= D(28.f);
+        }
+    } else {
+        this->onlineBeatmapsButton->setVisible(true);
+        this->onlineMapsLink->setVisible(false);
+    }
+    if(!UITheme::classic()) {
+        // round 6: stable's bars, 90px for a 462px logo with 18px between them, centred on the logo; their left end
+        // starts under its centre, so they always come out from behind it (sliding out as the menu opens)
+        const f32 n = (f32)this->menuElements.size();
+        const f32 barH = std::round(this->vSize.y * (90.f / 462.f));
+        const f32 gap = std::round(this->vSize.y * (18.f / 462.f));
+        const f32 barW = std::round(this->vSize.x * (860.f / 462.f));
+        const f32 open = this->centerOffsetAnim / (this->vSize.x / 2.0f);
+        const vec2 centre = this->cube->getRelPos() + this->vSize / 2.f;
+        f32 y = centre.y - (n * barH + (n - 1.f) * gap) * 0.5f;
+        for(auto *element : this->menuElements) {
+            auto *bar = static_cast<UIButtonRounded *>(element);
+            bar->onResized();
+            bar->setRelPos(centre.x - barW * 0.6f * (1.f - open), y);
+            bar->setSize(barW, barH);
+            bar->setThemedInset(std::round(this->vSize.x * (330.f / 462.f)));
+            bar->setFrameColor(argb(open, 1.0f, 1.0f, 1.0f));
+            y += barH + gap;
+        }
+        this->setSize(screenSize + vec2(1, 1));
+        this->update_pos();
+        return;
     }
 
     int numButtons = this->menuElements.size();

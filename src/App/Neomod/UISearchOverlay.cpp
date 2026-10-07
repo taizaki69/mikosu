@@ -1,5 +1,9 @@
 // Copyright (c) 2017, PG, All rights reserved.
 #include "UISearchOverlay.h"
+#include "Icons.h"
+#include "UIDraw.h"
+#include "UITheme.h"
+#include "UIType.h"
 
 #include <utility>
 
@@ -28,7 +32,70 @@ UISearchOverlay::UISearchOverlay(float xPos, float yPos, float xSize, float ySiz
     this->bSearching = false;
 }
 
+void UISearchOverlay::drawRedesigned() {
+    // round 6: a slanted field (typing anywhere in song select searches, as in stable): the search icon, what's been
+    // typed or the hint, and the result count or any fixed filter right-aligned in a softer colour
+    using Style = UIType::Style;
+    const auto &theme = UITheme::current();
+    const bool typed = UniString::num_codepoints(this->sSearchString) > 0;
+
+    std::string sub;
+    if(typed && this->bDrawNumResults) {
+        if(this->bSearching)
+            sub = _("Searching, please wait ...");
+        else if(this->iNumFoundResults > 0)
+            sub = fmt::format("{:d} match{:s}", this->iNumFoundResults, this->iNumFoundResults == 1 ? "" : "es");
+        else if(this->iNumFoundResults == 0)
+            sub = _("No matches found. Hit ESC to reset.");
+    }
+    if(!this->sHardcodedSearchString.empty())
+        sub = sub.empty() ? this->sHardcodedSearchString : sub + "  ·  " + this->sHardcodedSearchString;
+    const std::string main = typed ? this->sSearchString : std::string{_("Type to search")};
+
+    // song select gives the field its size; elsewhere (options) it sizes to its text at the right
+    const f32 pad = UIType::px(30.f), iconW = UIType::px(22.f), gap = UIType::px(14.f);
+    const f32 subW = sub.empty() ? 0.f : UIType::width(Style::FINE, sub) + gap;
+    McRect field{this->getPos(), this->getSize()};
+    if(field.getHeight() < UIType::px(40.f)) {
+        const f32 h = UIType::px(46.f);
+        const f32 w = std::min(this->getSize().x, pad * 2.f + iconW + gap + UIType::width(Style::BODY, main) + subW);
+        field = McRect{this->getPos().x + this->getSize().x - w - (f32)this->iOffsetRight, this->getPos().y, w, h};
+    }
+    const f32 h = field.getHeight();
+    const UIDraw::Shape shape = UIDraw::Shape::slanted(field, UIType::px(12.f));
+    UIDraw::fill(shape, theme.light ? argb(0.07f, 0.094f, 0.078f, 0.172f) : argb(0.1f, 1.f, 1.f, 1.f));
+    if(typed) {
+        const std::array<UIDraw::Stop, 3> lit{{{0.f, UITheme::fade(theme.pink, 0.22f)},
+                                               {0.6f, UITheme::fade(theme.pink, 0.06f)},
+                                               {1.f, UITheme::fade(theme.pink, 0.f)}}};
+        UIDraw::fillStops(shape, lit);
+    }
+
+    const f32 mid = field.getY() + h * 0.5f;
+    f32 x = field.getX() + pad;
+    UIType::icon(Style::ICON_22, Icons::SEARCH, {x + iconW * 0.5f, mid}, typed ? theme.pink : theme.ink);
+    x += iconW + gap;
+    const f32 right = field.getX() + field.getWidth() - pad;
+    if(!sub.empty()) {
+        const std::string fitted =
+            UIType::fit(Style::FINE, sub, std::max(right - x - UIType::px(120.f), UIType::px(40.f)));
+        const f32 w = UIType::width(Style::FINE, fitted);
+        UIType::drawCentredY(Style::FINE, fitted, right - w, mid, theme.ink4);
+        UIType::drawCentredY(Style::BODY,
+                             UIType::fit(Style::BODY, main, std::max(right - w - gap - x, UIType::px(20.f))), x, mid,
+                             typed ? theme.ink : theme.ink3);
+    } else {
+        UIType::drawCentredY(Style::BODY, UIType::fit(Style::BODY, main, std::max(right - x, UIType::px(20.f))), x, mid,
+                             typed ? theme.ink : theme.ink3);
+    }
+}
+
 void UISearchOverlay::draw() {
+    if(this->bRedesigned && !UITheme::classic()) {
+        this->drawRedesigned();
+        return;
+    }
+
     // draw search text and background
     const float searchTextScale = 1.0f;
     McFont *searchTextFont = this->font;

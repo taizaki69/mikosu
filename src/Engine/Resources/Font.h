@@ -59,6 +59,8 @@ class McFont final : public Resource {
 
     [[nodiscard]] float getGlyphWidth(char32_t character) const;
     [[nodiscard]] float getGlyphHeight(char32_t character) const;
+    // mikosu: the glyph's bitmap height (rows), for centring icons
+    [[nodiscard]] float getGlyphRows(char32_t character) const;
     [[nodiscard]] float getStringWidth(std::string_view text) const;
     [[nodiscard]] float getStringHeight(std::string_view text) const;
 

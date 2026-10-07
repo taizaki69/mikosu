@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mikosu song select mockup, round 6</title>
+<link rel="stylesheet" href="round6.css">
+</head>
+<body class="ss">
+<div class="bg"></div>
+<div class="scrim"></div>
+<div class="car" id="car"></div>
+
+<svg class="band" width="1920" height="300" viewBox="0 0 1920 300">
+  <defs><linearGradient id="edge" x1="0" y1="0" x2="1920" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff66aa"/><stop offset=".5" stop-color="#9a72ff"/><stop offset="1" stop-color="#66ccff"/></linearGradient></defs>
+  <polygon points="0,0 1920,0 1920,150 880,150 740,284 0,284"/>
+  <polyline points="0,284 740,284 880,150 1920,150" fill="none" stroke="url(#edge)" stroke-width="2.5"/>
+</svg>
+
+<section class="info" id="info"></section>
+<div class="lbtabs" id="lbtabs"></div>
+<div class="search frost" id="search"></div>
+<div class="gtabs" id="gtabs"></div>
+<section class="lb" id="lb"></section>
+
+<footer class="foot" id="foot"><div class="line"></div></footer>
+<div class="logo" id="mark" style="right:-58px;bottom:-66px;width:250px;height:250px"></div>
+
+<script src="icons.js"></script>
+<script src="round3.js"></script>
+<script src="round6.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+const v = q.get("v") || "dark";
+document.body.classList.add("v-" + v);
+
+document.getElementById("info").innerHTML = `
+  <div class="caps">Aurora Drift</div>
+  <div class="title">Lanternfall</div>
+  <div class="diff">Kaze's Extra<span>mapped by kazehana</span></div>
+  <div class="meta"><span>${icon("clock")}3:42</span><span>${icon("bpm")}174 bpm</span><span>${icon("circle")}702</span><span>${icon("slider")}578</span><span>${icon("exchange")}4</span></div>
+  <div class="attrs"><span><small>CS</small>4.2</span><span><small>AR</small>9.3</span><span><small>OD</small>8.8</span><span><small>HP</small>5</span>${starPill(6.71)}<span class="pp">392pp</span></div>`;
+document.getElementById("lbtabs").innerHTML = `<span class="on">Local</span><span>Country</span><span>Friends</span><span>Global</span><span class="sort">By score ${icon("down")}</span>`;
+document.getElementById("search").innerHTML = `${icon("search")}<span>Type to search</span><b>7,514 maps</b>`;
+document.getElementById("gtabs").innerHTML =
+  `<span class="sort">Date added ${icon("down")}</span><span class="sep"></span><span>Collections</span><span>Recently played</span><span class="on">Artist</span><span>Difficulty</span><span>No grouping</span>`;
+
+const avatarBg = ["linear-gradient(140deg,#ff9ccb,#a18bff)", "linear-gradient(140deg,#8ee3c8,#4f9dff)", "linear-gradient(140deg,#ffcf7a,#ff7a9c)",
+                  "linear-gradient(140deg,#b9a6ff,#6b7cff)", "linear-gradient(140deg,#7fe3ff,#7a8cff)", "linear-gradient(140deg,#ffb38a,#d56bff)", "linear-gradient(140deg,#a5f08a,#3fbf9f)"];
+const rows = [
+  { g: "S", who: "taizaki", mods: ["HD", "HR"], when: "2 days ago", score: "12,948,210", acc: "98.92% · 1,284x", me: 1 },
+  { g: "A", who: "mochi_m", mods: ["HD"], when: "1 week ago", score: "11,203,554", acc: "97.40% · 1,102x" },
+  { g: "A", who: "ren_k", mods: [], when: "3 weeks ago", score: "9,876,002", acc: "96.88% · 803x" },
+  { g: "A", who: "solstice", mods: ["HR"], when: "1 month ago", score: "8,442,190", acc: "96.10% · 722x" },
+  { g: "B", who: "Velvet", mods: [], when: "2 months ago", score: "6,120,775", acc: "93.05% · 514x" },
+  { g: "B", who: "kitsu", mods: ["DT"], when: "5 months ago", score: "5,980,340", acc: "92.77% · 466x" },
+  { g: "B", who: "hoshino", mods: [], when: "8 months ago", score: "5,412,808", acc: "91.80% · 402x" },
+];
+const gradeColour = { S: "var(--gold)", A: "var(--green)", B: "var(--blue)" };
+document.getElementById("lb").innerHTML = rows.map((r, i) => `
+  <div class="row${r.me ? " me" : ""}"><span class="n">${i + 1}</span><span class="g rk" style="color:${gradeColour[r.g]}">${r.g}</span>
+  <span class="av" style="background:${avatarBg[i]}">${r.who[0].toUpperCase()}</span>
+  <div class="who"><b>${r.who}</b><small>${r.mods.map(modPill).join("")}${r.when}</small></div>
+  <div class="sc"><b>${r.score}</b><small>${r.acc}</small></div></div>`).join("");
+
+// the carousel, stable's arrangement: the selection in the middle, the rest drifting right with distance.
+// Sets carry a dot per difficulty in its star colour; the open set's difficulties are blue with their colour as the edge.
+const items = [
+  { k: "set", t: "Paper Planes in June", a: "Kaori Nanase // Shibuki", art: "thumb4-sky", diffs: [1.9, 2.7, 3.6, 4.4] },
+  { k: "set", t: "夜明けの灯", a: "星野ミオ // rinne", art: "thumb4-dusk", diffs: [2.2, 3.1, 4.6, 5.3, 6.2] },
+  { k: "diff", t: "Lanternfall", a: "Aurora Drift // kazehana", d: "Normal", sr: 2.84, g: "S", art: "bg-sky" },
+  { k: "diff", t: "Lanternfall", a: "Aurora Drift // kazehana", d: "Hard", sr: 4.07, g: "A", art: "bg-sky" },
+  { k: "diff", t: "Lanternfall", a: "Aurora Drift // kazehana", d: "Insane", sr: 5.41, g: "A", art: "bg-sky" },
+  { k: "diff", t: "Lanternfall", a: "Aurora Drift // kazehana", d: "Kaze's Extra", sr: 6.71, g: "S", art: "bg-sky", sel: true },
+  { k: "set", t: "Velvet Static", a: "Lumen Kid // ponytail", art: "thumb4-sakura", diffs: [1.5, 2.4, 3.3] },
+  { k: "set", t: "Glass Harbor", a: "Mareen // Shiro", art: "thumb4-mint", diffs: [2.0, 3.0, 4.2, 5.0, 5.9, 7.1] },
+  { k: "set", t: "Moss & Mirrors", a: "The Quiet Engine // Oak", art: "thumb4-storm", diffs: [3.4, 4.8] },
+  { k: "set", t: "Starlit Overpass", a: "Hikari // Mio", art: "thumb4-night", diffs: [2.6, 4.1, 5.5] },
+];
+const H = 100, GAP = 12;
+const car = document.getElementById("car");
+const sel = items.findIndex((it) => it.sel);
+const CY = 540;
+let y = CY - H / 2 - sel * (H + GAP);
+items.forEach((it) => {
+  const mid = y + H / 2, dist = Math.abs(mid - CY);
+  const x = 1000 + (it.sel ? 0 : it.k === "diff" ? 40 : 80) + dist * dist * 0.00032;
+  const wrap = document.createElement("div");
+  wrap.className = `cw${it.sel ? " sel" : ""}`;
+  wrap.style.cssText = `left:${x}px;top:${y}px`;
+  const el = document.createElement("div");
+  el.className = `card ${it.k}${it.sel ? " sel" : ""}`;
+  el.style.cssText = `--art:url(art/${it.art}.png)` + (it.k === "diff" ? `;--mark:${starColour(it.sr)}` : "");
+  wrap.appendChild(el);
+  const row = it.k === "diff"
+    ? `<div class="d"><span class="rk" style="color:${gradeColour[it.g]}">${it.g}</span>${it.d}${starPill(it.sr, "sm")}</div>`
+    : `<div class="dots">${it.diffs.map((s) => `<i style="--c:${starColour(s)}"></i>`).join("")}</div>`;
+  el.innerHTML = `<div class="tint"></div>${triangles(7 + y, 1000, 100, { count: 10, size: 80, stroke: 1.6, colour: it.sel ? "#ff66aa" : "#ffffff", opacity: it.sel ? 0.28 : 0.12 })}
+    <div class="tx"><div class="t">${it.t}</div><div class="a">${it.a}</div>${row}</div>`;
+  car.appendChild(wrap);
+  y += H + GAP;
+});
+
+const fb = (x, ic, label, key, c) => `<div class="fb" style="left:${x}px;--c:${c}">${icon(ic)}<span>${label}${key ? `<small>${key}</small>` : ""}</span></div>`;
+document.getElementById("foot").innerHTML +=
+  `<div class="back">${triangles(3, 300, 112, { count: 6, size: 70, stroke: 1.6, opacity: 0.3 })}<div class="in">${icon("back")}back</div></div>` +
+  fb(262, "mode", "Mode", "", "#ff66aa") + fb(404, "plus", "Mods", "F1", "#ffcf4a") + fb(546, "shuffle", "Random", "F2", "#8ee36b") + fb(688, "menu", "Options", "F3", "#9d7bff") +
+  `<div class="user"><div class="av">T</div><div><b>taizaki</b><small>4,218pp &nbsp;·&nbsp; #48,213 &nbsp;·&nbsp; 97.84%</small>
+    <div class="lvr">Lv92<div class="lv"><i></i></div></div></div></div>`;
+document.getElementById("mark").innerHTML = logo6("ss", { word: "" });
+</script>
+</body>
+</html>

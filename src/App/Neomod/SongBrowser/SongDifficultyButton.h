@@ -29,6 +29,11 @@ class SongDifficultyButton final : public SongButton {
     void updateGrade() override;
 
     [[nodiscard]] Color getInactiveBackgroundColor() const override;
+    [[nodiscard]] PanelKind panelKind() const override {
+        return this->isIndependentDiffButton() ? PanelKind::SET : PanelKind::DIFF;
+    }
+    // the redesign marks a difficulty with its star-rating colour
+    [[nodiscard]] Color cardMark() const override;
 
     [[nodiscard]] inline SongButton *getParentSongButton() const { return this->parentSongButton; }
     [[nodiscard]] inline const std::vector<SongDifficultyButton *> &getSiblingsAndSelf() const {

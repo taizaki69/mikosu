@@ -1,5 +1,9 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "InfoLabel.h"
+#include "UITheme.h"
+#include "UIParts.h"
+#include "UIType.h"
+#include "Icons.h"
 
 #include <algorithm>
 #include <utility>
@@ -52,7 +56,117 @@ InfoLabel::InfoLabel(f32 xPos, f32 yPos, f32 xSize, f32 ySize, std::string name)
     this->iBeatmapSetId = -1;
 }
 
+namespace {
+// text pieces left to right on one baseline, each in its own style and colour (round 6)
+struct Row {
+    f32 x, baseline;
+    void text(UIType::Style style, std::string_view t, Color colour, f32 tracking = 0.f) {
+        if(t.empty()) return;
+        UIType::draw(style, t, {this->x, this->baseline}, colour, tracking);
+        this->x += UIType::width(style, t, tracking);
+    }
+    void icon(char32_t glyph, Color colour) {
+        const f32 size = UIType::px(19.f);
+        UIType::icon(UIType::Style::ICON_19, glyph,
+                     {this->x + size * 0.5f, this->baseline - UIType::capHeight(UIType::Style::META) * 0.5f}, colour);
+        this->x += size;
+    }
+    void gap(f32 design) { this->x += UIType::px(design); }
+};
+
+std::string asciiUpper(std::string_view s) {
+    std::string out{s};
+    for(char &ch : out)
+        if(ch >= 'a' && ch <= 'z') ch = (char)(ch - 'a' + 'A');
+    return out;
+}
+}  // namespace
+
+void InfoLabel::drawRedesigned() {
+    // round 6 (docs/renovation/mockups/songselect6.html): the artist in capitals, the title large, the difficulty and
+    // mapper, the map's details with icons, then CS/AR/OD/HP, the star rating as a chip and the pp
+    using Style = UIType::Style;
+    const auto &theme = UITheme::current();
+    const auto *pf = osu->getMapInterface();
+    const auto *map = pf->getBeatmap();
+
+    const f32 x0 = this->getPos().x;
+    const f32 y0 = this->getPos().y;
+    const f32 width = this->getSize().x;
+    auto D = [](f32 design) { return UIType::px(design); };
+
+    UIType::draw(Style::CAPS, UIType::fit(Style::CAPS, asciiUpper(this->sArtist), width), {x0, y0 + D(15.f)},
+                 theme.ink3, 0.14f);
+    UIType::draw(Style::TITLE, UIType::fit(Style::TITLE, this->sTitle, width), {x0, y0 + D(84.f)}, theme.ink);
+    {
+        Row row{x0, y0 + D(127.f)};
+        const std::string diff = UIType::fit(Style::HEAD, this->sDiff, width * 0.6f);
+        row.text(Style::HEAD, diff, theme.ink);
+        row.gap(12.f);
+        row.text(Style::BODY, UIType::fit(Style::BODY, tformat("mapped by {:s}", this->sMapper), x0 + width - row.x),
+                 theme.ink3);
+    }
+    if(!map) return;
+
+    const f32 speed = pf->getSpeedMultiplier();
+    const Color speedColour = speed > 1.f ? Color(0xffff8a8a) : speed < 1.f ? Color(0xff9fd8ff) : theme.ink2;
+
+    // length, bpm, circles, sliders, spinners
+    {
+        Row row{x0, y0 + D(166.f)};
+        auto item = [&](char32_t glyph, const std::string &value, Color colour) {
+            row.icon(glyph, theme.ink3);
+            row.gap(8.f);
+            row.text(Style::META, value, colour);
+            row.gap(22.f);
+        };
+        const u32 fullSeconds = (u32)((map->getLengthMS() * (1.0 / speed)) / 1000.0);
+        item(Icons::CLOCK_O, fmt::format("{:d}:{:02d}", fullSeconds / 60, fullSeconds % 60), speedColour);
+        const i32 minBPM = (i32)(map->getMinBPM() * speed), maxBPM = (i32)(map->getMaxBPM() * speed);
+        item(Icons::HEARTBEAT,
+             minBPM == maxBPM ? fmt::format("{} bpm", maxBPM)
+                              : fmt::format("{}-{} ({}) bpm", minBPM, maxBPM, (i32)(map->getMostCommonBPM() * speed)),
+             speedColour);
+        item(Icons::CIRCLE_O, fmt::format("{}", map->getNumCircles()), theme.ink2);
+        item(Icons::ARROWS_H, fmt::format("{}", map->getNumSliders()), theme.ink2);
+        item(Icons::REFRESH, fmt::format("{}", map->getNumSpinners()), theme.ink2);
+    }
+
+    // CS AR OD HP, stars, pp
+    {
+        const f32 mid = y0 + D(198.f);
+        Row row{x0, mid + UIType::capHeight(Style::META) * 0.5f};
+        const Color modColour = osu->getModEZ() ? Color(0xff9fd8ff) : osu->getModHR() ? Color(0xffff8a8a) : theme.ink;
+        auto pair = [&](std::string_view label, const std::string &value) {
+            row.text(Style::LABEL, label, theme.ink3, 0.08f);
+            row.gap(7.f);
+            row.text(Style::META, value, modColour);
+            row.gap(22.f);
+        };
+        pair("CS", fmt::format("{:.3g}", pf->getCS()));
+        pair("AR", fmt::format("{:.3g}", pf->getApproachRateForSpeedMultiplier()));
+        pair("OD", fmt::format("{:.3g}", pf->getOverallDifficultyForSpeedMultiplier()));
+        pair("HP", fmt::format("{:.3g}", pf->getHP()));
+        const auto &pp = pf->getWholeMapPPInfo();
+        const f32 stars = pp.pp != -1.0 ? (f32)pp.total_stars : map->getStarsNomod();
+        row.x += UIParts::starPill({row.x, mid}, stars, false);
+        row.gap(18.f);
+        if(pp.pp != -1.0 && std::isfinite(pp.pp)) {
+            row.text(Style::TAB, fmt::format("{}pp", (i32)std::round(pp.pp)), theme.pink);
+        }
+    }
+
+    if(this->iLocalOffset != 0 || this->iOnlineOffset != 0) {
+        UIType::draw(Style::FINE, this->buildOffsetInfoString(), {x0, y0 + D(240.f)}, theme.ink3);
+    }
+}
+
 void InfoLabel::draw() {
+    if(!UITheme::classic()) {
+        this->drawRedesigned();
+        return;
+    }
+
     // debug bounding box
     if(cv::debug_osu.getBool()) {
         g->setColor(0xffff0000);

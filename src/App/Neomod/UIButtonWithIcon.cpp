@@ -4,8 +4,10 @@
 #include "Graphics.h"
 #include "Osu.h"
 #include "UniString.h"
+#include "UITheme.h"
+#include "UIType.h"
 
-UIButtonWithIcon::UIButtonWithIcon(std::string text, char32_t icon) : CBaseUIContainer(0, 0, 0, 0, "") {
+UIButtonWithIcon::UIButtonWithIcon(std::string text, char32_t icon) : CBaseUIContainer(0, 0, 0, 0, ""), glyph(icon) {
     // the container itself is the button: opt back into hit candidacy; the labels are
     // decoration and must not win the single-target click over it
     this->bClickThroughSelf = false;
@@ -29,6 +31,18 @@ UIButtonWithIcon::UIButtonWithIcon(std::string text, char32_t icon) : CBaseUICon
 }
 
 void UIButtonWithIcon::draw() {
+    if(!UITheme::classic()) {
+        // the redesign: a small icon and the text in the soft ink, brighter while hovered
+        if(!this->isVisible()) return;
+        const auto& theme = UITheme::current();
+        const Color ink = this->isMouseInside() ? theme.ink : theme.ink2;
+        const f32 mid = this->getPos().y + this->getSize().y * 0.5f;
+        const f32 iconW = UIType::px(19.f);
+        UIType::icon(UIType::Style::ICON_19, this->glyph, {this->getPos().x + iconW * 0.5f, mid}, ink);
+        UIType::drawCentredY(UIType::Style::NOTE, this->text->getText(), this->getPos().x + iconW + UIType::px(9.f),
+                             mid, ink);
+        return;
+    }
     CBaseUIContainer::draw();
 
     // draw frame when hovered
@@ -38,6 +52,11 @@ void UIButtonWithIcon::draw() {
 }
 
 void UIButtonWithIcon::onResized() {
+    if(!UITheme::classic()) {
+        this->setSize(UIType::px(19.f + 9.f) + UIType::width(UIType::Style::NOTE, this->text->getText()),
+                      UIType::px(26.f));
+        return;
+    }
     this->icon->setFont(osu->getFontIcons());  // calls onResized()
     this->icon->setSizeToContent();
     this->text->onResized();

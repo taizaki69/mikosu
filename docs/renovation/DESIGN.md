@@ -84,7 +84,7 @@ The three treatments:
 2. **Tinted:** the same, with the hue taken from the current map's background (plum for the test art), so every map recolours the panels and the highlight.
 3. **Upright:** the same palette as 1 with no shear anywhere.
 
-### Round 4 (chosen 2026-10-05: Dusk as the default, the others as themes)
+### Round 4 (chosen 2026-10-05: Dusk as the default, the others as themes; built in game, then judged "awful")
 
 Stable's exact composition, made modern. Mockups: `mockups/{mainmenu4,songselect4}-{stable,moon,day}.jpg`; source in `mockups/src/{round4.css,round4.js,*4.html,make_art4.py}`.
 - **Layout, as stable:** song select's full-width header, deeper on the left for the map info (title [difficulty], artist and mapper, length/BPM/objects, circles/sliders/spinners, CS/AR/OD/HP/stars with pp) and stepping up on the right (group and sort, search, stable's filter tabs), the leaderboard tabs under the info; the leaderboard on the left; the carousel on the right with collapsed sets, the open set's difficulties and the selection in the middle, drifting right with distance; the bottom bar with back, mode, mods, random, options (each with its coloured marker, as in stable), the user panel and the logo bottom-right. The main menu: the logo left of centre with the visualiser, four buttons sliding out from behind it (the hovered one slides further), the user card top-left, the music player top-right.
@@ -101,7 +101,42 @@ Stable's exact composition, made modern. Mockups: `mockups/{mainmenu4,songselect
 - **Not Frutiger Aero** (the user, on the glossy first version of the main menu: "way too frutiger aero for my liking"): no glossy highlights, no shine on buttons, no orbs or bubbles. Glass stays matte and frosted, like song select (which the user liked), and colour lives in thin markers, lines and icons.
 - **Search (binding, the user's rule):** in song select, typing goes straight into the search, as in stable: no shortcut, no click, no focus step. The search field only shows what's typed ("Just type to search…" when empty). Backspace deletes, Escape clears, arrows and Enter keep driving the carousel. The game already works this way (`SongBrowser::onChar`); the redesign must keep it.
 
-## Tokens (round 2's working set, to be replaced by the round-4 pick)
+### Round 5 (shown 2026-10-06: "looks better")
+
+After the in-game round 4 ("still looks awful ... make it more beautiful, like actually beautiful, minimalistic and with the
+osu stable layout"). Mockups `mockups/{mainmenu5,songselect5}-{dark,light}.jpg`, source `mockups/src/{round5.css,*5.html}`:
+text on soft scrims over the art, few surfaces, one accent, a calm type scale (Inter), and the selection in white like
+stable's. The lesson of round 4: the mockups were liked, the game wasn't, because the game kept neomod's sizes (logo,
+fonts scaled from one atlas, cards stacked with no gaps). Round 5 and later are built at the mockups' own sizes.
+
+### Round 6 (chosen 2026-10-06, built in game)
+
+Round 5 after "make things bigger, and try to understand the osu design soul and incorporate it a bit ... look at actual
+osu stable and osu lazer ui images" (the wiki's stable screenshots; lazer's mod select and daily challenge), then
+"make song select less transparent ... looks kinda weird compared to osu stable", "add some more deco on the song
+rectangles", "decide if the buttons are glued to the mikosu logo or separated", "make some elements not rounded like
+the buttons in the main menu", and "not the song cards ... maybe make them more smooth". Mockups
+`mockups/{mainmenu6,songselect6}-{dark,light}.jpg`, source `mockups/src/{round6.css,round6.js,*6.html}`.
+- **Layout, as stable:** unchanged from round 4, at larger sizes (a 1080-high design: title 64 px, cards 100 px with 12 px
+  between them, leaderboard rows 72 px, menu bars 90 px for a 462 px logo).
+- **Solid, as stable:** the background dimmed evenly (40 %) under solid bands: the stepped header (its edge a pink, violet,
+  sky line) and the footer. Leaderboard rows solid; no frosted panels in song select.
+- **osu!'s soul:** osu!'s pink (#ff66aa) as the accent; stable's violet menu bars with slanted ends that turn pink and slide
+  out when hovered, the pink back button, pink sets, blue difficulties and the white selection, the visualiser around the
+  logo; lazer's sheared buttons with coloured bars, star ratings as spectrum-coloured chips, a dot per difficulty in its
+  star colour, faint drifting outlined triangles (on cards, bars, the back button, the logo).
+- **Cards:** rounded on the left (24 px), solid colour behind the text and the map's art fading in towards the right
+  ("very empty on their right side"), a coloured edge (pink for sets, the star colour for difficulties).
+- **Sharp elsewhere:** leaderboard rows, the search field, chips, tab underlines, bars and the back button have straight
+  edges and the menu bars' 12° slant where they end; the logo and the difficulty dots stay round (osu!'s circles).
+- **Main menu, glued:** the bars start under the logo's centre, so they always come out from behind it.
+- **Type:** Outfit (the game's font) at 400–700, rasterised at the size it's drawn (`UIType`), never scaled from one atlas.
+- **Themes:** Dusk (indigo bands, the default), Stable (black bands, stable's exact pink and blue), Moon (navy, sky and
+  violet), Day (white bands, dark text; the selection turns dark). Classic keeps neomod's look.
+- **Code:** `UIType` (fonts per style at this screen's size, icons, tracking), `UITheme` (the tokens), `UIDraw` (shapes with
+  slanted ends, gradients, triangles, radial bars), `UIParts` (chips, avatars, grade colours).
+
+## Tokens (round 2's working set, superseded by `UITheme.cpp` since round 6)
 
 **Shape:**
 - slant: `skewX(-11°)` (≈ 0.2 horizontal shear), with content counter-skewed so text stays upright;

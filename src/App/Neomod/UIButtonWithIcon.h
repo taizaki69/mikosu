@@ -25,4 +25,5 @@ class UIButtonWithIcon : public CBaseUIContainer {
     std::function<void()> clickCallback;
     CBaseUILabel* icon;
     CBaseUILabel* text;
+    char32_t glyph;
 };

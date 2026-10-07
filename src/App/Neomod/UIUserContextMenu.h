@@ -16,6 +16,8 @@ class UIUserContextMenuScreen final : public UIScreen {
     void open(i32 user_id, bool is_song_browser_button = false);
     void close();
     void on_action(std::string_view text, int user_action);
+    // opens the menu at the player's card: below it near the top of the screen, above it otherwise
+    void placeAtUserButton();
 
     i32 user_id{0};
     bool from_user_button{false};

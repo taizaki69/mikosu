@@ -154,6 +154,9 @@ struct OptionsOverlayImpl final {
 
     // options
     void onLanguageSelect();
+    void onThemeSelect();
+    void onThemeSelected(std::string_view text, int id);
+    static std::string themeDisplayName(std::string_view id);
     void onLanguageSelected(std::string_view newLanguage, int id = -1);
     void onFullscreenChange(CBaseUICheckbox *checkbox);
     void onDPIScalingChange(CBaseUICheckbox *checkbox);
@@ -276,6 +279,8 @@ struct OptionsOverlayImpl final {
     UIButton *skinSelectLocalButton{nullptr};
     CBaseUIButton *languageSelectButton{nullptr};
     Mc::Registration customResolutionPrompt;
+    CBaseUIButton *themeSelectButton{nullptr};
+    CBaseUILabel *themeLabel{nullptr};
     CBaseUIButton *resolutionSelectButton{nullptr};
     CBaseUILabel *resolutionLabel{nullptr};
     CBaseUIButton *outputDeviceSelectButton{nullptr};
@@ -1465,6 +1470,15 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     this->addCheckbox(_("Use combo color as tint for slider ball"), &cv::slider_ball_tint_combo_color);
     this->addCheckbox(_("Use combo color as tint for slider border"), &cv::slider_border_tint_combo_color);
     this->addCheckbox(_("Draw Slider End Circle"), &cv::slider_draw_endcircle);
+
+    this->addSubSection(_("Theme"), "look dusk stable moon day classic design redesign glass");
+    {
+        auto *themeElement =
+            this->addButton(_("Look"), themeDisplayName(cv::ui_theme.getString()), false, &cv::ui_theme);
+        this->themeSelectButton = (CBaseUIButton *)themeElement->baseElems[0].get();
+        this->themeLabel = static_cast<CBaseUILabel *>(themeElement->baseElems[1].get());
+        this->themeSelectButton->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onThemeSelect>(this));
+    }
 
     //**************************************************************************************************************************//
 
@@ -3070,6 +3084,40 @@ void OptionsOverlayImpl::updateNotelockSelectLabel() {
 
     this->notelockSelectLabel->setText(
         this->notelockTypes[std::clamp<int>(cv::notelock_type.getInt(), 0, this->notelockTypes.size() - 1)]);
+}
+
+namespace {
+// the redesign's themes (UITheme), in the order the options list them
+constexpr std::array<std::string_view, 5> THEME_IDS{"dusk", "stable", "moon", "day", "classic"};
+}  // namespace
+
+std::string OptionsOverlayImpl::themeDisplayName(std::string_view id) {
+    if(id == "stable") return "Stable";
+    if(id == "moon") return "Moon";
+    if(id == "day") return "Day";
+    if(id == "classic") return _("Classic (neomod's)");
+    return "Dusk";
+}
+
+void OptionsOverlayImpl::onThemeSelect() {
+    if(this->contextMenu->isVisible()) {
+        this->contextMenu->setVisible2(false);
+        return;
+    }
+    this->contextMenu->setPos(this->themeSelectButton->getPos());
+    this->contextMenu->setRelPos(this->themeSelectButton->getPos());
+    this->contextMenu->begin();
+    for(int i = 0; i < (int)THEME_IDS.size(); i++) {
+        this->contextMenu->addButton(themeDisplayName(THEME_IDS[i]), i);
+    }
+    this->contextMenu->end(false, UIContextMenu::EndStyle{0});
+    this->contextMenu->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onThemeSelected>(this));
+}
+
+void OptionsOverlayImpl::onThemeSelected(std::string_view /*text*/, int id) {
+    if(id < 0 || id >= (int)std::size(THEME_IDS)) return;
+    cv::ui_theme.setValue(THEME_IDS[id]);
+    if(this->themeLabel) this->themeLabel->setText(themeDisplayName(THEME_IDS[id]));
 }
 
 void OptionsOverlayImpl::onLanguageSelect() {

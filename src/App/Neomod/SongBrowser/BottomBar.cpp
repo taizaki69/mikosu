@@ -21,6 +21,11 @@
 #include "Font.h"
 #include "SyncMutex.h"
 #include "Graphics.h"
+#include "UIDraw.h"
+#include "UITheme.h"
+#include "UIType.h"
+#include "Icons.h"
+#include "UniString.h"
 
 #include <atomic>
 #include <cassert>
@@ -75,7 +80,20 @@ void press_button(Button btn_index) {
     std::unreachable();
 }
 
-f32 get_min_height() { return SongBrowser::getUIScale() * 101.f; }
+f32 get_min_height() { return UITheme::classic() ? SongBrowser::getUIScale() * 101.f : UIType::px(112.f); }
+
+namespace {
+// the theme draws the four buttons itself unless it's classic or the skin brings its own selection-* images
+bool redesigned_buttons() {
+    const auto* skin = osu->getSkin();
+    return !UITheme::classic() && skin->usesDefault(skin->i_sel_mode) && skin->usesDefault(skin->i_sel_mods) &&
+           skin->usesDefault(skin->i_sel_random) && skin->usesDefault(skin->i_sel_options);
+}
+}  // namespace
+
+void draw_redesigned_buttons();
+void draw_skin_buttons();
+void draw_background_tasks();
 
 f32 get_height() {
     f32 max = 0.f;
@@ -92,6 +110,20 @@ void tick() {
     const auto* skin = osu->getSkin();
     const vec2 screen = osu->getVirtScreenSize();
     bool is_widescreen = (screen.x / screen.y) > (4.f / 3.f);
+
+    if(redesigned_buttons()) {
+        // round 6: after the back button, four 132px buttons 10px apart, then the player's card
+        const f32 h = get_min_height();
+        const f32 w = UIType::px(132.f), pitch = UIType::px(142.f);
+        const f32 x0 = UIType::px(262.f);
+        for(int i = 0; i < 4; i++) {
+            btns[i].rect = McRect{x0 + (f32)i * pitch, screen.y - h, w, h};
+        }
+        osu->getUserButton()->setSize(UIType::px(440.f), UIType::px(84.f));
+        osu->getUserButton()->setPos(UIType::px(860.f), screen.y - h + (h - osu->getUserButton()->getSize().y) * 0.5f);
+        osu->getUserButton()->tick();
+        return;
+    }
 
     const SkinImage& mode_img = skin->i_sel_mode_over;
     btns[MODE].rect.setSize(SongBrowser::getSkinDimensions(mode_img));
@@ -181,16 +213,26 @@ void draw() {
     const auto* skin = osu->getSkin();
     const vec2 screen_size = osu->getVirtScreenSize();
 
-    g->pushTransform();
-    {
-        const f32 bar_height = get_min_height();
-        const Image* img = skin->i_songselect_bot;
-        g->setColor(0xffffffff);
-        g->scale((f32)screen_size.x / (f32)img->getWidth(), bar_height / (f32)img->getHeight());
-        g->translate(0, screen_size.y - bar_height);
-        g->drawImage(img, AnchorPoint::TOP_LEFT);
+    const f32 bar_height = get_min_height();
+    if(!UITheme::classic() && skin->usesDefault(skin->i_songselect_bot)) {
+        // the redesign: a solid band like the header's, a hairline along its top
+        const auto& theme = UITheme::current();
+        const f32 top = screen_size.y - bar_height;
+        UIDraw::glass({.rect = McRect{0.f, top, screen_size.x, bar_height}, .softness = 0.f},
+                      UITheme::fade(theme.scrim, theme.band));
+        g->setColor(theme.hair);
+        g->fillRect(0.f, top, screen_size.x, std::max(1.f, UIType::px(1.f)));
+    } else {
+        g->pushTransform();
+        {
+            const Image* img = skin->i_songselect_bot;
+            g->setColor(0xffffffff);
+            g->scale((f32)screen_size.x / (f32)img->getWidth(), bar_height / (f32)img->getHeight());
+            g->translate(0, screen_size.y - bar_height);
+            g->drawImage(img, AnchorPoint::TOP_LEFT);
+        }
+        g->popTransform();
     }
-    g->popTransform();
 
     // don't double-draw the back button
     if(!ui->getOptionsOverlay()->isVisible()) {
@@ -200,6 +242,61 @@ void draw() {
     // Draw the user card under selection elements, which can cover it for fancy effects
     // (we don't match stable perfectly, but close enough)
     osu->getUserButton()->draw();
+
+    if(redesigned_buttons()) {
+        draw_redesigned_buttons();
+    } else {
+        draw_skin_buttons();
+    }
+    draw_background_tasks();
+}
+
+void draw_redesigned_buttons() {
+    // lazer's footer buttons in stable's places: a slanted bar in each button's colour hanging from the band's top
+    // edge, the icon, and the label in capitals with its key
+    const auto& theme = UITheme::current();
+    const f32 h = get_min_height();
+    const f32 top = osu->getVirtScreenSize().y - h;
+    constexpr std::array<char32_t, 4> glyphs{Icons::DOT_CIRCLE_O, Icons::PLUS, Icons::RANDOM, Icons::BARS};
+    const std::array<std::string, 4> labels{_("Mode"), _("Mods"), _("Random"), _("Options")};
+    constexpr std::array<const char*, 4> keys{"", "F1", "F2", "F3"};
+
+    for(int i = 0; i < 4; i++) {
+        const McRect& r = btns[i].rect;
+        const f32 hover = std::clamp<f32>(btns[i].alpha, 0.f, 1.f);
+        const f32 cx = r.getX() + r.getWidth() * 0.5f;
+        const Color mark = theme.footMarks[i];
+
+        if(hover > 0.f) {
+            const UIDraw::Shape glowShape = UIDraw::Shape::slanted(r, UIDraw::slant(h));
+            UIDraw::fill(glowShape, UITheme::fade(mark, 0.10f * hover), UITheme::fade(mark, 0.04f * hover),
+                         UITheme::fade(mark, 0.f), 0.5f);
+        }
+
+        const f32 barH = std::max(3.f, UIType::px(6.f));
+        const McRect bar{r.getX() + UIType::px(22.f), top, r.getWidth() - UIType::px(44.f), barH};
+        const UIDraw::Shape barShape = UIDraw::Shape::slanted(bar, UIDraw::slant(barH));
+        UIDraw::glow(barShape, UIType::px(8.f + 6.f * hover), UITheme::fade(mark, 0.6f + 0.4f * hover));
+        UIDraw::fill(barShape, mark);
+
+        UIType::icon(UIType::Style::ICON_34, glyphs[i], {cx, top + UIType::px(44.f) - hover * UIType::px(2.f)},
+                     UITheme::mix(theme.ink, mark, hover * 0.5f));
+
+        std::string label = labels[i];
+        for(char& ch : label)
+            if(ch >= 'a' && ch <= 'z') ch = (char)(ch - 'a' + 'A');
+        const f32 labelW = UIType::width(UIType::Style::CAPS, label, 0.1f);
+        const f32 keyW = keys[i][0] ? UIType::px(5.f) + UIType::width(UIType::Style::TINY, keys[i]) : 0.f;
+        const f32 x = cx - (labelW + keyW) * 0.5f;
+        const f32 baseline = top + UIType::px(84.f);
+        UIType::draw(UIType::Style::CAPS, label, {x, baseline}, theme.ink2, 0.1f);
+        if(keys[i][0]) UIType::draw(UIType::Style::TINY, keys[i], {x + labelW + UIType::px(5.f), baseline}, theme.ink4);
+    }
+}
+
+void draw_skin_buttons() {
+    const auto* skin = osu->getSkin();
+    const vec2 screen_size = osu->getVirtScreenSize();
 
     g->setColor(0xffffffff);
 
@@ -240,9 +337,11 @@ void draw() {
                         mos_scale, AnchorPoint::CENTER);
         g->setBlendMode(DrawBlendMode::ALPHA);
     }
+}
 
+void draw_background_tasks() {
     // background task busy notification
-    g->setColor(0xff333333);
+    g->setColor(UITheme::classic() ? Color(0xff333333) : UITheme::current().ink2);
 
     // XXX: move this to permanent toasts
     McFont* font = engine->getDefaultFont();

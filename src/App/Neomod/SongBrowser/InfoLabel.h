@@ -36,6 +36,8 @@ class InfoLabel final : public CBaseUIButton {
     [[nodiscard]] static std::string buildDiffInfoString();
 
    private:
+    // the redesign's layout (docs/renovation/DESIGN.md): title [difficulty], artist and mapper, then label/value pairs
+    void drawRedesigned();
     void updateScaling();
     [[nodiscard]] f32 getTitleFontRatio() const;
 

@@ -137,14 +137,25 @@ void UIUserContextMenuScreen::open(i32 user_id, bool is_song_browser_button) {
     if(is_song_browser_button) {
         // Menu would open halfway off-screen, extra code to remove the jank.
         // Position before end() so vertical clamping can kick in for tall menus (many user names).
-        auto userPos = osu->getUserButton()->getPos();
-        this->menu->setPos(userPos.x, userPos.y - this->menu->getSize().y);
-        this->menu->end(true, UIContextMenu::EndStyle::CLAMP_TOP);
+        // mikosu: below the card when it's in the top half (the main menu's corner), above it otherwise
+        this->placeAtUserButton();
     } else {
         this->menu->setPos(mouse->getPos());
         this->menu->end(false, UIContextMenu::EndStyle::CLAMP_BOT);
     }
     this->menu->setClickCallback(SA::MakeDelegate<&UIUserContextMenuScreen::on_action>(this));
+}
+
+void UIUserContextMenuScreen::placeAtUserButton() {
+    const auto *card = osu->getUserButton();
+    const vec2 userPos = card->getPos();
+    if(userPos.y + card->getSize().y * 0.5f < (f32)osu->getVirtScreenHeight() * 0.5f) {
+        this->menu->setPos(userPos.x, userPos.y + card->getSize().y);
+        this->menu->end(false, UIContextMenu::EndStyle::CLAMP_BOT);
+    } else {
+        this->menu->setPos(userPos.x, userPos.y - this->menu->getSize().y);
+        this->menu->end(true, UIContextMenu::EndStyle::CLAMP_TOP);
+    }
 }
 
 void UIUserContextMenuScreen::close() { this->menu->setVisible2(false); }
@@ -259,9 +270,7 @@ void UIUserContextMenuScreen::on_action(std::string_view text, int user_action) 
                 hint->setTextDarkColor(0xff000000);
             }
             if(this->from_user_button) {
-                auto userPos = osu->getUserButton()->getPos();
-                this->menu->setPos(userPos.x, userPos.y - this->menu->getSize().y);
-                this->menu->end(true, UIContextMenu::EndStyle::CLAMP_TOP);
+                this->placeAtUserButton();
             } else {
                 this->menu->end(false, UIContextMenu::EndStyle::CLAMP_BOT);
             }

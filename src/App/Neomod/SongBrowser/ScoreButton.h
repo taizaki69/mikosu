@@ -33,6 +33,8 @@ class ScoreButton final : public CBaseUIButton {
     ~ScoreButton() override;
 
     void draw() override;
+    // the redesign's row (docs/renovation/DESIGN.md, round 6)
+    void drawRedesigned();
     void tick() override;
     void updateInput(CBaseUIEventCtx &c) override;
 

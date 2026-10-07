@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mikosu song select mockup, round 5</title>
+<link rel="stylesheet" href="round5.css">
+</head>
+<body class="ss">
+<div class="bg"></div>
+<div class="scrim"></div>
+<div class="car" id="car"></div>
+
+<svg class="hairline" width="1920" height="240" viewBox="0 0 1920 240">
+  <polyline points="0,236.5 560,236.5 740,136.5 1920,136.5" fill="none" stroke="var(--hair-2)" stroke-width="1"/>
+</svg>
+
+<section class="info">
+  <div class="eyebrow">Aurora Drift</div>
+  <div class="title">Lanternfall</div>
+  <div class="diff">Kaze's Extra <span>&nbsp;&middot;&nbsp; mapped by kazehana</span></div>
+  <div class="meta"><span>3:42</span><i>/</i><span>174 bpm</span><i>/</i><span>1,284 objects</span><i>/</i><span>702 circles &middot; 578 sliders &middot; 4 spinners</span></div>
+  <div class="attrs"><span><small>CS</small>4.2</span><span><small>AR</small>9.3</span><span><small>OD</small>8.8</span><span><small>HP</small>5</span><span class="sr">&#9733; 6.71</span><span class="pp">392 pp</span></div>
+</section>
+<div class="lbtabs"><span class="on">Local</span><span>Country</span><span>Friends</span><span>Global</span></div>
+
+<div class="search frost" id="search"></div>
+<div class="gtabs" id="gtabs"></div>
+
+<section class="lb" id="lb"></section>
+
+<footer class="foot" id="foot"><div class="line"></div></footer>
+<div class="mark" id="mark" style="right:48px;bottom:12px;width:72px;height:72px"></div>
+
+<script src="icons.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+const v = q.get("v") || "dark";
+document.body.classList.add("v-" + v);
+if (q.get("font")) document.body.classList.add("f-" + q.get("font"));
+
+document.getElementById("search").innerHTML = `${icon("search")}<span>Type to search</span><b>7,514 maps</b>`;
+document.getElementById("gtabs").innerHTML =
+  `<span class="sort">Date added ${icon("down")}</span><span class="sep"></span><span>Collections</span><span>Recently played</span><span class="on">Artist</span><span>Difficulty</span><span>No grouping</span>`;
+
+const rows = [
+  { g: "S", c: "gold", who: "taizaki", sub: "HD HR · 2 days ago", score: "12,948,210", acc: "98.92% · 1,284x", me: 1 },
+  { g: "A", c: "green", who: "mochi_m", sub: "HD · 1 week ago", score: "11,203,554", acc: "97.40% · 1,102x" },
+  { g: "A", c: "green", who: "ren_k", sub: "3 weeks ago", score: "9,876,002", acc: "96.88% · 803x" },
+  { g: "A", c: "green", who: "solstice", sub: "HR · 1 month ago", score: "8,442,190", acc: "96.10% · 722x" },
+  { g: "B", c: "blue", who: "Velvet", sub: "2 months ago", score: "6,120,775", acc: "93.05% · 514x" },
+  { g: "B", c: "blue", who: "kitsu", sub: "DT · 5 months ago", score: "5,980,340", acc: "92.77% · 466x" },
+  { g: "B", c: "blue", who: "hoshino", sub: "8 months ago", score: "5,412,808", acc: "91.80% · 402x" },
+];
+document.getElementById("lb").innerHTML = rows.map((r, i) => `
+  <div class="row${r.me ? " me" : ""}"><span class="n">${i + 1}</span><span class="g" style="color:var(--${r.c})">${r.g}</span>
+  <div class="who"><b>${r.who}</b><small>${r.sub}</small></div><div class="sc"><b>${r.score}</b><small>${r.acc}</small></div></div>`).join("");
+
+// carousel, stable's arrangement: the selection in the middle, the rest drifting right with distance
+const items = [
+  { k: "set", t: "Paper Planes in June", a: "Kaori Nanase // Shibuki", art: "thumb4-sky" },
+  { k: "set", t: "夜明けの灯", a: "星野ミオ // rinne", art: "thumb4-dusk" },
+  { k: "diff", t: "Lanternfall", a: "Aurora Drift // kazehana", d: "Normal", sr: 2.84, g: "S", c: "gold", art: "bg-sky" },
+  { k: "diff", t: "Lanternfall", a: "Aurora Drift // kazehana", d: "Hard", sr: 4.07, g: "A", c: "green", art: "bg-sky" },
+  { k: "diff", t: "Lanternfall", a: "Aurora Drift // kazehana", d: "Insane", sr: 5.41, g: "A", c: "green", art: "bg-sky" },
+  { k: "diff", t: "Lanternfall", a: "Aurora Drift // kazehana", d: "Kaze's Extra", sr: 6.71, g: "S", c: "gold", art: "bg-sky", sel: true },
+  { k: "set", t: "Velvet Static", a: "Lumen Kid // ponytail", art: "thumb4-sakura" },
+  { k: "set", t: "Glass Harbor", a: "Mareen // Shiro", art: "thumb4-mint" },
+  { k: "set", t: "Moss & Mirrors", a: "The Quiet Engine // Oak", art: "thumb4-storm" },
+  { k: "set", t: "Starlit Overpass", a: "Hikari // Mio", art: "thumb4-night" },
+];
+const H = (it) => (it.k === "diff" ? 84 : 96);
+const car = document.getElementById("car");
+const sel = items.findIndex((it) => it.sel);
+const CY = 540 - 138;  // the selection's centre, in the carousel's box
+let y = CY - H(items[sel]) / 2;
+for (let i = sel - 1; i >= 0; i--) y -= H(items[i]) + 14;
+const dots = (sr) => Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.floor(sr) ? "on" : i === Math.floor(sr) && sr % 1 > 0.25 ? "half" : ""}"></i>`).join("");
+items.forEach((it) => {
+  const h = H(it), mid = y + h / 2, dist = Math.abs(mid - CY);
+  const x = 1060 + (it.sel ? 0 : it.k === "diff" ? 36 : 72) + dist * dist * 0.00034;
+  const thumbW = Math.round((h - 20) * 1.62);
+  const el = document.createElement("div");
+  el.className = `card frost ${it.k}${it.sel ? " sel" : ""}`;
+  el.style.cssText = `left:${x}px;top:${y}px;height:${h}px`;
+  el.innerHTML = `<div class="th" style="width:${thumbW}px;background-image:url(art/${it.art}.png)"></div>
+    <div class="tx" style="left:${thumbW + 32}px"><div class="t">${it.t}</div><div class="a">${it.a}</div>
+    ${it.k === "diff" ? `<div class="d"><span class="g" style="color:var(--${it.c})">${it.g}</span>${it.d}<span class="stars">${dots(it.sr)}</span><span class="sr">${it.sr.toFixed(2)}</span></div>` : ""}</div>`;
+  car.appendChild(el);
+  y += h + 14;
+});
+
+const fb = (x, ic, label, c) => `<div class="fb" style="left:${x}px;--c:${c}">${icon(ic)}<span>${label}</span></div>`;
+document.getElementById("foot").innerHTML += `<div class="back">${icon("back")}Back</div>` +
+  fb(206, "mode", "Mode", "#ff86c0") + fb(292, "plus", "Mods", "#ff8a8a") + fb(378, "shuffle", "Random", "#7fe0a6") + fb(464, "menu", "Options", "#8fcaff") +
+  `<div class="user"><div class="av">T</div><div><b>taizaki</b><small>4,218 pp &nbsp;&middot;&nbsp; #48,213 &nbsp;&middot;&nbsp; 97.84%</small><div class="lv"><i></i></div></div></div>`;
+
+const ink = v === "light" ? "rgba(18,22,34,.85)" : "rgba(255,255,255,.9)";
+document.getElementById("mark").innerHTML = `<svg viewBox="-40 -40 80 80">
+  <circle r="34" fill="${v === "light" ? "rgba(255,255,255,.55)" : "rgba(255,255,255,.05)"}" stroke="${ink}" stroke-width="1.3"/>
+  <circle r="27" fill="none" stroke="${ink}" stroke-opacity=".25" stroke-width=".7"/>
+  <circle cx="-29.4" cy="-17" r="3.2" fill="var(--accent)"/>
+  <path d="M-6 -9 L10 0 L-6 9 Z" fill="${ink}"/></svg>`;
+</script>
+</body>
+</html>

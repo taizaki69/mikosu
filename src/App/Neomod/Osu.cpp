@@ -261,6 +261,7 @@ Osu::Osu()
     this->setupAudio();
 
     cv::skin.setCallback(SA::MakeDelegate<&Osu::onSkinChange>(this));
+    cv::ui_theme.setCallback(SA::MakeDelegate<&Osu::onThemeChange>(this));
     // no callback for skin_fallback: it's read on-demand by onSkinChange.
     // to apply a new fallback, change skin or use skin_reload.
     cv::skin_reload.setCallback(SA::MakeDelegate<&Osu::onSkinReload>(this));
@@ -353,6 +354,10 @@ Osu::Osu()
         resourceManager->loadFont("outfit@700", "FONT_OSU_SONGBROWSER_BOLD", 30, true, newDPI);
 
     this->fontIcons = resourceManager->loadFont("forkawesome", "FONT_OSU_ICONS", Icons::icons, 26, true, newDPI);
+    {
+        static constexpr std::array<char32_t, 6> logoGlyphs{U'm', U'i', U'k', U'o', U's', U'u'};
+        this->logoFont = resourceManager->loadFont("outfit@400", "FONT_OSU_LOGO", logoGlyphs, 72, true, newDPI);
+    }
 
     this->fonts.push_back(defaultFont);
     this->fonts.push_back(this->titleFont);
@@ -360,6 +365,7 @@ Osu::Osu()
     this->fonts.push_back(this->songBrowserFont);
     this->fonts.push_back(this->songBrowserFontBold);
     this->fonts.push_back(this->fontIcons);
+    this->fonts.push_back(this->logoFont);
 
     float averageIconHeight = 0.0f;
     for(char32_t icon : Icons::icons) {
@@ -510,6 +516,7 @@ Osu::~Osu() {
         cv::windowed_resolution.removeAllCallbacks();
         cv::animation_speed_override.removeAllCallbacks();
         cv::ui_scale.removeAllCallbacks();
+        cv::ui_theme.removeAllCallbacks();
         cv::ui_scale_to_dpi.removeAllCallbacks();
         cv::letterboxing.removeAllCallbacks();
         cv::letterboxing_offset_x.removeAllCallbacks();
@@ -1928,6 +1935,11 @@ static std::string resolve_skin_path(std::string_view skinName) {
         fmt::format("{}/{}/{}/", cv::osu_folder.getString(), cv::osu_folder_sub_skins.getString(), skinName)};
     File::normalizeSlashes(ppyFolder, '\\', '/');
     return ppyFolder;
+}
+
+void Osu::onThemeChange(std::string_view /*newValue*/) {
+    // sizes that depend on the theme (back button, bottom bar) are set in the layout pass
+    this->last_res_change_req_src |= R_MISC_MANUAL;
 }
 
 void Osu::onSkinChange(std::string_view newSkinName) {

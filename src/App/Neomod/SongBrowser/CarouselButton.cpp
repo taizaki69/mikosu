@@ -1,6 +1,7 @@
 // Copyright (c) 2016, PG, All rights reserved.
 #include "CarouselButton.h"
 
+#include <functional>
 #include <utility>
 
 #include "StarPrecalc.h"
@@ -23,6 +24,9 @@
 #include "UI.h"
 #include "UIContextMenu.h"
 #include "ContainerRanges.h"
+#include "UIDraw.h"
+#include "UITheme.h"
+#include "UIType.h"
 
 using namespace neomod::sbr;
 
@@ -49,6 +53,15 @@ CarouselButton::CarouselButton(float xPos, float yPos, float xSize, float ySize,
 CarouselButton::~CarouselButton() { this->deleteAnimations(); }
 
 void CarouselButton::updateResolution() {
+    if(redesigned()) {
+        // round 6 (docs/renovation/mockups/songselect6.html): 100px cards with 12px between them, wide enough that
+        // the selected one starts at about half the screen's width (the stable layout's offsets do the rest)
+        const f32 sc = UIType::scale();
+        actualScaledOffsetWithMargin = vec2{0.f, 0.f};
+        scaledBaseSize = vec::ceil(vec2{1108.f, 112.f} * sc);
+        bgImageScale = 1.f;
+        return;
+    }
     const f32 currentUIScale = Osu::getUIScale(baseOsuPixelsScale);
     actualScaledOffsetWithMargin = vec::ceil(vec2{(int)marginPixelsX, (int)(marginPixelsY)} * currentUIScale);
     scaledBaseSize = vec::ceil(baseSize * currentUIScale);
@@ -97,7 +110,93 @@ void CarouselButton::draw() {
     }
 }
 
+bool CarouselButton::redesigned() {
+    const Skin *skin = osu->getSkin();
+    return !UITheme::classic() && skin->usesDefault(skin->i_menu_button_bg);
+}
+
+Color CarouselButton::textColour(bool selectedStyle, bool secondary) const {
+    if(!redesigned()) {
+        const Skin *skin = osu->getSkin();
+        return selectedStyle ? skin->c_song_select_active_text : skin->c_song_select_inactive_text;
+    }
+    const auto &theme = UITheme::current();
+    if(selectedStyle) return secondary ? theme.selInk2 : theme.selInk;
+    return secondary ? theme.cardInk2 : theme.cardInk;
+}
+
+McRect CarouselButton::cardRect() const {
+    // the card inside the button's slot (the gap is split above and below), running off the screen's right edge
+    const vec2 pos = this->getActualPos();
+    const vec2 size = this->getActualSize();
+    const f32 gap = UIType::px(6.f);
+    const f32 right = (f32)osu->getVirtScreenWidth() + UIType::px(4.f);
+    return {pos.x, pos.y + gap, std::max(right - pos.x, 1.f), std::max(size.y - 2.f * gap, 1.f)};
+}
+
+Color CarouselButton::cardMark() const {
+    const auto &theme = UITheme::current();
+    switch(this->panelKind()) {
+        case PanelKind::GROUP:
+            return theme.groupMark;
+        case PanelKind::DIFF:
+            return theme.diffCard;
+        default:
+            return theme.setMark;
+    }
+}
+
+void CarouselButton::drawCard(const Image *art, f32 artAlpha) {
+    // stable's colours by kind (pink sets, blue difficulties, white selection) as solid cards with a rounded left
+    // end; the map's art shows through towards the right, under a faint drift of triangles
+    const auto &theme = UITheme::current();
+    const McRect r = this->cardRect();
+    const f32 radius = UIType::px(24.f);
+    const UIDraw::Shape card{.rect = r, .radii = {radius, 0.f, 0.f, radius}};
+    const PanelKind kind = this->panelKind();
+    const Color base = this->bSelected            ? theme.selCard
+                       : kind == PanelKind::DIFF  ? theme.diffCard
+                       : kind == PanelKind::GROUP ? theme.groupCard
+                                                  : theme.setCard;
+
+    // a soft shadow below, and osu!'s pink around the selection
+    UIDraw::Shape shadow = card;
+    shadow.rect = McRect{r.getX(), r.getY() + UIType::px(6.f), r.getWidth(), r.getHeight()};
+    UIDraw::glow(shadow, UIType::px(10.f), argb(0.3f, 0.f, 0.f, 0.f));
+    if(this->bSelected) UIDraw::glow(card, UIType::px(14.f), theme.selGlow);
+
+    UIDraw::fill(card, base);
+    if(art != nullptr && artAlpha > 0.f) {
+        UIDraw::image(card, art, argb(artAlpha, 1.f, 1.f, 1.f));
+        // the colour over the art: solid behind the text, thinning out to the right
+        const std::array<UIDraw::Stop, 7> tint{{{0.f, UITheme::fade(base, 1.f)},
+                                                {0.3f, UITheme::fade(base, 1.f)},
+                                                {0.42f, UITheme::fade(base, 0.9f)},
+                                                {0.55f, UITheme::fade(base, 0.68f)},
+                                                {0.7f, UITheme::fade(base, 0.45f)},
+                                                {0.85f, UITheme::fade(base, 0.3f)},
+                                                {1.f, UITheme::fade(base, 0.24f)}}};
+        UIDraw::fillStops(card, tint);
+    }
+
+    // the coloured edge, following the rounded corners
+    const f32 edge = UIType::px(8.f) / std::max(r.getWidth(), 1.f);
+    const Color mark = this->cardMark();
+    const std::array<UIDraw::Stop, 3> markStops{{{0.f, mark}, {edge, mark}, {edge, UITheme::fade(mark, 0.f)}}};
+    UIDraw::fillStops(card, markStops);
+
+    const u32 seed = (u32)(std::hash<const void *>{}(this) & 0xffffffffu);
+    UIDraw::triangles(card, seed, 8, UIType::px(64.f), std::max(1.f, UIType::px(1.5f)),
+                      this->bSelected ? UITheme::fade(theme.pink, 0.16f) : argb(0.07f, 1.f, 1.f, 1.f),
+                      (f32)engine->getTime());
+}
+
 void CarouselButton::drawMenuButtonBackground() {
+    if(redesigned()) {
+        this->drawCard(nullptr, 0.f);
+        return;
+    }
+
     g->setColor(this->bSelected ? this->getActiveBackgroundColor() : this->getInactiveBackgroundColor());
     g->pushTransform();
     {

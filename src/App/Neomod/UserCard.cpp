@@ -1,5 +1,10 @@
 // Copyright (c) 2018, PG, All rights reserved.
 #include "UserCard.h"
+#include "UIDraw.h"
+#include "UITheme.h"
+#include "UIParts.h"
+#include "UIType.h"
+#include "SString.h"
 
 #include "AnimationHandler.h"
 #include "Bancho.h"
@@ -37,8 +42,67 @@ UserCard::UserCard(i32 user_id) : CBaseUIButton() {
 
 UserCard::~UserCard() = default;
 
+void UserCard::drawRedesigned() {
+    // round 6: a square avatar (the online one, else the initial on a gradient), the name, pp and accuracy, and the
+    // level with a pink bar
+    using Style = UIType::Style;
+    const auto &theme = UITheme::current();
+    const McRect r{this->getPos(), this->getSize()};
+    const f32 h = r.getHeight();
+    const f32 side = std::min(h, UIType::px(76.f));
+    const McRect avatarRect{r.getX(), r.getY() + (h - side) * 0.5f, side, side};
+    if(this->avatar) {
+        this->avatar->setPos(avatarRect.getPos());
+        this->avatar->setSize(side, side);
+        this->avatar->draw_avatar(1.f);
+    } else {
+        UIParts::avatarTile(avatarRect, this->getText(), Style::RANK, UIType::px(6.f));
+    }
+    UIDraw::Shape edge = UIDraw::Shape::rounded(avatarRect, UIType::px(6.f));
+    edge.border = std::max(1.f, UIType::px(2.f));
+    UIDraw::fill(edge, argb(0.5f, 1.f, 1.f, 1.f));
+
+    const f32 x = avatarRect.getX() + side + UIType::px(18.f);
+    const f32 maxW = std::max(r.getX() + r.getWidth() - x, UIType::px(40.f));
+    const f32 top = r.getY() + (h - UIType::px(76.f)) * 0.5f;  // laid out on the avatar's 76px
+    UIType::draw(Style::NAME, UIType::fit(Style::NAME, this->getText(), maxW), {x, top + UIType::px(24.f)}, theme.ink);
+    if(!cv::scores_enabled.getBool()) return;
+
+    std::string stats;
+    if(cv::user_draw_pp.getBool()) stats = fmt::format("{}pp", SString::thousands((i64)std::round(this->fPP)));
+    if(cv::user_draw_accuracy.getBool())
+        stats += fmt::format("{}{:.2f}%", stats.empty() ? "" : "  ·  ", this->fAcc * 100.0f);
+    UIType::draw(Style::NOTE, UIType::fit(Style::NOTE, stats, maxW), {x, top + UIType::px(49.f)}, theme.ink3);
+
+    if(cv::user_draw_level.getBool()) {
+        const std::string level = fmt::format("Lv{}", this->iLevel);
+        const f32 mid = top + UIType::px(66.f);
+        UIType::drawCentredY(Style::LABEL, level, x, mid, theme.ink3);
+        if(cv::user_draw_level_bar.getBool()) {
+            const f32 barX = x + UIType::width(Style::LABEL, level) + UIType::px(10.f);
+            const f32 barW = std::min(UIType::px(230.f), std::max(r.getX() + r.getWidth() - barX, UIType::px(20.f)));
+            const f32 barH = std::max(2.f, UIType::px(5.f));
+            const McRect bar{barX, mid - barH * 0.5f, barW, barH};
+            UIDraw::fill(UIDraw::Shape{.rect = bar}, theme.hair2);
+            const f32 done = std::clamp<f32>(this->fPercentToNextLevel, 0.0f, 1.0f);
+            if(done > 0.f) {
+                const McRect fillRect{barX, bar.getY(), barW * done, barH};
+                UIDraw::glow(UIDraw::Shape{.rect = fillRect}, UIType::px(5.f), UITheme::fade(theme.pink, 0.5f));
+                UIDraw::fill(UIDraw::Shape{.rect = fillRect}, theme.pink);
+            }
+        }
+    }
+
+    this->drawPPDelta();
+}
+
 void UserCard::draw() {
     if(!this->bVisible) return;
+
+    if(!UITheme::classic()) {
+        this->drawRedesigned();
+        return;
+    }
 
     int yCounter = 0;
     const float iconHeight = this->getSize().y;
@@ -161,48 +225,68 @@ void UserCard::draw() {
                         barWidth * std::clamp<float>(this->fPercentToNextLevel, 0.0f, 1.0f), barHeight);
         }
 
-        // draw pp increase/decrease delta
-        McFont *deltaFont = performanceFont;
-        const float deltaScale = 0.4f;
-        if(this->fPPDeltaAnim > 0.0f) {
-            std::string performanceDeltaString = fmt::format("{:.1f}pp", this->fPPDelta);
-            if(this->fPPDelta > 0.0f) performanceDeltaString.insert(0, "+");
+        this->drawPPDelta();
+    }
+}
 
-            const float border = 1.f;
+void UserCard::drawPPDelta() {
+    if(!UITheme::classic()) {
+        // the redesign: the change after a play, in green or red after the name
+        if(this->fPPDeltaAnim <= 0.0f) return;
+        const auto &theme = UITheme::current();
+        std::string delta = fmt::format("{:.1f}pp", this->fPPDelta);
+        if(this->fPPDelta > 0.0f) delta.insert(0, "+");
+        const f32 side = std::min(this->getSize().y, UIType::px(76.f));
+        const f32 x = this->getPos().x + side + UIType::px(18.f) + UIType::width(UIType::Style::NAME, this->getText()) +
+                      UIType::px(12.f);
+        const f32 top = this->getPos().y + (this->getSize().y - UIType::px(76.f)) * 0.5f;
+        const f32 a = 1.0f - (1.0f - this->fPPDeltaAnim) * (1.0f - this->fPPDeltaAnim);
+        UIType::draw(UIType::Style::LABEL, delta, {x, top + UIType::px(23.f)},
+                     UITheme::fade(this->fPPDelta > 0.0f ? theme.green : theme.red, a));
+        return;
+    }
+    McFont *performanceFont = osu->getSubTitleFont();
+    // pp increase/decrease after a play
+    McFont *deltaFont = performanceFont;
+    const float deltaScale = 0.4f;
+    if(this->fPPDeltaAnim > 0.0f) {
+        std::string performanceDeltaString = fmt::format("{:.1f}pp", this->fPPDelta);
+        if(this->fPPDelta > 0.0f) performanceDeltaString.insert(0, "+");
 
-            const float height = this->getSize().y * 0.5f;
-            const float scale = (height / deltaFont->getHeight()) * deltaScale;
+        const float border = 1.f;
 
-            const float performanceDeltaStringWidth = deltaFont->getStringWidth(performanceDeltaString) * scale;
+        const float height = this->getSize().y * 0.5f;
+        const float scale = (height / deltaFont->getHeight()) * deltaScale;
 
-            const vec2 backgroundSize =
-                vec2(performanceDeltaStringWidth + border, deltaFont->getHeight() * scale + border * 3);
-            const vec2 pos = vec2(this->getPos().x + this->getSize().x - performanceDeltaStringWidth - border,
-                                  this->getPos().y + border);
-            const vec2 textPos = vec2(pos.x, pos.y + deltaFont->getHeight() * scale);
+        const float performanceDeltaStringWidth = deltaFont->getStringWidth(performanceDeltaString) * scale;
 
-            // background (to ensure readability even with stupid long usernames)
-            g->setColor(argb(1.0f - (1.0f - this->fPPDeltaAnim) * (1.0f - this->fPPDeltaAnim), 0.f, 0.f, 0.f));
-            g->fillRect(pos.x, pos.y, backgroundSize.x, backgroundSize.y);
+        const vec2 backgroundSize =
+            vec2(performanceDeltaStringWidth + border, deltaFont->getHeight() * scale + border * 3);
+        const vec2 pos = vec2(this->getPos().x + this->getSize().x - performanceDeltaStringWidth - border,
+                              this->getPos().y + border);
+        const vec2 textPos = vec2(pos.x, pos.y + deltaFont->getHeight() * scale);
 
-            // delta text
-            g->pushTransform();
-            {
-                g->scale(scale, scale);
-                g->translate((int)textPos.x, (int)textPos.y);
+        // background (to ensure readability even with stupid long usernames)
+        g->setColor(argb(1.0f - (1.0f - this->fPPDeltaAnim) * (1.0f - this->fPPDeltaAnim), 0.f, 0.f, 0.f));
+        g->fillRect(pos.x, pos.y, backgroundSize.x, backgroundSize.y);
 
-                g->translate(1, 1);
-                g->setColor(Color(0xff000000).setA((f32)this->fPPDeltaAnim));
+        // delta text
+        g->pushTransform();
+        {
+            g->scale(scale, scale);
+            g->translate((int)textPos.x, (int)textPos.y);
 
-                g->drawString(deltaFont, performanceDeltaString);
+            g->translate(1, 1);
+            g->setColor(Color(0xff000000).setA((f32)this->fPPDeltaAnim));
 
-                g->translate(-1, -1);
-                g->setColor(Color(this->fPPDelta > 0.0f ? 0xff00ff00 : 0xffff0000).setA((f32)this->fPPDeltaAnim));
+            g->drawString(deltaFont, performanceDeltaString);
 
-                g->drawString(deltaFont, performanceDeltaString);
-            }
-            g->popTransform();
+            g->translate(-1, -1);
+            g->setColor(Color(this->fPPDelta > 0.0f ? 0xff00ff00 : 0xffff0000).setA((f32)this->fPPDeltaAnim));
+
+            g->drawString(deltaFont, performanceDeltaString);
         }
+        g->popTransform();
     }
 }
 

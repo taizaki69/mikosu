@@ -5,6 +5,11 @@
 #include "SString.h"
 #include "ScoreButton.h"
 #include "SongBrowser.h"
+#include "UIDraw.h"
+#include "UITheme.h"
+#include "UIParts.h"
+#include "UIType.h"
+#include "StarPrecalc.h"
 #include "SongDifficultyButton.h"
 #include "BeatmapCarousel.h"
 
@@ -67,6 +72,11 @@ void SongButton::draw() {
         return;
     }
 
+    if(CarouselButton::redesigned()) {
+        this->drawRedesignedCard(nullptr);
+        return;
+    }
+
     CarouselButton::draw();
 
     if(this->databaseBeatmap &&  // delay requesting the image itself a bit
@@ -126,6 +136,96 @@ void SongButton::tick() {
     }
 }
 
+const Image *SongButton::visibleArt() {
+    // delay requesting the image itself a bit (scrolling past shouldn't load every background)
+    if(this->databaseBeatmap == nullptr ||
+       this->fVisibleFor < std::clamp<f32>(cv::songbrowser_thumbnail_delay.getFloat(), 0.f, 2.f) / 4.f)
+        return nullptr;
+    return osu->getBackgroundImageHandler()->getLoadBackgroundImage(this->databaseBeatmap);
+}
+
+f32 SongButton::artFadeIn(const Image *image) {
+    f32 alpha = 1.0f;
+    if(const f32 fadein_time = cv::songbrowser_thumbnail_fade_in_duration.getFloat(); fadein_time > 0.0f) {
+        const f64 now = engine->getTime();
+        if(image == nullptr || !image->isReady())
+            this->fThumbnailFadeInTime = (f32)now;
+        else if(this->fThumbnailFadeInTime > 0.0f && now > this->fThumbnailFadeInTime) {
+            alpha = std::clamp<float>((f32)(now - this->fThumbnailFadeInTime) / fadein_time, 0.0f, 1.0f);
+            alpha = 1.0f - (1.0f - alpha) * (1.0f - alpha);
+        }
+    }
+    return (image != nullptr && image->isReady()) ? alpha : 0.f;
+}
+
+void SongButton::drawRedesignedCard(const DatabaseBeatmap *diff) {
+    // round 6 (docs/renovation/mockups/songselect6.html), on a 100px card: the title (26px), "artist // mapper"
+    // (18px), then the dots or the difficulty row
+    using Style = UIType::Style;
+    const Image *art = cv::draw_songbrowser_thumbnails.getBool() ? this->visibleArt() : nullptr;
+    this->drawCard(art, this->artFadeIn(art));
+
+    const McRect r = this->cardRect();
+    const bool sel = this->bSelected;
+    const Color ink = this->textColour(sel), ink2 = this->textColour(sel, true);
+    const f32 x = r.getX() + UIType::px(34.f);
+    const f32 maxW = std::max((f32)osu->getVirtScreenWidth() - x - UIType::px(48.f), UIType::px(120.f));
+    auto D = [](f32 design) { return UIType::px(design); };
+    const f32 top = r.getY() + (r.getHeight() - D(100.f)) * 0.5f;  // the content is laid out on 100px
+
+    const std::string_view title{this->databaseBeatmap ? this->databaseBeatmap->getTitle() : ""sv};
+    const std::string_view artist{this->databaseBeatmap ? this->databaseBeatmap->getArtist() : ""sv};
+    const std::string_view mapper{this->databaseBeatmap ? this->databaseBeatmap->getCreator() : ""sv};
+    UIType::draw(Style::NAME, UIType::fit(Style::NAME, title, maxW), {x, top + D(diff ? 31.f : 36.f)}, ink);
+    UIType::draw(Style::ARTIST, UIType::fit(Style::ARTIST, fmt::format("{:s} // {:s}", artist, mapper), maxW),
+                 {x, top + D(diff ? 56.f : 62.f)}, ink2);
+
+    if(diff != nullptr) {
+        // grade, difficulty name, star rating
+        const f32 mid = top + D(81.f);
+        f32 cx = x;
+        if(this->grade != ScoreGrade::N) {
+            const std::string_view letter = UIParts::gradeText(this->grade);
+            // on the selected card the light grade colours (silver, gold) are darkened towards its ink
+            const Color grade =
+                sel ? UITheme::mix(UIParts::gradeColour(this->grade), ink, 0.45f) : UIParts::gradeColour(this->grade);
+            UIType::drawCentredY(Style::TAB, letter, cx, mid, grade);
+            cx += UIType::width(Style::TAB, letter) + D(10.f);
+        }
+        const std::string name = UIType::fit(Style::TAB, diff->getDifficultyName(), maxW - (cx - x) - D(120.f));
+        UIType::drawCentredY(Style::TAB, name, cx, mid, ink);
+        cx += UIType::width(Style::TAB, name) + D(12.f);
+        const f32 stars = diff->getStarRating(StarPrecalc::active_idx);
+        if(stars > 0.f && std::isfinite(stars)) UIParts::starPill({cx, mid}, stars, true);
+        return;
+    }
+
+    // a dot per difficulty in its star colour (lazer's set panels), up to a row's worth
+    const f32 mid = top + D(84.f);
+    const f32 dot = D(14.f), ring = std::max(1.f, D(2.f)), pitch = D(20.f);
+    constexpr size_t MAX_DOTS = 16;
+    f32 cx = x;
+    size_t shown = 0;
+    for(const SongButton *child : this->children) {
+        if(!child->isSearchMatch()) continue;
+        if(shown == MAX_DOTS) break;
+        const DatabaseBeatmap *map = child->getDatabaseBeatmap();
+        const f32 stars = map ? map->getStarRating(StarPrecalc::active_idx) : 0.f;
+        const McRect outer{cx - ring, mid - dot * 0.5f - ring, dot + 2.f * ring, dot + 2.f * ring};
+        UIDraw::fill(UIDraw::Shape::rounded(outer, outer.getHeight() * 0.5f), argb(0.85f, 1.f, 1.f, 1.f));
+        const McRect inner{cx, mid - dot * 0.5f, dot, dot};
+        UIDraw::fill(UIDraw::Shape::rounded(inner, dot * 0.5f),
+                     UITheme::starColour(std::isfinite(stars) ? stars : 0.f));
+        cx += pitch;
+        shown++;
+    }
+    size_t visible = 0;
+    for(const SongButton *child : this->children) visible += child->isSearchMatch() ? 1 : 0;
+    if(visible > shown) {
+        UIType::drawCentredY(Style::FINE, fmt::format("+{}", visible - shown), cx + D(4.f), mid, ink2);
+    }
+}
+
 void SongButton::drawBeatmapBackgroundThumbnail(const Image *image) {
     if(!cv::draw_songbrowser_thumbnails.getBool() || osu->getSkin()->version < 2.2f) return;
 
@@ -147,6 +247,7 @@ void SongButton::drawBeatmapBackgroundThumbnail(const Image *image) {
     const vec2 size = this->getActualSize();
 
     const f32 thumbnailYRatio = g_songbrowser->thumbnailYRatio;
+
     const f32 beatmapBackgroundScale =
         Osu::getImageScaleToFillResolution(image, vec2(size.y * thumbnailYRatio, size.y)) * 1.05f;
 
@@ -199,8 +300,7 @@ void SongButton::drawTitle(float deselectedAlpha, bool forceSelectedStyle) {
     const vec2 size = this->getActualSize();
 
     const float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
-    g->setColor((this->bSelected || forceSelectedStyle) ? osu->getSkin()->c_song_select_active_text
-                                                        : osu->getSkin()->c_song_select_inactive_text);
+    g->setColor(this->textColour(this->bSelected || forceSelectedStyle));
     if(!(this->bSelected || forceSelectedStyle)) g->setAlpha(deselectedAlpha);
 
     const std::string_view title{this->databaseBeatmap ? this->databaseBeatmap->getTitle() : ""sv};
@@ -222,8 +322,7 @@ void SongButton::drawSubTitle(float deselectedAlpha, bool forceSelectedStyle) {
 
     const float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
     const float subTitleScale = (size.y * this->fSubTitleScale) / this->font->getHeight();
-    g->setColor((this->bSelected || forceSelectedStyle) ? osu->getSkin()->c_song_select_active_text
-                                                        : osu->getSkin()->c_song_select_inactive_text);
+    g->setColor(this->textColour(this->bSelected || forceSelectedStyle, true));
     if(!(this->bSelected || forceSelectedStyle)) g->setAlpha(deselectedAlpha);
 
     const std::string_view artist{this->databaseBeatmap ? this->databaseBeatmap->getArtist() : ""sv};

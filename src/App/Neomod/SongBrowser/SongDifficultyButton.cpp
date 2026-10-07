@@ -6,6 +6,8 @@
 #include "BeatmapCarousel.h"
 #include "Font.h"
 #include "SongBrowser.h"
+#include "UITheme.h"
+#include "StarPrecalc.h"
 // #include "Logging.h"
 // ---
 
@@ -46,12 +48,22 @@ SongDifficultyButton::SongDifficultyButton(float xPos, float yPos, float xSize, 
 
 SongDifficultyButton::~SongDifficultyButton() = default;
 
+Color SongDifficultyButton::cardMark() const {
+    const f32 stars = this->databaseBeatmap ? this->databaseBeatmap->getStarRating(StarPrecalc::active_idx) : 0.f;
+    return UITheme::starColour(std::isfinite(stars) ? stars : 0.f);
+}
+
 void SongDifficultyButton::draw() {
     // NOTE(spec): we don't need this check because the updateClipping() call in the scrollview already sets visibility
     /*  || this->getPos().y + this->getSize().y < 0 || this->getPos().y > osu->getVirtScreenHeight() */
     if(!this->bVisible) {
         return;
     }
+    if(CarouselButton::redesigned()) {
+        this->drawRedesignedCard(this->databaseBeatmap);
+        return;
+    }
+
     // we intentionally leapfrog SongButtons for some methods
     CarouselButton::draw();  // NOLINT(bugprone-parent-virtual-call)
 
@@ -80,7 +92,7 @@ void SongDifficultyButton::draw() {
     const float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
     const float subTitleScale = (size.y * this->fSubTitleScale) / this->font->getHeight();
     const float diffScale = (size.y * this->fDiffScale) / fontBold->getHeight();
-    g->setColor(this->bSelected ? skin->c_song_select_active_text : skin->c_song_select_inactive_text);
+    g->setColor(this->textColour(this->bSelected));
     g->pushTransform();
     {
         g->scale(diffScale, diffScale);
@@ -103,7 +115,7 @@ void SongDifficultyButton::draw() {
         const float partialStarScale =
             std::max(0.5f, std::clamp<float>(stars - numFullStars, 0.0f, 1.0f));  // at least 0.5x
 
-        g->setColor(this->bSelected ? skin->c_song_select_active_text : skin->c_song_select_inactive_text);
+        g->setColor(this->textColour(this->bSelected));
 
         // full stars
         for(int i = 0; i < numFullStars; i++) {
@@ -130,7 +142,7 @@ void SongDifficultyButton::draw() {
         g->popTransform();
 
         // fill leftover space up to 10 stars total (background stars)
-        g->setColor(0x1effffff);
+        g->setColor(Color(0x1effffff));
         const float backgroundStarScale = 0.6f;
 
         g->setBlendMode(DrawBlendMode::ADDITIVE);

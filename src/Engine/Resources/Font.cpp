@@ -290,6 +290,7 @@ struct McFontImpl final {
 
     [[nodiscard]] float getGlyphWidth(char32_t character) const;
     [[nodiscard]] float getGlyphHeight(char32_t character) const;
+    [[nodiscard]] float getGlyphRows(char32_t character) const;
     [[nodiscard]] float getStringWidth(std::string_view text) const;
     [[nodiscard]] float getStringHeight(std::string_view text) const;
 
@@ -393,6 +394,7 @@ void McFont::drawString(std::string_view text, std::optional<TextFX> effects) {
 
 float McFont::getGlyphWidth(char32_t character) const { return pImpl->getGlyphWidth(character); }
 float McFont::getGlyphHeight(char32_t character) const { return pImpl->getGlyphHeight(character); }
+float McFont::getGlyphRows(char32_t character) const { return pImpl->getGlyphRows(character); }
 float McFont::getStringWidth(std::string_view text) const { return pImpl->getStringWidth(text); }
 float McFont::getStringHeight(std::string_view text) const { return pImpl->getStringHeight(text); }
 std::vector<std::string> McFont::wrap(std::string_view text, f64 max_width) const {
@@ -691,6 +693,12 @@ float McFontImpl::getGlyphHeight(char32_t character) const {
     if(!m_parent->isReady()) return 1.0f;
 
     return static_cast<float>(getGlyphMetrics(character).top);
+}
+
+float McFontImpl::getGlyphRows(char32_t character) const {
+    if(!m_parent->isReady()) return 1.0f;
+
+    return static_cast<float>(getGlyphMetrics(character).rows);
 }
 
 float McFontImpl::getStringWidth(std::string_view text) const {

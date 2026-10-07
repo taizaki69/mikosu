@@ -91,6 +91,8 @@ Same-day A/B runs against a build of neomod's code (`main` before the rebrand, b
 |---|---|---:|---:|---|
 | 2026-10-05 | mikosu `main` after PRs #1–#6 (rebrand, data dirs, replay fixes, ScoreV1, detection) | 0.347 ms vs neomod 0.417 (3 runs each) | 0.378 / 0.501 / 0.390 ms vs neomod 0.418 / 0.518 / 0.434 (10 runs each) | no regression |
 | 2026-10-06 | merge of neomod master `de2a5fdf` (PlayfieldView, MusicTrack, BeatmapFile) | 0.321 ms vs neomod 0.322 (3 runs each) | not re-measured (no song select changes in the merge) | no regression |
+| 2026-10-06 | redesign (`ui-glass`, Dusk theme) on the merged base | — (gameplay untouched) | 0.511 / 0.661 / 0.538 ms CPU p99, GPU p99 ≤ 0.29 ms (3 runs; menu budget 1.5 ms) | within budget |
+| 2026-10-06 | redesign round 6 (`ui-glass`, Dusk; cards with the map's art, triangles, `UIType` text) | — (gameplay untouched) | 0.741 / 0.794 / 0.769 ms CPU p99 (idle / keys / wheel), GPU p99 0.46–0.47 ms, 2560x1440 GL (3 runs; menu budget 1.5 ms) | within budget |
 
 - A first 3-run song select pass flagged wheel scrolling at 0.456 vs a 0.454 ms limit. The 10-run re-measure (the rule above) cleared it.
 - An earlier run that day, while the user was playing a game (`hl2_linux` at ≈150% CPU), measured every scene about 2× slower. It's void: **benchmarks need an idle PC.**

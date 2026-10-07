@@ -300,6 +300,9 @@ class SongBrowser final : public ScreenBackable {
     CollBtnContainer *getCollectionButtonsForGroup(GroupType group);
 
     void drawStrainGraphOverlay();
+    void drawHeader();  // the redesign's top bar, when the skin doesn't bring songselect-top
+    void drawHeaderLabels();  // the redesign's GROUP and SORT labels
+    void updateLayoutRedesigned();
     StrainGraph strainGraph;
 
     GroupType curGroup{GroupType::NO_GROUPING};

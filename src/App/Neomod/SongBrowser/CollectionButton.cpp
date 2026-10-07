@@ -6,6 +6,7 @@
 #include "Font.h"
 #include "SongBrowser.h"
 #include "SongButton.h"
+#include "UIType.h"
 // ---
 
 #include "OsuConVars.h"
@@ -34,9 +35,24 @@ CollectionButton::CollectionButton(float xPos, float yPos, float xSize, float yS
 
 void CollectionButton::draw() {
     if(!this->bVisible) return;
+    if(CarouselButton::redesigned()) {
+        // the redesign: an indigo card with the group's name and how many maps it holds
+        this->drawCard(nullptr, 0.f);
+        const McRect r = this->cardRect();
+        const f32 x = r.getX() + UIType::px(34.f);
+        const f32 mid = r.getY() + r.getHeight() * 0.5f;
+        const f32 maxW = std::max((f32)osu->getVirtScreenWidth() - x - UIType::px(48.f), UIType::px(120.f));
+        const std::string count =
+            fmt::format("{} map{}", this->numVisibleChildren, this->numVisibleChildren == 1 ? "" : "s");
+        const std::string name = UIType::fit(UIType::Style::NAME, this->sCollectionName,
+                                             maxW - UIType::width(UIType::Style::ARTIST, count) - UIType::px(16.f));
+        UIType::drawCentredY(UIType::Style::NAME, name, x, mid, this->textColour(this->bSelected));
+        UIType::drawCentredY(UIType::Style::ARTIST, count,
+                             x + UIType::width(UIType::Style::NAME, name) + UIType::px(16.f), mid,
+                             this->textColour(this->bSelected, true));
+        return;
+    }
     CarouselButton::draw();
-
-    const auto *skin = osu->getSkin();
 
     // scaling
     const vec2 pos = this->getActualPos();
@@ -47,7 +63,7 @@ void CollectionButton::draw() {
     titleString.append(fmt::format(" ({} map{})", this->numVisibleChildren, this->numVisibleChildren == 1 ? "" : "s"));
     int textXOffset = size.x * 0.02f;
     float titleScale = (size.y * this->fTitleScale) / this->font->getHeight();
-    g->setColor(this->bSelected ? skin->c_song_select_active_text : skin->c_song_select_inactive_text);
+    g->setColor(this->textColour(this->bSelected));
     g->pushTransform();
     {
         g->scale(titleScale, titleScale);

@@ -971,6 +971,8 @@ CONVAR(submit_after_pause, true, CLIENT | SERVER);
 CONVAR(submit_scores, false, CLIENT | SERVER);
 CONVAR(tooltip_anim_duration, 0.4f, CLIENT | SKINS | SERVER);
 CONVAR(ui_scale, 1.0f, CLIENT | SKINS | SERVER, "multiplier");
+CONVAR(ui_theme, "dusk"sv, CLIENT | SKINS,
+       "the look of menus and song select: dusk (the default), stable, moon, day, or classic (neomod's)");
 CONVAR(ui_scale_to_dpi, true, CLIENT | SKINS | SERVER,
        "whether the game should scale its UI based on the DPI reported by your operating system");
 CONVAR(ui_scale_to_dpi_minimum_height, 1300, CLIENT | SKINS | SERVER,

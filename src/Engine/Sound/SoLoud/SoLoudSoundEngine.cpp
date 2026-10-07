@@ -966,4 +966,17 @@ void SoLoudSoundEngine::onMaxActiveChange(f32 newMax) {
     cv::snd_sanity_simultaneous_limit.setValue(this->iMaxActiveVoices, false);  // no infinite callback loop
 }
 
+void SoLoudSoundEngine::setSpectrumEnabled(bool enabled) {
+    if(soloud == nullptr || !this->bReady) return;
+    soloud->setVisualizationEnable(enabled);
+}
+
+bool SoLoudSoundEngine::getSpectrum(std::array<f32, 256> &out) {
+    if(soloud == nullptr || !this->bReady) return false;
+    const float *fft = soloud->calcFFT();
+    if(fft == nullptr) return false;
+    std::copy_n(fft, out.size(), out.begin());
+    return true;
+}
+
 #endif  // MCENGINE_FEATURE_SOLOUD

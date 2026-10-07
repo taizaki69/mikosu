@@ -3687,3 +3687,71 @@ msgstr ""
 #: src/Engine/Sound/SoundEngine.cpp
 msgid "No sound"
 msgstr "Нет звука"
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "Length"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "BPM"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "Objects"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "Circles"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "Sliders"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "Spinners"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "Stars"
+msgstr ""
+
+#: src/App/Neomod/OptionsOverlay.cpp
+msgid "Theme"
+msgstr ""
+
+#: src/App/Neomod/OptionsOverlay.cpp
+msgid "Look"
+msgstr ""
+
+#: src/App/Neomod/OptionsOverlay.cpp
+msgid "Classic (neomod's)"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/BottomBar.cpp
+msgid "Mode"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/BottomBar.cpp
+msgid "Random"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/InfoLabel.cpp
+msgid "mapped by {:s}"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/SongBrowser.cpp
+msgid "GROUP"
+msgstr ""
+
+#: src/App/Neomod/SongBrowser/SongBrowser.cpp
+msgid "SORT"
+msgstr ""
+
+#: src/App/Neomod/UISearchOverlay.cpp
+msgid "Type to search"
+msgstr ""
+
+#: src/App/Neomod/MainMenu.cpp
+msgid "Online maps"
+msgstr ""

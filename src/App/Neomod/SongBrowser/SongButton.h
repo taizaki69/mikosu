@@ -54,6 +54,12 @@ class SongButton : public CarouselButton {
     void onDeleteBeatmapConfirmed(std::string_view text, int id = -1);
 
     void drawBeatmapBackgroundThumbnail(const Image *image);
+    // the redesign: the card with this map's art, its title and artist, then a dot per difficulty (a set) or the
+    // grade, difficulty name and star rating (`diff`, else nullptr)
+    void drawRedesignedCard(const DatabaseBeatmap *diff);
+    // the map's background once it has been visible for a moment, and how far it has faded in
+    [[nodiscard]] const Image *visibleArt();
+    [[nodiscard]] f32 artFadeIn(const Image *image);
     void drawGrade();
     void drawTitle(float deselectedAlpha = 1.0f, bool forceSelectedStyle = false);
     void drawSubTitle(float deselectedAlpha = 1.0f, bool forceSelectedStyle = false);
