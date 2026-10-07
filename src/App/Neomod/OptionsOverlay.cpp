@@ -1355,15 +1355,6 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
 
     this->skinSection = this->addSection(_("Skin"));
 
-    this->addSubSection(_("Theme"), "look dusk stable moon day classic design redesign glass");
-    {
-        auto *themeElement =
-            this->addButton(_("Look"), themeDisplayName(cv::ui_theme.getString()), false, &cv::ui_theme);
-        this->themeSelectButton = (CBaseUIButton *)themeElement->baseElems[0].get();
-        this->themeLabel = static_cast<CBaseUILabel *>(themeElement->baseElems[1].get());
-        this->themeSelectButton->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onThemeSelect>(this));
-    }
-
     this->addSubSection(_("Skin"));
     this->addSkinPreview();
     {
@@ -1479,6 +1470,15 @@ OptionsOverlayImpl::OptionsOverlayImpl(OptionsOverlay *parent) : parent(parent) 
     this->addCheckbox(_("Use combo color as tint for slider ball"), &cv::slider_ball_tint_combo_color);
     this->addCheckbox(_("Use combo color as tint for slider border"), &cv::slider_border_tint_combo_color);
     this->addCheckbox(_("Draw Slider End Circle"), &cv::slider_draw_endcircle);
+
+    this->addSubSection(_("Theme"), "look dusk stable moon day classic design redesign glass");
+    {
+        auto *themeElement =
+            this->addButton(_("Look"), themeDisplayName(cv::ui_theme.getString()), false, &cv::ui_theme);
+        this->themeSelectButton = (CBaseUIButton *)themeElement->baseElems[0].get();
+        this->themeLabel = static_cast<CBaseUILabel *>(themeElement->baseElems[1].get());
+        this->themeSelectButton->setClickCallback(SA::MakeDelegate<&OptionsOverlayImpl::onThemeSelect>(this));
+    }
 
     //**************************************************************************************************************************//
 
